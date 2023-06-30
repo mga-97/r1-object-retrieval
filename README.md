@@ -1,14 +1,7 @@
-# 🎓 Workbook _your name_
+# r1-Object-Retrieval
 
-Repository to manage _your name_`s work. 
-    
-Add here _a brief description of your project_.
-
-| <img src="your-picture.png" alt="your name and github account" width="200" height="200" /> |
-| :----------------------------------------------------: |
-| Your Name and github account |
-
-    
+Repository to manage the work on the object retrieval with the robot R1.
+   
 # Code repositories
 
 The repositories connected to this workbook are: (update with repositories that you actually use/contribute to)
@@ -19,11 +12,6 @@ The repositories connected to this workbook are: (update with repositories that 
 * [Minutes of meetings](minutes/README.md)  
 * [Main results](results/README.md)
 
-
-# Team
-
-* Responsible: <your name>
-* Supervisors: <list here names of supervisors>
     
 # Issues
 
