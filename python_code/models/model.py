@@ -6,19 +6,19 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-from code.models.image_encoder import (
+from python_code.models.image_encoder import (
     mdetr_resnet101_backbone,
     PositionEmbedding2D,
 )
-from code.models.text_encoder import (
+from python_code.models.text_encoder import (
     FeatureResizer,
     mdetr_roberta_text_encoder,
 )
-from code.models.transformer import (
+from python_code.models.transformer import (
     mdetr_transformer,
     MDETRTransformerOutput,
 )
-from code.modules.layers.mlp import MLP
+from python_code.modules.layers.mlp import MLP
 
 
 class MDETRModelOutput(NamedTuple):

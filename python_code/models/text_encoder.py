@@ -3,10 +3,10 @@ from typing import Optional
 
 import torch
 from torch import nn, Tensor
-from code.modules.encoders.bert_text_encoder import BERTTextEncoder
+from python_code.modules.encoders.bert_text_encoder import BERTTextEncoder
 
-from code.modules.layers.text_embedding import BERTTextEmbeddings
-from code.modules.layers.transformer import TransformerOutput
+from python_code.modules.layers.text_embedding import BERTTextEmbeddings
+from python_code.modules.layers.transformer import TransformerOutput
 
 
 class ModifiedTransformerEncoder(nn.Module):
