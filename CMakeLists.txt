@@ -2,10 +2,8 @@
 # Authors: Raffaele Colombo
 # CopyPolicy: Released under the terms of the GNU GPL v2.0.
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(R1_OBJECT_RETRIEVAL LANGUAGES CXX C VERSION 1.0.0)
-
-set(VARS_PREFIX "R1_OBJECT_RETRIEVAL")
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 11)
@@ -36,22 +34,14 @@ yarp_configure_external_installation(${PROJECT_NAME} WITH_PLUGINS)
 
 include(AddInstallRPATHSupport)
 
-add_install_rpath_support(LIB_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}"                                   # Libraries
-                          BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"                                   # Binaries
-                                   "${CMAKE_INSTALL_PREFIX}/${CER_DYNAMIC_PLUGINS_INSTALL_DIR}"     # Plugins
+add_install_rpath_support(BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"
+                          LIB_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}"
+                          INSTALL_NAME_DIR "${CMAKE_INSTALL_FULL_LIBDIR}"
                           USE_LINK_PATH)
-
+                   
 # Everything is configured now, we can start adding source code
 add_subdirectory(app)
 add_subdirectory(modules)
 
-include(InstallBasicPackageFiles)
-install_basic_package_files(${PROJECT_NAME} VARS_PREFIX ${VARS_PREFIX}
-                                            VERSION ${${VARS_PREFIX}_VERSION}
-                                            COMPATIBILITY AnyNewerVersion
-                                            TARGETS_PROPERTY ${VARS_PREFIX}_TARGETS
-                                            DEPENDENCIES "YARP 3.3.0 REQUIRED COMPONENTS os sig dev math rosmsg idl_tools" "ICUB REQUIRED"
-                                            NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
-include(AddUninstallTarget)
 

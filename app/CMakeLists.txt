@@ -3,3 +3,4 @@
 # email:  raffaele.colombo@iit.it
 
 add_subdirectory(goAndPoint)
+add_subdirectory(nextLocPlanner)

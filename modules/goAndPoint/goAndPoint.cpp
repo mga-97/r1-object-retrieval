@@ -19,7 +19,7 @@
 
 #include "goAndPoint.h"
 
-YARP_LOG_COMPONENT(GO_AND_POINT, "cer.goAndPoint")
+YARP_LOG_COMPONENT(GO_AND_POINT, "r1_obr.goAndPoint")
 
 GoAndPoint::GoAndPoint() :
     m_period(1.0)

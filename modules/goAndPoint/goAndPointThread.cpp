@@ -25,7 +25,7 @@
 #include <cmath>
 #include <list>
 
-YARP_LOG_COMPONENT(GO_AND_POINT_THREAD, "cer.goAndPoint.GoAndPointThread")
+YARP_LOG_COMPONENT(GO_AND_POINT_THREAD, "r1_obr.goAndPoint.GoAndPointThread")
 bool print{true};
 
 
