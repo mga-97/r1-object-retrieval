@@ -16,53 +16,54 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef NEXT_LOC_PLANNER_H
-#define NEXT_LOC_PLANNER_H
+#ifndef HEAD_ORIENTATOR_H
+#define HEAD_ORIENTATOR_H
 
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
-#include <yarp/os/Network.h>
-#include <yarp/os/RFModule.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/os/Time.h>
 #include <yarp/os/Port.h>
-#include <yarp/dev/INavigation2D.h>
-#include <vector>
+#include <yarp/os/RFModule.h>
+#include <yarp/dev/ControlBoardInterfaces.h>
 #include <map>
+#include <vector>
 #include <algorithm>
 
-
-class NextLocPlanner : public yarp::os::RFModule
+class HeadOrientator : public yarp::os::RFModule
 {
 
-enum LocationStatus {
-    LOC_PLAN_UNCHECKED = 0,
-    LOC_PLAN_CHECKING = 1,
-    LOC_PLAN_CHECKED = 2   
+enum HeadOrientStatus {
+    HO_UNCHECKED = 0,
+    HO_CHECKING = 1,
+    HO_CHECKED = 2   
 };
 
-private:  
-    double                           m_period;
-    std::string                      m_area;
-    std::map<std::string, LocationStatus>    m_research_locations;
-
-    //Devices
-    yarp::dev::PolyDriver            m_nav2DPoly;
-    yarp::dev::Nav2D::INavigation2D* m_iNav2D{nullptr};
-
+private:
+    //Polydriver
+    yarp::dev::PolyDriver           m_Poly;
+    yarp::dev::IRemoteCalibrator*   m_iremcal;       //to command HomingWholePart to arms and head
+    yarp::dev::IControlMode*        m_ictrlmode;     //to set the Position control mode
+    yarp::dev::IPositionControl*    m_iposctrl;      //to retrieve the number of joints of each part
+    
     //Ports
     yarp::os::RpcServer              m_rpc_server_port;
 
+    std::map<std::string, std::string>          m_orientations;
+    std::map<std::string, HeadOrientStatus>     m_orientation_status;
+
 public:
-    NextLocPlanner();
-    ~NextLocPlanner() = default;
-    virtual bool configure(yarp::os::ResourceFinder &rf);
-    virtual bool close();
-    virtual double getPeriod();
-    virtual bool updateModule();
+    //Constructor/Distructor
+    HeadOrientator(){}
+    ~HeadOrientator(){}
+
+    //Internal methods
+    bool configure(yarp::os::ResourceFinder &rf);
+    void home();
+    virtual bool  close();
     bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
-    bool setLocationStatus(const std::string& location_name, const LocationStatus& ls);
+    bool setLocationStatus(const std::string& location_name, const HeadOrientStatus& ls);
 
 };
 
-#endif
+#endif //HEAD_ORIENTATOR_H

@@ -193,7 +193,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
         }
     }
-    else if (cmd.size()==3) 
+    else if (cmd.size()==3)    //expected 'set <location> <status>'  or 'set all <status>'
     {
         if (cmd_0=="set")
         {
