@@ -18,7 +18,6 @@
 
 
 #include "nextLocPlanner.h"
-#include <algorithm>
 
 YARP_LOG_COMPONENT(NEXT_LOC_PLANNER, "r1_obr.nextLocPlanner")
 
@@ -81,20 +80,30 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
     }
 
     //Load locally the locations
-    if(!m_iNav2D->getLocationsList(m_research_locations)) 
+    std::vector<std::string> tempLocations;
+    if(!m_iNav2D->getLocationsList(tempLocations)) 
     {
         yCError(NEXT_LOC_PLANNER,"Error getting locations list from map server");
         return false;
     }
 
-    if(m_research_locations.size()>0) //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
+    if(!tempLocations.empty()) 
     {
-        auto new_end = std::remove_if(m_research_locations.begin(), m_research_locations.end(), [this](std::string& str){return (str.find(m_area) == std::string::npos);} );
-        m_research_locations.erase(new_end, m_research_locations.end());
+        //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
+        auto new_end = std::remove_if(tempLocations.begin(), tempLocations.end(), [this](std::string& str){return (str.find(m_area) == std::string::npos);} );
+        tempLocations.erase(new_end, tempLocations.end());
+
+        for (std::vector<std::string>::iterator iter = tempLocations.begin(); iter < tempLocations.end(); iter++) 
+        {
+            m_research_locations.insert(make_pair(*iter, LOC_PLAN_UNCHECKED ));
+        }
+
     }
-    
-    m_status_locations = std::vector<LocationStatus>(m_research_locations.size(), LOC_PLAN_UNCHECKED);
- 
+    else
+    {
+        yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server");
+    }
+     
     return true;
 }
 
@@ -119,12 +128,10 @@ double NextLocPlanner::getPeriod()
 
 
 /****************************************************************/
-void NextLocPlanner::setLocationStatus(const std::string& location_name, const LocationStatus& ls)
+bool NextLocPlanner::setLocationStatus(const std::string& location_name, const LocationStatus& ls)
 {
-    std::vector<std::string>::iterator it = std::find (m_research_locations.begin(), m_research_locations.end(), location_name);
-    int idx { (int)distance(it, m_research_locations.begin()) };
-    m_status_locations[idx] = ls;
-
+    m_research_locations.at(location_name) = ls; 
+    return true;
 }
 
 
@@ -137,22 +144,20 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     {
         if (cmd_0=="next")
         {
-            if (std::find(m_status_locations.begin(), m_status_locations.end(), LOC_PLAN_UNCHECKED) != m_status_locations.end()) // At least one location unchecked
+            std::map<std::string, LocationStatus>::iterator it;
+            for (it = m_research_locations.begin(); it != m_research_locations.end(); it++  ) 
             {
-                //Extract first unchecked location index
-                std::vector<LocationStatus>::iterator it = std::find_if (m_status_locations.begin(), m_status_locations.end(), [](const LocationStatus& ls){return (ls == LOC_PLAN_UNCHECKED);});
-                int locationIdx { (int)distance(it, m_status_locations.begin()) };
-                std::string nextLocation = m_research_locations[locationIdx];
-
-                reply.addString(nextLocation);
-
-                //Mark the location status as "Checking"
-                *it = LOC_PLAN_CHECKING;
-            }
-            else
-            {
-                reply.addString("noLocation");
-            }           
+                if (it->second == LOC_PLAN_UNCHECKED)
+                {
+                    reply.addString(it->first);
+                    it->second = LOC_PLAN_CHECKING;
+                    return true;
+                }
+                else if (it == m_research_locations.end())
+                {
+                    reply.addString("noLocation");
+                }
+            }      
         }
         else if (cmd_0=="help")
         {
@@ -172,13 +177,14 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else if (cmd_0=="list")
         {
             reply.addVocab32("many");
-            for(unsigned int i = 0; i < m_research_locations.size(); i++)
+            std::map<std::string, LocationStatus>::iterator it;
+            for(it = m_research_locations.begin(); it != m_research_locations.end(); it++)
             {
                 yarp::os::Bottle& tempList = reply.addList();
-                tempList.addString(m_research_locations[i]);
-                if (m_status_locations[i]==LOC_PLAN_UNCHECKED) {tempList.addString("Unchecked");}
-                else if (m_status_locations[i]==LOC_PLAN_CHECKING) {tempList.addString("Checking");}
-                else if (m_status_locations[i]==LOC_PLAN_CHECKED) {tempList.addString("Checked");}
+                tempList.addString(it->first);
+                if (it->second==LOC_PLAN_UNCHECKED) {tempList.addString("Unchecked");}
+                else if (it->second==LOC_PLAN_CHECKING) {tempList.addString("Checking");}
+                else if (it->second==LOC_PLAN_CHECKED) {tempList.addString("Checked");}
             }
         }
         else
@@ -193,11 +199,11 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         {
             std::string cmd_1=cmd.get(1).asString();
             std::string cmd_2=cmd.get(2).asString();
-            if(std::find(m_research_locations.begin(), m_research_locations.end(), cmd_1) != m_research_locations.end()) 
+            if(m_research_locations.find(cmd_1) != m_research_locations.end()) 
             {
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED") {setLocationStatus(cmd_1, LOC_PLAN_UNCHECKED); }
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {setLocationStatus(cmd_1, LOC_PLAN_CHECKING); }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED") {setLocationStatus(cmd_1, LOC_PLAN_CHECKED); }
+                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   {m_research_locations.at(cmd_1) = LOC_PLAN_UNCHECKED; }
+                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {m_research_locations.at(cmd_1) = LOC_PLAN_CHECKING; }
+                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    {m_research_locations.at(cmd_1) = LOC_PLAN_CHECKED;  }
                 else 
                 { 
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
@@ -206,9 +212,9 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             }
             else if (cmd_1=="all")
             {
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED") {std::fill(m_status_locations.begin(), m_status_locations.end(), LOC_PLAN_UNCHECKED); }
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {std::fill(m_status_locations.begin(), m_status_locations.end(), LOC_PLAN_CHECKING); }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED") {std::fill(m_status_locations.begin(), m_status_locations.end(), LOC_PLAN_CHECKED); }
+                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   { for (auto &p : m_research_locations ) p.second = LOC_PLAN_UNCHECKED; }  
+                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") { for (auto &p : m_research_locations ) p.second = LOC_PLAN_CHECKING; }
+                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    { for (auto &p : m_research_locations ) p.second = LOC_PLAN_CHECKED; }
                 else 
                 { 
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
@@ -233,6 +239,9 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         yCWarning(NEXT_LOC_PLANNER,"Error: input RPC command bottle has a wrong number of elements.");
     }
     
+    if (reply.size()==0)
+        reply.addVocab32(yarp::os::Vocab32::encode("ack")); 
+
     return true;
 }
 

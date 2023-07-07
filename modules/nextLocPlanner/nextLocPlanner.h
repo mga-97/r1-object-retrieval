@@ -27,6 +27,8 @@
 #include <yarp/os/Time.h>
 #include <yarp/os/Port.h>
 #include <yarp/dev/INavigation2D.h>
+#include <map>
+#include <algorithm>
 
 
 class NextLocPlanner : public yarp::os::RFModule
@@ -39,17 +41,16 @@ enum LocationStatus {
 };
 
 private:  
-    double                      m_period;
-    std::string                 m_area;
-    std::vector<std::string>    m_research_locations;
-    std::vector<LocationStatus> m_status_locations;
+    double                           m_period;
+    std::string                      m_area;
+    std::map<std::string, LocationStatus>    m_research_locations;
 
     //Devices
     yarp::dev::PolyDriver            m_nav2DPoly;
     yarp::dev::Nav2D::INavigation2D* m_iNav2D{nullptr};
 
     //Ports
-    yarp::os::RpcServer         m_rpc_server_port;;
+    yarp::os::RpcServer              m_rpc_server_port;;
 
 public:
     NextLocPlanner();
@@ -59,7 +60,7 @@ public:
     virtual double getPeriod();
     virtual bool updateModule();
     bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
-    void setLocationStatus(const std::string& location_name, const LocationStatus& ls);
+    bool setLocationStatus(const std::string& location_name, const LocationStatus& ls);
 
 };
 
