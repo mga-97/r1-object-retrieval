@@ -22,6 +22,7 @@
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
 #include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/IRGBDSensor.h>
 #include <yarp/os/Time.h>
 #include <yarp/os/Port.h>
 #include <yarp/os/RFModule.h>
@@ -29,6 +30,17 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+
+//Defaults RGBD sensor
+#define RGBDClient            "RGBDSensorClient"
+#define RGBDLocalImagePort    "/headOrientator/clientRgbPort:i"
+#define RGBDLocalDepthPort    "/headOrientator/clientDepthPort:i"
+#define RGBDLocalRpcPort      "/headOrientator/clientRpcPort"
+#define RGBDRemoteImagePort   "/cer/depthCamera/rgbImage:o"
+#define RGBDRemoteDepthPort   "/cer/depthCamera/depthImage:o"
+#define RGBDRemoteRpcPort     "/cer/depthCamera/rpc:i"
+#define RGBDImageCarrier      "mjpeg"
+#define RGBDDepthCarrier      "fast_tcp"
 
 class HeadOrientator : public yarp::os::RFModule
 {
@@ -41,16 +53,21 @@ enum HeadOrientStatus {
 
 private:
     //Polydriver
-    yarp::dev::PolyDriver           m_Poly;
-    yarp::dev::IRemoteCalibrator*   m_iremcal;       //to command HomingWholePart to arms and head
-    yarp::dev::IControlMode*        m_ictrlmode;     //to set the Position control mode
-    yarp::dev::IPositionControl*    m_iposctrl;      //to retrieve the number of joints of each part
+    yarp::dev::PolyDriver            m_Poly;
+    yarp::dev::IRemoteCalibrator*    m_iremcal;       
+    yarp::dev::IControlMode*         m_ictrlmode;     
+    yarp::dev::IPositionControl*     m_iposctrl;      
+
+    yarp::dev::PolyDriver            m_rgbdPoly;
+    yarp::dev::IRGBDSensor*          m_iRgbd{nullptr};
     
     //Ports
     yarp::os::RpcServer              m_rpc_server_port;
 
     std::map<std::string, std::string>          m_orientations;
     std::map<std::string, HeadOrientStatus>     m_orientation_status;
+
+    double                           m_period;
 
 public:
     //Constructor/Distructor
@@ -59,8 +76,11 @@ public:
 
     //Internal methods
     bool configure(yarp::os::ResourceFinder &rf);
-    void home();
+    virtual double getPeriod();
+    virtual bool updateModule();
     virtual bool  close();
+
+    void home();
     bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
     bool setLocationStatus(const std::string& location_name, const HeadOrientStatus& ls);
 

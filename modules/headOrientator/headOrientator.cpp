@@ -24,6 +24,50 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
 {
     std::string robot=rf.check("robot",yarp::os::Value("cer")).asString();
 
+    // --------- RGBDSensor config --------- //
+    yarp::os::Property rgbdProp;
+    // Prepare default prop object
+    rgbdProp.put("device", RGBDClient);
+    rgbdProp.put("localImagePort", RGBDLocalImagePort);
+    rgbdProp.put("localDepthPort", RGBDLocalDepthPort);
+    rgbdProp.put("localRpcPort", RGBDLocalRpcPort);
+    rgbdProp.put("remoteImagePort", RGBDRemoteImagePort);
+    rgbdProp.put("remoteDepthPort", RGBDRemoteDepthPort);
+    rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
+    rgbdProp.put("ImageCarrier", RGBDImageCarrier);
+    rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
+    bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
+    if(!okRgbdRf)
+    {
+        yCWarning(HEAD_ORIENTATOR,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
+    }
+    else
+    {
+        yarp::os::Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
+        if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
+        if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
+        if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
+        if(rgbd_config.check("localRpcPort")) {rgbdProp.put("localRpcPort", rgbd_config.find("localRpcPort").asString());}
+        if(rgbd_config.check("remoteImagePort")) {rgbdProp.put("remoteImagePort", rgbd_config.find("remoteImagePort").asString());}
+        if(rgbd_config.check("remoteDepthPort")) {rgbdProp.put("remoteDepthPort", rgbd_config.find("remoteDepthPort").asString());}
+        if(rgbd_config.check("remoteRpcPort")) {rgbdProp.put("remoteRpcPort", rgbd_config.find("remoteRpcPort").asString());}
+        if(rgbd_config.check("ImageCarrier")) {rgbdProp.put("ImageCarrier", rgbd_config.find("ImageCarrier").asString());}
+        if(rgbd_config.check("DepthCarrier")) {rgbdProp.put("DepthCarrier", rgbd_config.find("DepthCarrier").asString());}
+    }
+
+    m_rgbdPoly.open(rgbdProp);
+    if(!m_rgbdPoly.isValid())
+    {
+        yCError(HEAD_ORIENTATOR,"Error opening PolyDriver check parameters");
+        return false;
+    }
+    m_rgbdPoly.view(m_iRgbd);
+    if(!m_iRgbd)
+    {
+        yCError(HEAD_ORIENTATOR,"Error opening iRGBD interface. Device not available");
+        return false;
+    }
+
     // ----------- Polydriver config ----------- //
     yarp::os::Property controllerProp;
     if(!rf.check("REMOTE_CONTROL_BOARD"))
@@ -33,15 +77,15 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         // defaults
         controllerProp.clear();
         controllerProp.put("device","remote_controlboard");
-        controllerProp.put("local","/handPointing/goHomeHead");
+        controllerProp.put("local","/headOrientator/homingCmd");
         controllerProp.put("remote","/cer/head");
     }
     else
     {
-        yarp::os::Searchable& goHome_config = rf.findGroup("REMOTE_CONTROL_BOARD");
-        if(goHome_config.check("device")) {controllerProp.put("device", goHome_config.find("device").asString());}
-        if(goHome_config.check("local")) {controllerProp.put("local", goHome_config.find("local").asString());}
-        if(goHome_config.check("remote")) {controllerProp.put("remote", goHome_config.find("remote").asString());}
+        yarp::os::Searchable& pos_configs = rf.findGroup("REMOTE_CONTROL_BOARD");
+        if(pos_configs.check("device")) {controllerProp.put("device", pos_configs.find("device").asString());}
+        if(pos_configs.check("local")) {controllerProp.put("local", pos_configs.find("local").asString());}
+        if(pos_configs.check("remote")) {controllerProp.put("remote", pos_configs.find("remote").asString());}
     }
     if (!m_Poly.open(controllerProp))
     {
@@ -69,7 +113,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    //Configure Head Positions maps
+    // ----------- Configure Head Positions ----------- //
     std::map<std::string, std::string>  orientations_default{
         {"pos1", "(0.0 0.0)" },
         {"pos2" ,"(35.0 0.0)"},
@@ -90,11 +134,45 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     }
     else
     {
-        yarp::os::Searchable& goHome_config = rf.findGroup("HEAD_POSITIONS");
-        for (int i=0; i<9; i++) 
+        yarp::os::Searchable& pos_configs = rf.findGroup("HEAD_POSITIONS");
+        bool useFov = pos_configs.check("useCameraFOV") ? pos_configs.find("useCameraFOV").asString()=="true" : false;
+
+        if (!useFov) 
         {
-            m_orientations.insert({"pos" + (i+1), goHome_config.check("pos" + (i+1)) ? goHome_config.find("pos" + (i+1)).asString() : orientations_default.at("pos" + (i+1))});
-            m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });
+            for (int i=0; i<9; i++) 
+            {
+                m_orientations.insert({"pos" + (i+1), pos_configs.check("pos" + (i+1)) ? pos_configs.find("pos" + (i+1)).asString() : orientations_default.at("pos" + (i+1))});
+                m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });
+            }
+        }
+        else 
+        {
+            double verticalFov, horizontalFov;
+            double newVFov, newHFov;
+            bool fovGot = m_iRgbd->getRgbFOV(horizontalFov,verticalFov);
+            if(!fovGot)
+            {
+                yCError(HEAD_ORIENTATOR,"An error occurred while retrieving the rgb camera FOV");
+            }
+
+            //consider the width of the fov to inspect an area of 180 degrees laterally and 90 degrees vertically
+            // overlapping the views by at least 5 degrees
+            newHFov = horizontalFov>60 ?  (90.0 - horizontalFov/2) : (horizontalFov-5.0) ;
+            newVFov = verticalFov>30 ?  (45.0 - verticalFov/2) : (verticalFov-5.0) ;
+
+            m_orientations = {
+                {"pos1", "(0.0 0.0)" },
+                {"pos2" ,"(" + std::to_string(newHFov) + " 0.0)"},
+                {"pos3" ,"(-" + std::to_string(newHFov) + " 0.0)"},
+                {"pos4" ,"(0.0 " + std::to_string(newVFov) + ")"},
+                {"pos5" ,"(" + std::to_string(newHFov) + " " + std::to_string(newVFov) + ")"},
+                {"pos6" ,"(-" + std::to_string(newHFov) + " " + std::to_string(newVFov) + ")"},
+                {"pos7" ,"(0.0 -" + std::to_string(newVFov) + ")"},
+                {"pos8" ,"(" + std::to_string(newHFov) + " -" + std::to_string(newVFov) + ")"},
+                {"pos9" ,"(-" + std::to_string(newHFov) + " -" + std::to_string(newVFov) + ")"}};
+
+            for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });}
+
         }
     }
     
@@ -118,7 +196,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 {
                     reply.addString(m_orientations.at(it->first));
                     it->second = HO_CHECKING;
-                    return;
+                    return true;
                 }
                 else if (it == m_orientation_status.end())
                 {
@@ -212,6 +290,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     if (reply.size()==0)
         reply.addVocab32(yarp::os::Vocab32::encode("ack")); 
     
+    return true;
 }
 
 
@@ -237,6 +316,16 @@ void HeadOrientator::home()
     
 }
 
+
+double HeadOrientator::getPeriod()
+{
+    return m_period;
+}
+
+bool HeadOrientator::updateModule()
+{   
+    return true;
+}
 
 bool HeadOrientator::close()
 {

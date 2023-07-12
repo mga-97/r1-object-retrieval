@@ -4,3 +4,5 @@
 
 add_subdirectory(goAndPoint)
 add_subdirectory(nextLocPlanner)
+add_subdirectory(headOrientator)
+
