@@ -19,28 +19,32 @@ class YarpMdetr(yarp.RFModule):
         
         # Generic configs
         self.period = rf.find('period').asFloat32() if rf.check('period') else 0.1
-        self.module_name = rf.find('module_name').asString() if rf.check('module_name') else 'YarpMdetr'
-
+        
         self.image_w = rf.find('image_width').asInt32() if rf.check('image_width') else 640
         self.image_h = rf.find('image_height').asInt32() if rf.check('image_height') else 480
         self.min_prob = rf.find('min_confidence').asFloat32() if rf.check('min_confidence') else 0.85
 
         # Opening ports
         self.cmd_port = yarp.Port()
-        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/command:i' 
-        self.cmd_port.open('/' + self.module_name + commandPortName)
-        print('{:s} opened'.format('/' + self.module_name + commandPortName))
+        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/object_retrieval/command:i' 
+        self.cmd_port.open(commandPortName)
+        print('{:s} opened'.format(commandPortName))
         self.attach(self.cmd_port)
 
         self._input_image_port = yarp.BufferedPortImageRgb()
-        imageInPortName = rf.find('input_image_port').asString() if rf.check('input_image_port') else '/image:i'
-        self._input_image_port.open('/' + self.module_name + imageInPortName)
-        print('{:s} opened'.format('/' + self.module_name + imageInPortName))
+        imageInPortName = rf.find('input_image_port').asString() if rf.check('input_image_port') else '/yarpMdetr/image:i'
+        self._input_image_port.open(imageInPortName)
+        print('{:s} opened'.format(imageInPortName))
 
         self._output_image_port = yarp.Port()
-        imageOutPortName = rf.find('output_image_port').asString() if rf.check('output_image_port') else '/image:o' 
-        self._output_image_port.open('/' + self.module_name + imageOutPortName)
-        print('{:s} opened'.format('/' + self.module_name + imageOutPortName))
+        imageOutPortName = rf.find('output_image_port').asString() if rf.check('output_image_port') else '/yarpMdetr/image:o' 
+        self._output_image_port.open(imageOutPortName)
+        print('{:s} opened'.format(imageOutPortName))
+
+        self.output_coords_port = yarp.BufferedPortBottle()
+        coordsOutPortName = rf.find('bbox_coord_port').asString() if rf.check('bbox_coord_port') else '/yarpMdetr/bbox_coords:o' 
+        self.output_coords_port.open(coordsOutPortName)
+        print('{:s} opened'.format(coordsOutPortName))
 
         # Preparing images
         print('Preparing input image...')
@@ -63,8 +67,7 @@ class YarpMdetr(yarp.RFModule):
         self.model.cuda()
         self.model.eval()
         
-        self.caption = ''
-        self.caption_coords = ''        
+        self.caption = ''       
 
         return True
 
@@ -77,8 +80,14 @@ class YarpMdetr(yarp.RFModule):
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
             self.caption = command.get(1).asString()
-            time.sleep(1)
-            reply.addString(self.caption_coords)
+            time.sleep(0.5)
+            reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
+
+            bout = self.output_coords_port.prepare()
+            bout.clear()
+            bout.addFloat32(self.x_bbox)
+            bout.addFloat32(self.y_bbox)
+            self.output_coords_port.write()
         else:
             print('Command {:s} not recognized'.format(command.get(0).asString()))
             reply.addString('Command {:s} not recognized'.format(command.get(0).asString()))
@@ -89,9 +98,8 @@ class YarpMdetr(yarp.RFModule):
             mask = probs == probs.max()
             bbox = out_bbox[mask]
             x, y, _, _ = bbox.unbind(-1)
-            x_=x.item() * self.image_w
-            y_=y.item() * self.image_h
-            self.caption_coords = str(x_) + ' ' + str(y_)
+            self.x_bbox=x.item() * self.image_w
+            self.y_bbox=y.item() * self.image_h
 
     
     def interruptModule(self):
