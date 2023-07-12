@@ -6,11 +6,11 @@ from typing import Any, Callable, Optional, OrderedDict, Union
 
 import torch
 from torch import nn, Tensor
-from code.modules.layers.normalizations import Fp32LayerNorm
-from code.modules.losses.contrastive_loss_with_temperature import (
+from python_code.modules.layers.normalizations import Fp32LayerNorm
+from python_code.modules.losses.contrastive_loss_with_temperature import (
     contrastive_loss_with_temperature,
 )
-from code.utils.common import ModelOutput
+from python_code.utils.common import ModelOutput
 
 
 def assert_labels_are_present(

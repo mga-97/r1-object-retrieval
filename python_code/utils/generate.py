@@ -7,7 +7,7 @@ import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
 
-from code.utils.attention import get_causal_attention_mask
+from python_code.utils.attention import get_causal_attention_mask
 
 
 class SampleOutput(NamedTuple):

@@ -3,7 +3,7 @@ import math
 
 import torch
 from torch import nn, Tensor
-from code.modules.diffusion.schedules import DiffusionSchedule
+from python_code.modules.diffusion.schedules import DiffusionSchedule
 
 
 class DiffusionHybridLoss(nn.Module):
