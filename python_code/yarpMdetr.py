@@ -1,3 +1,4 @@
+import sys
 import cv2
 import numpy as np
 import time
@@ -26,7 +27,7 @@ class YarpMdetr(yarp.RFModule):
 
         # Opening ports
         self.cmd_port = yarp.Port()
-        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/object_retrieval/command:i' 
+        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/object_retrieval/command/rpc' 
         self.cmd_port.open(commandPortName)
         print('{:s} opened'.format(commandPortName))
         self.attach(self.cmd_port)
@@ -71,16 +72,15 @@ class YarpMdetr(yarp.RFModule):
 
         return True
 
-
     def respond(self, command, reply):
         if command.get(0).asString() == 'caption':
             print('Command \'caption\' received')
             self.caption = command.get(1).asString()
-            reply.addString('caption state activated: ' + self.caption)
+            reply.addString('caption: ' + self.caption)
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
             self.caption = command.get(1).asString()
-            time.sleep(0.5)
+            time.sleep(self.period*2)
             reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
 
             bout = self.output_coords_port.prepare()
@@ -88,6 +88,12 @@ class YarpMdetr(yarp.RFModule):
             bout.addFloat32(self.x_bbox)
             bout.addFloat32(self.y_bbox)
             self.output_coords_port.write()
+        elif command.get(0).asString() == 'help':
+            print('Command \'help\' received')
+            reply.addVocab32('many')
+            reply.addString('caption <something> : identify "something" in input image')
+            reply.addString('where <something> : identify "something" in input image and return its pixel coords')
+            reply.addString('help : get this list')           
         else:
             print('Command {:s} not recognized'.format(command.get(0).asString()))
             reply.addString('Command {:s} not recognized'.format(command.get(0).asString()))
@@ -104,9 +110,10 @@ class YarpMdetr(yarp.RFModule):
     
     def interruptModule(self):
         print('Interrupt function')
-        self.cmd_port.interrupt()
-        self._input_image_port.interrupt()
+        self.cmd_port.close()
+        self._input_image_port.close()
         self._output_image_port.close()
+        self.output_coords_port.close()
         return True
 
     
@@ -179,15 +186,24 @@ class YarpMdetr(yarp.RFModule):
 
 
 if __name__ == '__main__':
-
+    
     rf = yarp.ResourceFinder()
     rf.setVerbose(True)
     rf.setDefaultContext("yarpMdetr")
-    rf.setDefaultConfigFile("yarpMdetr_R1_SIM.ini");
+    conffile = rf.find("from").asString()
+    if not conffile:
+        print('Using default conf file')
+        rf.setDefaultConfigFile('yarpMdetr_R1_SIM.ini')
+    else:
+        rf.setDefaultConfigFile(rf.find("from").asString())
 
+    rf.configure(sys.argv)
+
+    # Run module
     ap = YarpMdetr()
-    ap.runModule(rf)
-
-
-
+    try:
+        ap.runModule(rf)
+    finally:
+        print('Closing YarpMdetr...')
+        ap.interruptModule()
 
