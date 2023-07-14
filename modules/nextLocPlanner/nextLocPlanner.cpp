@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
+#include <math.h>
 #include "nextLocPlanner.h"
 
 YARP_LOG_COMPONENT(NEXT_LOC_PLANNER, "r1_obr.nextLocPlanner")
@@ -79,30 +79,32 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    //Load locally the locations
-    std::vector<std::string> tempLocations;
-    if(!m_iNav2D->getLocationsList(tempLocations)) 
+    //Load all the locations in m_all_locations
+    if(!m_iNav2D->getLocationsList(m_all_locations)) 
     {
         yCError(NEXT_LOC_PLANNER,"Error getting locations list from map server");
         return false;
     }
 
-    if(!tempLocations.empty()) 
+    if(!m_all_locations.empty()) 
     {
         //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
-        auto new_end = std::remove_if(tempLocations.begin(), tempLocations.end(), [this](std::string& str){return (str.find(m_area) == std::string::npos);} );
-        tempLocations.erase(new_end, tempLocations.end());
+        auto new_end = std::remove_if(m_all_locations.begin(), m_all_locations.end(), [this](std::string& str){return (str.find(m_area) == std::string::npos);} );
+        m_all_locations.erase(new_end, m_all_locations.end());
 
-        for (std::vector<std::string>::iterator iter = tempLocations.begin(); iter < tempLocations.end(); iter++) 
+        if(m_all_locations.empty()) 
         {
-            m_research_locations.insert(make_pair(*iter, LOC_PLAN_UNCHECKED ));
+            yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server for the area specified");
         }
+
+        m_locations_unchecked = m_all_locations;
 
     }
     else
     {
         yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server");
     }
+  
      
     return true;
 }
@@ -128,9 +130,39 @@ double NextLocPlanner::getPeriod()
 
 
 /****************************************************************/
-bool NextLocPlanner::setLocationStatus(const std::string& location_name, const LocationStatus& ls)
+bool NextLocPlanner::setLocationStatus(const std::string location_name, const std::string& location_status)
 {
-    m_research_locations.at(location_name) = ls; 
+    std::vector<std::string>::iterator findUnchecked {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
+    std::vector<std::string>::iterator findChecking {std::find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
+    std::vector<std::string>::iterator findChecked {std::find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
+    
+    bool locFound { findUnchecked != m_locations_unchecked.end() || findChecking != m_locations_checking.end() || findChecked != m_locations_checked.end()};
+    if (!locFound) 
+    {
+        yCError(NEXT_LOC_PLANNER,"Error: location specified not found");
+        return false;
+    }
+
+    if ( !(location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED" ||
+            location_status == "checking" || location_status == "Checking"  || location_status == "CHECKING"  ||
+            location_status == "checked"  || location_status == "Checked"   || location_status == "CHECKED")  ) 
+    { 
+        yCError(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
+        return false;
+    }
+
+    if (findUnchecked != m_locations_unchecked.end())   { m_locations_unchecked.erase(findUnchecked);}
+    else if(findChecking != m_locations_checking.end()) { m_locations_checking.erase(findChecking);  }
+    else if(findChecked != m_locations_checked.end())   { m_locations_checked.erase(findChecked);    }
+
+
+    if (location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED")  
+        {m_locations_unchecked.push_back(location_name); }
+    else if (location_status == "checking" || location_status == "Checking" || location_status == "CHECKING")  
+        {m_locations_checking.push_back(location_name); }
+    else if (location_status == "checked" || location_status == "Checked" || location_status == "CHECKED")  
+        {m_locations_checked.push_back(location_name); }
+
     return true;
 }
 
@@ -143,20 +175,17 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     if (cmd.size()==1)
     {
         if (cmd_0=="next")
-        {
-            std::map<std::string, LocationStatus>::iterator it;
-            for (it = m_research_locations.begin(); it != m_research_locations.end(); it++  ) 
+        {      
+            if (m_locations_unchecked.size()>0)
             {
-                if (it->second == LOC_PLAN_UNCHECKED)
-                {
-                    reply.addString(it->first);
-                    it->second = LOC_PLAN_CHECKING;
-                    return true;
-                }
-                else if (it == m_research_locations.end())
-                {
-                    reply.addString("noLocation");
-                }
+                //reading the first unchecked location
+                reply.addString(m_locations_unchecked[0]); 
+                //setting that location as "checking"
+                setLocationStatus(m_locations_unchecked[0], "checking");
+            }
+            else
+            {
+                reply.addString("noLocation");
             }      
         }
         else if (cmd_0=="help")
@@ -168,7 +197,6 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("list : lists all the locations and their status");
             reply.addString("stop : stops the nextLocationPlanner module");
             reply.addString("help : gets this list");
-
         }
         else if (cmd_0=="stop")
         {
@@ -177,14 +205,58 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else if (cmd_0=="list")
         {
             reply.addVocab32("many");
-            std::map<std::string, LocationStatus>::iterator it;
-            for(it = m_research_locations.begin(); it != m_research_locations.end(); it++)
+
+            if (m_all_locations.size()!=0)
             {
-                yarp::os::Bottle& tempList = reply.addList();
-                tempList.addString(it->first);
-                if (it->second==LOC_PLAN_UNCHECKED) {tempList.addString("Unchecked");}
-                else if (it->second==LOC_PLAN_CHECKING) {tempList.addString("Checking");}
-                else if (it->second==LOC_PLAN_CHECKED) {tempList.addString("Checked");}
+                yarp::os::Bottle& tempList1 = reply.addList();
+                std::vector<std::string>::iterator it;
+                for(it = m_all_locations.begin(); it != m_all_locations.end(); it++)
+                {
+                    yarp::os::Bottle& tempList = tempList1.addList();
+                    tempList.addString(*it);
+
+                    if (std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), *it) != m_locations_unchecked.end()) 
+                        tempList.addString("Unchecked");
+                    if (std::find(m_locations_checking.begin(), m_locations_checking.end(), *it) != m_locations_checking.end()) 
+                        tempList.addString("Checking");
+                    if (std::find(m_locations_checked.begin(), m_locations_checked.end(), *it) != m_locations_checked.end()) 
+                        tempList.addString("Checked");
+                }
+            }
+        }
+        else if (cmd_0=="listone")
+        {
+            reply.addVocab32("many");
+            yarp::os::Bottle& tempList = reply.addList();
+            
+            tempList.addString("Unchecked: ");
+            if (m_locations_unchecked.size()!=0)
+            {
+                std::vector<std::string>::iterator it;
+                for(it = m_locations_unchecked.begin(); it != m_locations_unchecked.end(); it++)
+                {
+                    tempList.addString(*it);
+                }
+            }
+            tempList.addString(" ");
+            tempList.addString("Checking: ");
+            if (m_locations_checking.size()!=0)
+            {
+                std::vector<std::string>::iterator it;
+                for(it = m_locations_checking.begin(); it != m_locations_checking.end(); it++)
+                {
+                    tempList.addString(*it);
+                }
+            }
+            tempList.addString(" ");
+            tempList.addString("Checked: ");
+            if (m_locations_checked.size()!=0)
+            {
+                std::vector<std::string>::iterator it;
+                for(it = m_locations_checked.begin(); it != m_locations_checked.end(); it++)
+                {
+                    tempList.addString(*it);
+                }
             }
         }
         else
@@ -199,26 +271,39 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         {
             std::string cmd_1=cmd.get(1).asString();
             std::string cmd_2=cmd.get(2).asString();
-            if(m_research_locations.find(cmd_1) != m_research_locations.end()) 
+
+            bool locFound {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), cmd_1) != m_locations_unchecked.end() ||
+                           std::find(m_locations_checking.begin(), m_locations_checking.end(), cmd_1) != m_locations_checking.end() ||
+                           std::find(m_locations_checked.begin(), m_locations_checked.end(), cmd_1) != m_locations_checked.end()};
+            if(locFound) 
             {
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   {m_research_locations.at(cmd_1) = LOC_PLAN_UNCHECKED; }
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {m_research_locations.at(cmd_1) = LOC_PLAN_CHECKING; }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    {m_research_locations.at(cmd_1) = LOC_PLAN_CHECKED;  }
-                else 
-                { 
+                if(!setLocationStatus(cmd_1, cmd_2))
+                {
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                    yCWarning(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
                 }
             }
             else if (cmd_1=="all")
             {
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   { for (auto &p : m_research_locations ) p.second = LOC_PLAN_UNCHECKED; }  
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") { for (auto &p : m_research_locations ) p.second = LOC_PLAN_CHECKING; }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    { for (auto &p : m_research_locations ) p.second = LOC_PLAN_CHECKED; }
+                int statusCode{0};
+                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   {statusCode=1; }
+                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {statusCode=2; }
+                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    {statusCode=3; }
                 else 
                 { 
+                    yCError(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                    yCWarning(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
+                }
+
+                if (statusCode>0)
+                {
+                    m_locations_unchecked.clear();
+                    m_locations_checking.clear();
+                    m_locations_checked.clear();
+
+                    
+                    if      (statusCode=1)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_unchecked.push_back(m_all_locations[i]);}}  
+                    else if (statusCode=2)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_checking.push_back(m_all_locations[i]);}}
+                    else if (statusCode=3)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_checked.push_back(m_all_locations[i]);}} 
                 }
             }
             else
@@ -247,10 +332,91 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
 
 
 /****************************************************************/
+bool NextLocPlanner::getCurrentCheckingLocation(std::string& location_name)
+{
+    if (m_locations_checking.size()==0)
+    {
+        location_name = "<noLocation>";
+    }
+    else if (m_locations_checking.size()==1)
+    {
+        location_name = m_locations_checking[0];
+    }
+    else
+    {
+        yCWarning(NEXT_LOC_PLANNER,"Warning: more than one location set as Checking");
+        location_name = m_locations_checking.back();
+    }
+    return true;
+}
+
+
+/****************************************************************/
+bool NextLocPlanner::getUncheckedLocations(std::vector<std::string>& location_list)
+{
+    if (m_locations_unchecked.size()==0)
+    {
+        location_list.push_back("<noLocation>");
+    }
+    else
+    {
+        location_list = m_locations_unchecked;
+    }
+    return true;
+}
+
+
+/****************************************************************/
+bool NextLocPlanner::getCheckedLocations(std::vector<std::string>& location_list)
+{
+    if (m_locations_checked.size()==0)
+    {
+        location_list.push_back("<noLocation>");
+    }
+    else
+    {
+        location_list = m_locations_checked;
+    }
+    return true;
+}
+
+
+/****************************************************************/
+double NextLocPlanner::distRobotLocation(const std::string& location_name)
+{
+    yarp::dev::Nav2D::Map2DLocation robotLoc;
+    yarp::dev::Nav2D::Map2DLocation loc;
+    m_iNav2D->getCurrentPosition(robotLoc);
+    m_iNav2D->getLocation(location_name, loc);
+
+    return sqrt(pow((robotLoc.x - loc.x), 2) + pow((robotLoc.y - loc.y), 2));
+}
+
+
+/****************************************************************/
 bool NextLocPlanner::updateModule()
 {   
     
-    //  =====>  sort m_reasearch_locations and m_status_locations <====== //
+    // --- Sorting m_locations_unchecked by its distance from the robot  --- //
+    std::vector<double> m_unchecked_dist;
+    for(size_t i=0; i<m_locations_unchecked.size(); ++i)
+    {
+        m_unchecked_dist.push_back(distRobotLocation(m_locations_unchecked[i]));
+    }
 
+    // Zip the vectors together
+    std::vector<std::pair<std::string,double>> zipped;
+    zip(m_locations_unchecked, m_unchecked_dist, zipped);
+
+    // Sort the vector of pairs
+    std::sort(std::begin(zipped), std::end(zipped), 
+        [&](const auto& a, const auto& b)
+        {
+            return a.second < b.second;
+        });
+
+    // Write the sorted pairs back to the original vectors
+    unzip(zipped, m_locations_unchecked, m_unchecked_dist);
+    
     return true;
 }

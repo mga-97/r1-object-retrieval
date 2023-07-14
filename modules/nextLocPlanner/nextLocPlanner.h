@@ -32,19 +32,13 @@
 #include <algorithm>
 
 
+
 class NextLocPlanner : public yarp::os::RFModule
 {
-
-enum LocationStatus {
-    LOC_PLAN_UNCHECKED = 0,
-    LOC_PLAN_CHECKING = 1,
-    LOC_PLAN_CHECKED = 2   
-};
 
 private:  
     double                           m_period;
     std::string                      m_area;
-    std::map<std::string, LocationStatus>    m_research_locations;
 
     //Devices
     yarp::dev::PolyDriver            m_nav2DPoly;
@@ -52,6 +46,12 @@ private:
 
     //Ports
     yarp::os::RpcServer              m_rpc_server_port;
+
+    //Locations
+    std::vector<std::string>    m_all_locations;
+    std::vector<std::string>    m_locations_unchecked;
+    std::vector<std::string>    m_locations_checking;
+    std::vector<std::string>    m_locations_checked;
 
 public:
     NextLocPlanner();
@@ -61,7 +61,40 @@ public:
     virtual double getPeriod();
     virtual bool updateModule();
     bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
-    bool setLocationStatus(const std::string& location_name, const LocationStatus& ls);
+    bool setLocationStatus(const std::string location_name, const std::string& location_status);
+    bool getCurrentCheckingLocation(std::string& location_name);
+    bool getUncheckedLocations(std::vector<std::string>& location_list);
+    bool getCheckedLocations(std::vector<std::string>& location_list);
+
+private:
+    double distRobotLocation(const std::string& location_name);
+
+
+    template <typename A, typename B>
+    void zip(
+        const std::vector<A> &a, 
+        const std::vector<B> &b, 
+        std::vector<std::pair<A,B>> &zipped)
+    {
+        for(size_t i=0; i<a.size(); ++i)
+        {
+            zipped.push_back(std::make_pair(a[i], b[i]));
+        }
+    }
+
+    template <typename A, typename B>
+    void unzip(
+        const std::vector<std::pair<A, B>> &zipped, 
+        std::vector<A> &a, 
+        std::vector<B> &b)
+    {
+        for(size_t i=0; i<a.size(); i++)
+        {
+            a[i] = zipped[i].first;
+            b[i] = zipped[i].second;
+        }
+    }
+
 
 };
 
