@@ -153,7 +153,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         yCWarning(HEAD_ORIENTATOR,"HEAD_POSITIONS section missing in ini file. Using default values.");
 
         m_orientations = orientations_default;
-        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });}
+        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + std::to_string(i+1), HO_UNCHECKED });}
     }
     else
     {
@@ -164,8 +164,10 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         {
             for (int i=0; i<9; i++) 
             {
-                m_orientations.insert({"pos" + (i+1), pos_configs.check("pos" + (i+1)) ? pos_configs.find("pos" + (i+1)).asString() : "(0.0 0.0)"});
-                m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });
+                using namespace std;
+                m_orientations.insert({"pos" + to_string(i+1), 
+                                        pos_configs.check("pos" + to_string(i+1)) ? pos_configs.find("pos" + to_string(i+1)).asString() : orientations_default.at("pos" + to_string(i+1))});
+                m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });
             }
         }
         else 
@@ -187,9 +189,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
             
             double min_pos_h {0}, min_pos_v {0};
             double max_pos_h {100}, max_pos_v {100};
-            int number_of_joints;
-            m_iposctrl->getAxes(&number_of_joints);
-            yCDebug(HEAD_ORIENTATOR)<<"number_of_joints:"<<number_of_joints;
+
             bool limGotV = m_ilimctrl->getLimits(0, &min_pos_v, &max_pos_v); //pitch
             bool limGotH = m_ilimctrl->getLimits(1, &min_pos_h, &max_pos_h); //yaw
             if(!limGotV || !limGotH)
@@ -214,7 +214,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
                 {"pos8" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"},   //down left
                 {"pos9" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"}};  //down right
 
-            for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });}
+            for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + std::to_string(i+1), HO_UNCHECKED });}
 
             
 
