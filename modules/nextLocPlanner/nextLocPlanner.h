@@ -71,10 +71,7 @@ private:
 
 
     template <typename A, typename B>
-    void zip(
-        const std::vector<A> &a, 
-        const std::vector<B> &b, 
-        std::vector<std::pair<A,B>> &zipped)
+    void zip(const std::vector<A> &a, const std::vector<B> &b,  std::vector<std::pair<A,B>> &zipped)
     {
         for(size_t i=0; i<a.size(); ++i)
         {
@@ -83,10 +80,7 @@ private:
     }
 
     template <typename A, typename B>
-    void unzip(
-        const std::vector<std::pair<A, B>> &zipped, 
-        std::vector<A> &a, 
-        std::vector<B> &b)
+    void unzip(const std::vector<std::pair<A, B>> &zipped, std::vector<A> &a, std::vector<B> &b)
     {
         for(size_t i=0; i<a.size(); i++)
         {

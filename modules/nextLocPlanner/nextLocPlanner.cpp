@@ -97,7 +97,7 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
             yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server for the area specified");
         }
 
-        m_locations_unchecked = m_all_locations;
+        m_locations_unchecked.insert(m_locations_unchecked.end(), m_all_locations.begin(), m_all_locations.end());
 
     }
     else
@@ -284,27 +284,34 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             }
             else if (cmd_1=="all")
             {
-                int statusCode{0};
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   {statusCode=1; }
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING") {statusCode=2; }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    {statusCode=3; }
+                
+                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   
+                {
+                    m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checked.begin(), m_locations_checked.end());
+                    m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checking.begin(), m_locations_checking.end());
+                    m_locations_checking.clear();
+                    m_locations_checked.clear();
+                }
+                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING")    
+                {
+                    m_locations_checking.insert(m_locations_checking.end(), m_locations_checked.begin(), m_locations_checked.end());
+                    m_locations_checking.insert(m_locations_checking.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
+                    m_locations_unchecked.clear();
+                    m_locations_checked.clear();
+                }
+                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    
+                {
+                    m_locations_checked.insert(m_locations_checked.end(), m_locations_checking.begin(), m_locations_checking.end());
+                    m_locations_checked.insert(m_locations_checked.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
+                    m_locations_unchecked.clear();
+                    m_locations_checking.clear();
+                }
                 else 
                 { 
                     yCError(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
                 }
 
-                if (statusCode>0)
-                {
-                    m_locations_unchecked.clear();
-                    m_locations_checking.clear();
-                    m_locations_checked.clear();
-
-                    
-                    if      (statusCode=1)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_unchecked.push_back(m_all_locations[i]);}}  
-                    else if (statusCode=2)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_checking.push_back(m_all_locations[i]);}}
-                    else if (statusCode=3)   { for(size_t i=0; i<m_all_locations.size(); ++i) {m_locations_checked.push_back(m_all_locations[i]);}} 
-                }
             }
             else
             {
