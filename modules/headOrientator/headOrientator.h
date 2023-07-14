@@ -83,7 +83,6 @@ public:
 
     void home();
     bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
-    bool setLocationStatus(const std::string& location_name, const HeadOrientStatus& ls);
 
 };
 
