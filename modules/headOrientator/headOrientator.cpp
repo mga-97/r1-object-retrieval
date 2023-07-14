@@ -22,7 +22,20 @@ YARP_LOG_COMPONENT(HEAD_ORIENTATOR, "r1_obr.headOrientator")
 
 bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
 {
-    std::string robot=rf.check("robot",yarp::os::Value("cer")).asString();
+    m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
+
+    //Open RPC Server Port
+    std::string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
+    if (!m_rpc_server_port.open(rpcPortName))
+    {
+        yCError(HEAD_ORIENTATOR, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
+        return false;
+    }
+    if (!attach(m_rpc_server_port))
+    {
+        yCError(HEAD_ORIENTATOR, "attach() error with rpc port %s", rpcPortName.c_str());
+        return false;
+    }
 
     // --------- RGBDSensor config --------- //
     yarp::os::Property rgbdProp;
@@ -77,7 +90,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         // defaults
         controllerProp.clear();
         controllerProp.put("device","remote_controlboard");
-        controllerProp.put("local","/headOrientator/homingCmd");
+        controllerProp.put("local","/headOrientator/remote_controlboard");
         controllerProp.put("remote","/cer/head");
     }
     else
@@ -87,13 +100,14 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         if(pos_configs.check("local")) {controllerProp.put("local", pos_configs.find("local").asString());}
         if(pos_configs.check("remote")) {controllerProp.put("remote", pos_configs.find("remote").asString());}
     }
+
     if (!m_Poly.open(controllerProp))
     {
         yCError(HEAD_ORIENTATOR,"Unable to connect to remote");
         close();
         return false;
     }
-
+    
     m_Poly.view(m_iremcal);
     if(!m_iremcal)
     {
@@ -101,15 +115,24 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
+    m_Poly.view(m_iposctrl);
     if(!m_iposctrl)
     {
         yCError(HEAD_ORIENTATOR,"Error opening iPositionControl interface. Device not available");
         return false;
     }
 
+    m_Poly.view(m_ictrlmode);
     if(!m_ictrlmode)
     {
         yCError(HEAD_ORIENTATOR,"Error opening iControlMode interface. Device not available");
+        return false;
+    }
+
+    m_Poly.view(m_ilimctrl);
+    if(!m_ilimctrl)
+    {
+        yCError(HEAD_ORIENTATOR,"Error opening IControlLimits interface. Device not available");
         return false;
     }
 
@@ -141,40 +164,71 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
         {
             for (int i=0; i<9; i++) 
             {
-                m_orientations.insert({"pos" + (i+1), pos_configs.check("pos" + (i+1)) ? pos_configs.find("pos" + (i+1)).asString() : orientations_default.at("pos" + (i+1))});
+                m_orientations.insert({"pos" + (i+1), pos_configs.check("pos" + (i+1)) ? pos_configs.find("pos" + (i+1)).asString() : "(0.0 0.0)"});
                 m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });
             }
         }
         else 
         {
-            double verticalFov, horizontalFov;
-            double newVFov, newHFov;
+            double verticalFov{0.0}, horizontalFov{0.0};
+            double newVFov{0.0}, newHFov{0.0};
             bool fovGot = m_iRgbd->getRgbFOV(horizontalFov,verticalFov);
             if(!fovGot)
             {
                 yCError(HEAD_ORIENTATOR,"An error occurred while retrieving the rgb camera FOV");
             }
+            else
+            {
+                //consider the width of the fov to inspect an area of 180 degrees laterally and 90 degrees vertically
+                // overlapping the views by at least 5 degrees
+                newHFov = horizontalFov>60 ?  (90.0 - horizontalFov/2) : (horizontalFov-5.0) ;
+                newVFov = verticalFov>30 ?  (45.0 - verticalFov/2) : (verticalFov-5.0) ;
+            }
+            
+            double min_pos_h {0}, min_pos_v {0};
+            double max_pos_h {100}, max_pos_v {100};
+            int number_of_joints;
+            m_iposctrl->getAxes(&number_of_joints);
+            yCDebug(HEAD_ORIENTATOR)<<"number_of_joints:"<<number_of_joints;
+            bool limGotV = m_ilimctrl->getLimits(0, &min_pos_v, &max_pos_v); //pitch
+            bool limGotH = m_ilimctrl->getLimits(1, &min_pos_h, &max_pos_h); //yaw
+            if(!limGotV || !limGotH)
+            {
+                yCError(HEAD_ORIENTATOR,"An error occurred while retrieving the head joint limits");
+            }
 
-            //consider the width of the fov to inspect an area of 180 degrees laterally and 90 degrees vertically
-            // overlapping the views by at least 5 degrees
-            newHFov = horizontalFov>60 ?  (90.0 - horizontalFov/2) : (horizontalFov-5.0) ;
-            newVFov = verticalFov>30 ?  (45.0 - verticalFov/2) : (verticalFov-5.0) ;
+
+            double up = limGotV ? std::min(fovGot ? newVFov : 20.0 , max_pos_v) : (fovGot ? newVFov : 20.0);
+            double down = limGotV ? std::max(fovGot ? -newVFov : -20.0 , min_pos_v) : (fovGot ? -newVFov : -20.0);
+            double left = limGotH ? std::min(fovGot ? newHFov : 35.0 , max_pos_h) : (fovGot ? newHFov : 35.0);;
+            double right = limGotH ? std::max(fovGot ? -newHFov : -35.0 , min_pos_h) : (fovGot ? -newHFov : -35.0); 
 
             m_orientations = {
                 {"pos1", "(0.0 0.0)" },
-                {"pos2" ,"(" + std::to_string(newHFov) + " 0.0)"},
-                {"pos3" ,"(-" + std::to_string(newHFov) + " 0.0)"},
-                {"pos4" ,"(0.0 " + std::to_string(newVFov) + ")"},
-                {"pos5" ,"(" + std::to_string(newHFov) + " " + std::to_string(newVFov) + ")"},
-                {"pos6" ,"(-" + std::to_string(newHFov) + " " + std::to_string(newVFov) + ")"},
-                {"pos7" ,"(0.0 -" + std::to_string(newVFov) + ")"},
-                {"pos8" ,"(" + std::to_string(newHFov) + " -" + std::to_string(newVFov) + ")"},
-                {"pos9" ,"(-" + std::to_string(newHFov) + " -" + std::to_string(newVFov) + ")"}};
+                {"pos2" ,"(" + std::to_string(left) + " 0.0)"},                            //left
+                {"pos3" ,"(" + std::to_string(right) + " 0.0)"},                           //right
+                {"pos4" ,"(0.0 " + std::to_string(up) + ")"},                              //up
+                {"pos5" ,"(" + std::to_string(up) + " " + std::to_string(left) + ")"},     //up left
+                {"pos6" ,"(" + std::to_string(up) + " " + std::to_string(right) + ")"},    //up right
+                {"pos7" ,"(0.0 " + std::to_string(down) + ")"},                            //down
+                {"pos8" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"},   //down left
+                {"pos9" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"}};  //down right
 
             for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + (i+1), HO_UNCHECKED });}
 
+            
+
         }
     }
+
+    std::map<std::string, std::string>::iterator it;
+    for (it = m_orientations.begin(); it != m_orientations.end(); it++  )
+        {yCDebug(HEAD_ORIENTATOR)<<it->first<<it->second;}
+    
+    yCDebug(HEAD_ORIENTATOR)<<" ";
+    std::map<std::string, HeadOrientStatus>::iterator ite;
+    for (ite = m_orientation_status.begin(); ite != m_orientation_status.end(); ite++  )
+        {yCDebug(HEAD_ORIENTATOR)<<ite->first<<ite->second;}
     
     return true;
 }

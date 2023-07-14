@@ -56,7 +56,8 @@ private:
     yarp::dev::PolyDriver            m_Poly;
     yarp::dev::IRemoteCalibrator*    m_iremcal;       
     yarp::dev::IControlMode*         m_ictrlmode;     
-    yarp::dev::IPositionControl*     m_iposctrl;      
+    yarp::dev::IPositionControl*     m_iposctrl;
+    yarp::dev::IControlLimits*       m_ilimctrl;      
 
     yarp::dev::PolyDriver            m_rgbdPoly;
     yarp::dev::IRGBDSensor*          m_iRgbd{nullptr};
