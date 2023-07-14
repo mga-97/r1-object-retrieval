@@ -170,6 +170,7 @@ bool NextLocPlanner::setLocationStatus(const std::string location_name, const st
 /****************************************************************/
 bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
 {
+    std::lock_guard<std::mutex> m_lock(m_mutex);
     reply.clear();
     std::string cmd_0=cmd.get(0).asString();
     if (cmd.size()==1)
@@ -195,6 +196,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("set <locationName> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all locations");
             reply.addString("list : lists all the locations and their status");
+            reply.addString("list2 : lists all the locations divided by their status");
             reply.addString("stop : stops the nextLocationPlanner module");
             reply.addString("help : gets this list");
         }
@@ -224,7 +226,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 }
             }
         }
-        else if (cmd_0=="listone")
+        else if (cmd_0=="list2")
         {
             reply.addVocab32("many");
             yarp::os::Bottle& tempList = reply.addList();
@@ -404,6 +406,8 @@ double NextLocPlanner::distRobotLocation(const std::string& location_name)
 bool NextLocPlanner::updateModule()
 {   
     
+    std::lock_guard<std::mutex> m_lock(m_mutex);
+
     // --- Sorting m_locations_unchecked by its distance from the robot  --- //
     std::vector<double> m_unchecked_dist;
     for(size_t i=0; i<m_locations_unchecked.size(); ++i)

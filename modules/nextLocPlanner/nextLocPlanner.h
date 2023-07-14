@@ -68,7 +68,7 @@ public:
 
 private:
     double distRobotLocation(const std::string& location_name);
-
+    std::mutex      m_mutex;
 
     template <typename A, typename B>
     void zip(const std::vector<A> &a, const std::vector<B> &b,  std::vector<std::pair<A,B>> &zipped)
