@@ -68,7 +68,8 @@ private:
     std::map<std::string, std::string>          m_orientations;
     std::map<std::string, HeadOrientStatus>     m_orientation_status;
 
-    double                           m_period;
+    double          m_period;
+    std::mutex      m_mutex;
 
 public:
     //Constructor/Distructor

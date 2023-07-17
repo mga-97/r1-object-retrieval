@@ -52,6 +52,8 @@ private:
     std::vector<std::string>    m_locations_unchecked;
     std::vector<std::string>    m_locations_checking;
     std::vector<std::string>    m_locations_checked;
+    
+    std::mutex      m_mutex;
 
 public:
     NextLocPlanner();
@@ -68,7 +70,6 @@ public:
 
 private:
     double distRobotLocation(const std::string& location_name);
-    std::mutex      m_mutex;
 
     template <typename A, typename B>
     void zip(const std::vector<A> &a, const std::vector<B> &b,  std::vector<std::pair<A,B>> &zipped)

@@ -220,15 +220,6 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
 
         }
     }
-
-    std::map<std::string, std::string>::iterator it;
-    for (it = m_orientations.begin(); it != m_orientations.end(); it++  )
-        {yCDebug(HEAD_ORIENTATOR)<<it->first<<it->second;}
-    
-    yCDebug(HEAD_ORIENTATOR)<<" ";
-    std::map<std::string, HeadOrientStatus>::iterator ite;
-    for (ite = m_orientation_status.begin(); ite != m_orientation_status.end(); ite++  )
-        {yCDebug(HEAD_ORIENTATOR)<<ite->first<<ite->second;}
     
     return true;
 }
@@ -237,6 +228,8 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
 {
     yCInfo(HEAD_ORIENTATOR,"Received: %s",cmd.toString().c_str());
 
+    std::lock_guard<std::mutex> m_lock(m_mutex);
+    reply.clear();
     std::string cmd0 = cmd.get(0).asString();
 
     if(cmd.size() == 1) 
@@ -266,6 +259,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("set <orientation> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all orientations");
             reply.addString("list : lists all the orientation and their status");
+            reply.addString("home : let the robot head go back to its home position");
             reply.addString("stop : stops the headOrientator module");
             reply.addString("help : gets this list");
 
@@ -273,6 +267,10 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else if (cmd0=="stop")
         {
             close();
+        }
+        else if (cmd0=="home")
+        {
+            home();
         }
         else if (cmd0=="list")
         {
