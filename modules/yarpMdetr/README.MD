@@ -12,5 +12,5 @@ When running the Python script, four ports will be created:
 - the output bottle port, where the pixel coordinates of the searched object are returned
 
 The commands which can be sent to the RPC port are:
-- `caption <something>`: one or more bounding boxes for "something" are created on the output image
+- `label <something>`: one or more bounding boxes for "something" are created on the output image
 - `where <something>`: one or more bounding boxes for "something" are created on the output image, and the pixel coordinates of the bbox with the highest confidence are returned

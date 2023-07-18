@@ -1,13 +1,14 @@
 import sys
+from threading import Lock
 import cv2
 import numpy as np
-import time
 import torch
 torch.set_grad_enabled(False)
 from PIL import Image
 import torchvision.transforms as T
 from collections import defaultdict
 from python_code.models.model import mdetr_resnet101
+
 
 import yarp
 
@@ -68,35 +69,39 @@ class YarpMdetr(yarp.RFModule):
         self.model.cuda()
         self.model.eval()
         
-        self.caption = ''       
+        self.caption = ''   
+        self.lock = Lock() 
 
         return True
 
     def respond(self, command, reply):
-        if command.get(0).asString() == 'caption':
-            print('Command \'caption\' received')
+        if command.get(0).asString() == 'label':
+            print('Command \'label\' received')
             self.caption = command.get(1).asString()
-            reply.addString('caption: ' + self.caption)
+            reply.addString('labeling: ' + self.caption)
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
+            self.lock.acquire()
             self.x_bbox = 0.0
             self.y_bbox = 0.0
             self.caption = command.get(1).asString()
-            time.sleep(self.period*5)
+            self.plot_inference(self._in_buf_array, self.caption)
             if self.x_bbox == 0.0:
                 reply.addString('not found')
             else:
                 reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
+            self.lock.release()
 
             bout = self.output_coords_port.prepare()
             bout.clear()
             bout.addFloat32(self.x_bbox)
             bout.addFloat32(self.y_bbox)
             self.output_coords_port.write()
+
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
             reply.addVocab32('many')
-            reply.addString('caption <something> : identify "something" in input image')
+            reply.addString('label <something> : identify "something" in input image')
             reply.addString('where <something> : identify "something" in input image and return its pixel coords')
             reply.addString('help : get this list')           
         else:
@@ -180,8 +185,8 @@ class YarpMdetr(yarp.RFModule):
 
         self.get_max_prob_coord(out_bbox, probas[keep])
 
-
     def updateModule(self):
+        self.lock.acquire()
         received_image = self._input_image_port.read()
         self._in_buf_image.copy(received_image)   
         assert self._in_buf_array.__array_interface__['data'][0] == self._in_buf_image.getRawImage().__int__()
@@ -189,6 +194,7 @@ class YarpMdetr(yarp.RFModule):
         self.plot_inference(frame, self.caption)
         self._out_buf_array[:,:] = self.np_image
         self._output_image_port.write(self._out_buf_image)
+        self.lock.release()
         return True
 
 
