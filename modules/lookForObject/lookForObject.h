@@ -16,27 +16,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <yarp/os/Log.h>
-#include <yarp/os/Network.h>
-#include <yarp/os/RFModule.h>
+#ifndef LOOK_FOR_OBJECT_H
+#define LOOK_FOR_OBJECT_H
 
-#include "goAndPoint.h"
+#include <yarp/os/all.h>
 
-int main(int argc, char *argv[])
+#include "lookForObjectThread.h"
+
+
+class LookForObject : public yarp::os::RFModule
 {
-    yarp::os::Network yarp;
-    if (!yarp.checkNetwork())
-    {
-        yError("check Yarp network.\n");
-        return -1;
-    }
+protected:
+    
+    //Ports
+    yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort;
 
-    yarp::os::ResourceFinder rf;
-    rf.setVerbose(true);
-    rf.setDefaultConfigFile("GoAndPoint_R1_SIM.ini");             //overridden by --from parameter
-    rf.setDefaultContext("goAndPoint");                           //overridden by --context parameter
-    rf.configure(argc,argv);
-    GoAndPoint point;
+    //Callback thread
+    LookForObjectThread*           m_innerThread;
+       
+    double                         m_period;
 
-    return point.runModule(rf);
-}
+
+public:
+    LookForObject();
+    virtual bool configure(yarp::os::ResourceFinder &rf);
+    virtual bool close();
+    virtual double getPeriod();
+    virtual bool updateModule();
+};
+
+#endif

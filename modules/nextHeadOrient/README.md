@@ -1,4 +1,4 @@
-# headOrientator
+# nextHeadOrient
 
 Module to let the robot move its head around nine pre-defined orientations.
 The positions of the head are, in order:
@@ -17,7 +17,7 @@ The head positions can be defined:
 - automatically, optimizing the head orientations considering the horizonatal and vertical fov of the camera
 
 The module opens a RGBDCamera client and a Remote Control Board client which give access to the necessary methods.
-An RPC port is also opened (default name: /headOrientator/request/rpc)
+An RPC port is also opened (default name: /nextHeadOrient/request/rpc)
 
 ## Usage:
 Possible RPC commands:
@@ -26,7 +26,7 @@ Possible RPC commands:
 - `set all <status>` : sets the status of all orientations
 - `list` : lists all the orientations and their status
 - `home` : let the robot head go back to its home position
-- `stop` : stops the headOrientator module
+- `stop` : stops the nextHeadOrient module
 - `help` : gets this list
 
 Each head orientation can have one of the following statuses: `unchecked`,`checking`, `checked` .

@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "headOrientator.h"
+#include "nextHeadOrient.h"
 
-YARP_LOG_COMPONENT(HEAD_ORIENTATOR, "r1_obr.headOrientator")
+YARP_LOG_COMPONENT(NEXT_HEAD_ORIENT, "r1_obr.nextHeadOrient")
 
-bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
+bool NextHeadOrient::configure(yarp::os::ResourceFinder &rf)
 {
     m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
 
@@ -28,12 +28,12 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     std::string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
     if (!m_rpc_server_port.open(rpcPortName))
     {
-        yCError(HEAD_ORIENTATOR, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
+        yCError(NEXT_HEAD_ORIENT, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
         return false;
     }
     if (!attach(m_rpc_server_port))
     {
-        yCError(HEAD_ORIENTATOR, "attach() error with rpc port %s", rpcPortName.c_str());
+        yCError(NEXT_HEAD_ORIENT, "attach() error with rpc port %s", rpcPortName.c_str());
         return false;
     }
 
@@ -52,7 +52,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
     if(!okRgbdRf)
     {
-        yCWarning(HEAD_ORIENTATOR,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
+        yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
     }
     else
     {
@@ -71,13 +71,13 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     m_rgbdPoly.open(rgbdProp);
     if(!m_rgbdPoly.isValid())
     {
-        yCError(HEAD_ORIENTATOR,"Error opening PolyDriver check parameters");
+        yCError(NEXT_HEAD_ORIENT,"Error opening PolyDriver check parameters");
         return false;
     }
     m_rgbdPoly.view(m_iRgbd);
     if(!m_iRgbd)
     {
-        yCError(HEAD_ORIENTATOR,"Error opening iRGBD interface. Device not available");
+        yCError(NEXT_HEAD_ORIENT,"Error opening iRGBD interface. Device not available");
         return false;
     }
 
@@ -85,12 +85,12 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     yarp::os::Property controllerProp;
     if(!rf.check("REMOTE_CONTROL_BOARD"))
     {
-        yCWarning(HEAD_ORIENTATOR,"REMOTE_CONTROL_BOARD section missing in ini file. Using default values.");
+        yCWarning(NEXT_HEAD_ORIENT,"REMOTE_CONTROL_BOARD section missing in ini file. Using default values.");
 
         // defaults
         controllerProp.clear();
         controllerProp.put("device","remote_controlboard");
-        controllerProp.put("local","/headOrientator/remote_controlboard");
+        controllerProp.put("local","/nextHeadOrient/remote_controlboard");
         controllerProp.put("remote","/cer/head");
     }
     else
@@ -103,7 +103,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
 
     if (!m_Poly.open(controllerProp))
     {
-        yCError(HEAD_ORIENTATOR,"Unable to connect to remote");
+        yCError(NEXT_HEAD_ORIENT,"Unable to connect to remote");
         close();
         return false;
     }
@@ -111,28 +111,28 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     m_Poly.view(m_iremcal);
     if(!m_iremcal)
     {
-        yCError(HEAD_ORIENTATOR,"Error opening iRemoteCalibrator interface. Device not available");
+        yCError(NEXT_HEAD_ORIENT,"Error opening iRemoteCalibrator interface. Device not available");
         return false;
     }
 
     m_Poly.view(m_iposctrl);
     if(!m_iposctrl)
     {
-        yCError(HEAD_ORIENTATOR,"Error opening iPositionControl interface. Device not available");
+        yCError(NEXT_HEAD_ORIENT,"Error opening iPositionControl interface. Device not available");
         return false;
     }
 
     m_Poly.view(m_ictrlmode);
     if(!m_ictrlmode)
     {
-        yCError(HEAD_ORIENTATOR,"Error opening iControlMode interface. Device not available");
+        yCError(NEXT_HEAD_ORIENT,"Error opening iControlMode interface. Device not available");
         return false;
     }
 
     m_Poly.view(m_ilimctrl);
     if(!m_ilimctrl)
     {
-        yCError(HEAD_ORIENTATOR,"Error opening IControlLimits interface. Device not available");
+        yCError(NEXT_HEAD_ORIENT,"Error opening IControlLimits interface. Device not available");
         return false;
     }
 
@@ -150,7 +150,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     
     if(!rf.check("HEAD_POSITIONS"))
     {
-        yCWarning(HEAD_ORIENTATOR,"HEAD_POSITIONS section missing in ini file. Using default values.");
+        yCWarning(NEXT_HEAD_ORIENT,"HEAD_POSITIONS section missing in ini file. Using default values.");
 
         m_orientations = orientations_default;
         for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + std::to_string(i+1), HO_UNCHECKED });}
@@ -177,7 +177,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
             bool fovGot = m_iRgbd->getRgbFOV(horizontalFov,verticalFov);
             if(!fovGot)
             {
-                yCError(HEAD_ORIENTATOR,"An error occurred while retrieving the rgb camera FOV");
+                yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the rgb camera FOV");
             }
             else
             {
@@ -194,7 +194,7 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
             bool limGotH = m_ilimctrl->getLimits(1, &min_pos_h, &max_pos_h); //yaw
             if(!limGotV || !limGotH)
             {
-                yCError(HEAD_ORIENTATOR,"An error occurred while retrieving the head joint limits");
+                yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the head joint limits");
             }
 
 
@@ -224,9 +224,9 @@ bool HeadOrientator::configure(yarp::os::ResourceFinder &rf)
     return true;
 }
 
-bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
+bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
 {
-    yCInfo(HEAD_ORIENTATOR,"Received: %s",cmd.toString().c_str());
+    yCInfo(NEXT_HEAD_ORIENT,"Received: %s",cmd.toString().c_str());
 
     std::lock_guard<std::mutex> m_lock(m_mutex);
     reply.clear();
@@ -260,7 +260,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("set all <status> : sets the status of all orientations");
             reply.addString("list : lists all the orientation and their status");
             reply.addString("home : let the robot head go back to its home position");
-            reply.addString("stop : stops the headOrientator module");
+            reply.addString("stop : stops the nextHeadOrient module");
             reply.addString("help : gets this list");
 
         }
@@ -290,7 +290,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else
         {
             reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-            yCWarning(HEAD_ORIENTATOR,"Error: wrong RPC command.");
+            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
         }
     }
     else if (cmd.size()==3)    //expected 'set <orientation> <status>' or 'set all <status>'
@@ -307,7 +307,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 else 
                 { 
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                    yCWarning(HEAD_ORIENTATOR,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
+                    yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
                 }
             }
             else if (cmd1=="all")
@@ -318,25 +318,25 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 else 
                 { 
                     reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                    yCWarning(HEAD_ORIENTATOR,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
+                    yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
                 }
             }
             else
             {
                 reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                yCWarning(HEAD_ORIENTATOR,"Error: specified location name not found.");
+                yCWarning(NEXT_HEAD_ORIENT,"Error: specified location name not found.");
             }
         }
         else
         {
             reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-            yCWarning(HEAD_ORIENTATOR,"Error: wrong RPC command.");
+            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
         }
     }
     else
     {
         reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-        yCWarning(HEAD_ORIENTATOR,"Error: input RPC command bottle has a wrong number of elements.");
+        yCWarning(NEXT_HEAD_ORIENT,"Error: input RPC command bottle has a wrong number of elements.");
     }
     
     if (reply.size()==0)
@@ -346,7 +346,7 @@ bool HeadOrientator::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
 }
 
 
-void HeadOrientator::home()
+void NextHeadOrient::home()
 {    
     // ------ set head to Position control mode ------ //
     int NUMBER_OF_JOINTS;
@@ -361,25 +361,25 @@ void HeadOrientator::home()
         m_iremcal->isCalibratorDevicePresent(&isCalib);
         if (!isCalib) // providing better feedback to user by verifying if the calibrator device was set or not. 
                       // (SIM_CER_ROBOT does not have a calibrator!)
-        { yCError(HEAD_ORIENTATOR) << "Error: No calibrator device was configured to perform this action, please verify that the wrapper config file for the part has the 'Calibrator' keyword in the attach phase"; }
+        { yCError(NEXT_HEAD_ORIENT) << "Error: No calibrator device was configured to perform this action, please verify that the wrapper config file for the part has the 'Calibrator' keyword in the attach phase"; }
         else
-        { yCError(HEAD_ORIENTATOR) << "Error: The remote calibrator reported that something went wrong during the calibration procedure"; }
+        { yCError(NEXT_HEAD_ORIENT) << "Error: The remote calibrator reported that something went wrong during the calibration procedure"; }
     }
     
 }
 
 
-double HeadOrientator::getPeriod()
+double NextHeadOrient::getPeriod()
 {
     return m_period;
 }
 
-bool HeadOrientator::updateModule()
+bool NextHeadOrient::updateModule()
 {   
     return true;
 }
 
-bool HeadOrientator::close()
+bool NextHeadOrient::close()
 {
     if(m_Poly.isValid())
     {

@@ -17,16 +17,16 @@
  */
 
 
-#include "goAndPoint.h"
+#include "lookForObject.h"
 
-YARP_LOG_COMPONENT(GO_AND_POINT, "r1_obr.goAndPoint")
+YARP_LOG_COMPONENT(LOOK_FOR_OBJECT, "r1_obr.lookForObject")
 
-GoAndPoint::GoAndPoint() :
+LookForObject::LookForObject() :
     m_period(1.0)
 {  
 }
 
-bool GoAndPoint::configure(yarp::os::ResourceFinder &rf) 
+bool LookForObject::configure(yarp::os::ResourceFinder &rf) 
 {   
 
     if(rf.check("period")){m_period = rf.find("period").asFloat32();}
@@ -35,17 +35,17 @@ bool GoAndPoint::configure(yarp::os::ResourceFinder &rf)
     if(rf.check("thread_period")){threadPeriod = rf.find("thread_period").asFloat32();}
   
 
-    std::string portName = "/goAndPoint/inputQuestion:i";
-    if(rf.check("input_question_port")){portName = rf.find("input_question_port").asString();}
+    std::string portName = "/lookForObject/object:i";
+    if(rf.check("input_object_port")){portName = rf.find("input_question_port").asString();}
     bool ret = m_inputPort.open(portName);
     if (!ret)
     {
-        yCError(GO_AND_POINT, "Unable to open input port");
+        yCError(LOOK_FOR_OBJECT, "Unable to open input port");
         return false;
     }
    
     // --------- Thread initialization --------- //
-    m_innerThread = new GoAndPointThread(threadPeriod,rf);
+    m_innerThread = new LookForObjectThread(threadPeriod,rf);
     bool threadOk = m_innerThread->start();
     if (!threadOk){
         return false;
@@ -56,22 +56,22 @@ bool GoAndPoint::configure(yarp::os::ResourceFinder &rf)
     return true;
 }
 
-bool GoAndPoint::close()
+bool LookForObject::close()
 {
     m_innerThread->stop();
     delete m_innerThread;
-    m_innerThread =NULL;
+    m_innerThread = NULL;
     m_inputPort.close();
 
     return true;
 }
 
-double GoAndPoint::getPeriod()
+double LookForObject::getPeriod()
 {
     return m_period;
 }
 
-bool GoAndPoint::updateModule()
+bool LookForObject::updateModule()
 {
     if (isStopping())
     {

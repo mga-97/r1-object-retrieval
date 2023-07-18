@@ -23,7 +23,7 @@ class YarpMdetr(yarp.RFModule):
         
         self.image_w = rf.find('image_width').asInt32() if rf.check('image_width') else 640
         self.image_h = rf.find('image_height').asInt32() if rf.check('image_height') else 480
-        self.min_prob = rf.find('min_confidence').asFloat32() if rf.check('min_confidence') else 0.85
+        self.min_prob = rf.find('min_confidence').asFloat32() if rf.check('min_confidence') else 0.95
 
         # Opening ports
         self.cmd_port = yarp.Port()
@@ -79,9 +79,14 @@ class YarpMdetr(yarp.RFModule):
             reply.addString('caption: ' + self.caption)
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
+            self.x_bbox = 0.0
+            self.y_bbox = 0.0
             self.caption = command.get(1).asString()
-            time.sleep(self.period*2)
-            reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
+            time.sleep(self.period*5)
+            if self.x_bbox == 0.0:
+                reply.addString('not found')
+            else:
+                reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
 
             bout = self.output_coords_port.prepare()
             bout.clear()
@@ -97,6 +102,9 @@ class YarpMdetr(yarp.RFModule):
         else:
             print('Command {:s} not recognized'.format(command.get(0).asString()))
             reply.addString('Command {:s} not recognized'.format(command.get(0).asString()))
+        
+        if reply.size()==0:
+            reply.addVocab32('ack')
         return True
 
     def get_max_prob_coord(self, out_bbox, probs):
@@ -147,7 +155,7 @@ class YarpMdetr(yarp.RFModule):
         for s, (xmin, ymin, xmax, ymax), l in zip(scores, boxes.tolist(), labels):
             xmin, ymin, xmax, ymax = map(int, [xmin, ymin, xmax, ymax])
             cv2.rectangle(self.np_image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
-            cv2.putText(self.np_image, l, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(self.np_image, l + ' [' + str(s.item()) + ']', (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         return np.array(pil_img)
 
 
@@ -178,7 +186,6 @@ class YarpMdetr(yarp.RFModule):
         self._in_buf_image.copy(received_image)   
         assert self._in_buf_array.__array_interface__['data'][0] == self._in_buf_image.getRawImage().__int__()
         frame = self._in_buf_array
-        # print(self.caption + ': ' + self.caption_coords)
         self.plot_inference(frame, self.caption)
         self._out_buf_array[:,:] = self.np_image
         self._output_image_port.write(self._out_buf_image)

@@ -177,8 +177,18 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     {
         if (cmd_0=="next")
         {      
-            if (m_locations_unchecked.size()>0)
+            if (m_locations_checking.size()>0)
             {
+                std::vector<std::string>::iterator it;
+                for(it = m_locations_checking.begin(); it != m_locations_checking.end(); it++)
+                {
+                    //setting all the "checking" locations as "unchecked"
+                    setLocationStatus(*it, "checking");
+                }
+            }
+
+            if (m_locations_unchecked.size()>0)
+            {                
                 //reading the first unchecked location
                 reply.addString(m_locations_unchecked[0]); 
                 //setting that location as "checking"

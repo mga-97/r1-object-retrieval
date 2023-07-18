@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef HEAD_ORIENTATOR_H
-#define HEAD_ORIENTATOR_H
+#ifndef NEXT_HEAD_ORIENT_H
+#define NEXT_HEAD_ORIENT_H
 
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
@@ -33,16 +33,16 @@
 
 //Defaults RGBD sensor
 #define RGBDClient            "RGBDSensorClient"
-#define RGBDLocalImagePort    "/headOrientator/clientRgbPort:i"
-#define RGBDLocalDepthPort    "/headOrientator/clientDepthPort:i"
-#define RGBDLocalRpcPort      "/headOrientator/clientRpcPort"
+#define RGBDLocalImagePort    "/nextHeadOrient/clientRgbPort:i"
+#define RGBDLocalDepthPort    "/nextHeadOrient/clientDepthPort:i"
+#define RGBDLocalRpcPort      "/nextHeadOrient/clientRpcPort"
 #define RGBDRemoteImagePort   "/cer/depthCamera/rgbImage:o"
 #define RGBDRemoteDepthPort   "/cer/depthCamera/depthImage:o"
 #define RGBDRemoteRpcPort     "/cer/depthCamera/rpc:i"
 #define RGBDImageCarrier      "mjpeg"
 #define RGBDDepthCarrier      "fast_tcp"
 
-class HeadOrientator : public yarp::os::RFModule
+class NextHeadOrient : public yarp::os::RFModule
 {
 
 enum HeadOrientStatus {
@@ -73,8 +73,8 @@ private:
 
 public:
     //Constructor/Distructor
-    HeadOrientator(){}
-    ~HeadOrientator(){}
+    NextHeadOrient(){}
+    ~NextHeadOrient(){}
 
     //Internal methods
     bool configure(yarp::os::ResourceFinder &rf);

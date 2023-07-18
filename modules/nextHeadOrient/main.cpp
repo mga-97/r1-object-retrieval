@@ -20,7 +20,7 @@
 #include <yarp/os/Network.h>
 #include <yarp/os/RFModule.h>
 
-#include "headOrientator.h"
+#include "nextHeadOrient.h"
 
 int main(int argc, char *argv[])
 {
@@ -33,10 +33,10 @@ int main(int argc, char *argv[])
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultConfigFile("headOrientator_R1_SIM.ini");             //overridden by --from parameter
-    rf.setDefaultContext("headOrientator");                           //overridden by --context parameter
+    rf.setDefaultConfigFile("nextHeadOrient_R1_SIM.ini");             //overridden by --from parameter
+    rf.setDefaultContext("nextHeadOrient");                           //overridden by --context parameter
     rf.configure(argc,argv);
-    HeadOrientator ho;
+    NextHeadOrient ho;
 
     return ho.runModule(rf);
 }

@@ -18,4 +18,5 @@ Possible RPC commands:
 Each location can have one of the following statuses: `unchecked`,`checking`, `checked` .
 When the module is created, each location status is 'unchecked'.
 When the `next` command is called, the first 'unchecked' location is returned to the asker, and its status is set to 'checking'.
+If a location has been already set to 'checking' when the `next` command is called, that location is set to 'unchecked' and the next 'unchecked' location is returned.
 It is supposed that a navigation orchestrator would set the location status to 'checked' after performing some task. This is possible with the command `set <locationName> checked`.
