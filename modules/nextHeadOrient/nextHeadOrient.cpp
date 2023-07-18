@@ -18,14 +18,18 @@
 
 #include "nextHeadOrient.h"
 
+
 YARP_LOG_COMPONENT(NEXT_HEAD_ORIENT, "r1_obr.nextHeadOrient")
 
-bool NextHeadOrient::configure(yarp::os::ResourceFinder &rf)
+bool NextHeadOrient::configure(ResourceFinder &rf)
 {
+    //Generic config
     m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
+    bool useFov = rf.check("useCameraFOV") ? rf.find("useCameraFOV").asString()=="true" : false;
+    m_overlap = rf.check("fov_overlap_degrees")  ? rf.find("fov_overlap_degrees").asFloat32() : 5.0;
 
     //Open RPC Server Port
-    std::string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
+    string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
     if (!m_rpc_server_port.open(rpcPortName))
     {
         yCError(NEXT_HEAD_ORIENT, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
@@ -37,52 +41,55 @@ bool NextHeadOrient::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    // --------- RGBDSensor config --------- //
-    yarp::os::Property rgbdProp;
-    // Prepare default prop object
-    rgbdProp.put("device", RGBDClient);
-    rgbdProp.put("localImagePort", RGBDLocalImagePort);
-    rgbdProp.put("localDepthPort", RGBDLocalDepthPort);
-    rgbdProp.put("localRpcPort", RGBDLocalRpcPort);
-    rgbdProp.put("remoteImagePort", RGBDRemoteImagePort);
-    rgbdProp.put("remoteDepthPort", RGBDRemoteDepthPort);
-    rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
-    rgbdProp.put("ImageCarrier", RGBDImageCarrier);
-    rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
-    bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
-    if(!okRgbdRf)
+    if (useFov) 
     {
-        yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
-    }
-    else
-    {
-        yarp::os::Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
-        if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
-        if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
-        if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
-        if(rgbd_config.check("localRpcPort")) {rgbdProp.put("localRpcPort", rgbd_config.find("localRpcPort").asString());}
-        if(rgbd_config.check("remoteImagePort")) {rgbdProp.put("remoteImagePort", rgbd_config.find("remoteImagePort").asString());}
-        if(rgbd_config.check("remoteDepthPort")) {rgbdProp.put("remoteDepthPort", rgbd_config.find("remoteDepthPort").asString());}
-        if(rgbd_config.check("remoteRpcPort")) {rgbdProp.put("remoteRpcPort", rgbd_config.find("remoteRpcPort").asString());}
-        if(rgbd_config.check("ImageCarrier")) {rgbdProp.put("ImageCarrier", rgbd_config.find("ImageCarrier").asString());}
-        if(rgbd_config.check("DepthCarrier")) {rgbdProp.put("DepthCarrier", rgbd_config.find("DepthCarrier").asString());}
-    }
+        // --------- RGBDSensor config --------- //
+        Property rgbdProp;
+        // Prepare default prop object
+        rgbdProp.put("device", RGBDClient);
+        rgbdProp.put("localImagePort", RGBDLocalImagePort);
+        rgbdProp.put("localDepthPort", RGBDLocalDepthPort);
+        rgbdProp.put("localRpcPort", RGBDLocalRpcPort);
+        rgbdProp.put("remoteImagePort", RGBDRemoteImagePort);
+        rgbdProp.put("remoteDepthPort", RGBDRemoteDepthPort);
+        rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
+        rgbdProp.put("ImageCarrier", RGBDImageCarrier);
+        rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
+        bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
+        if(!okRgbdRf)
+        {
+            yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
+        }
+        else
+        {
+            Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
+            if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
+            if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
+            if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
+            if(rgbd_config.check("localRpcPort")) {rgbdProp.put("localRpcPort", rgbd_config.find("localRpcPort").asString());}
+            if(rgbd_config.check("remoteImagePort")) {rgbdProp.put("remoteImagePort", rgbd_config.find("remoteImagePort").asString());}
+            if(rgbd_config.check("remoteDepthPort")) {rgbdProp.put("remoteDepthPort", rgbd_config.find("remoteDepthPort").asString());}
+            if(rgbd_config.check("remoteRpcPort")) {rgbdProp.put("remoteRpcPort", rgbd_config.find("remoteRpcPort").asString());}
+            if(rgbd_config.check("ImageCarrier")) {rgbdProp.put("ImageCarrier", rgbd_config.find("ImageCarrier").asString());}
+            if(rgbd_config.check("DepthCarrier")) {rgbdProp.put("DepthCarrier", rgbd_config.find("DepthCarrier").asString());}
+        }
 
-    m_rgbdPoly.open(rgbdProp);
-    if(!m_rgbdPoly.isValid())
-    {
-        yCError(NEXT_HEAD_ORIENT,"Error opening PolyDriver check parameters");
-        return false;
-    }
-    m_rgbdPoly.view(m_iRgbd);
-    if(!m_iRgbd)
-    {
-        yCError(NEXT_HEAD_ORIENT,"Error opening iRGBD interface. Device not available");
-        return false;
+        m_rgbdPoly.open(rgbdProp);
+        if(!m_rgbdPoly.isValid())
+        {
+            yCError(NEXT_HEAD_ORIENT,"Error opening PolyDriver check parameters");
+            return false;
+        }
+        m_rgbdPoly.view(m_iRgbd);
+        if(!m_iRgbd)
+        {
+            yCError(NEXT_HEAD_ORIENT,"Error opening iRGBD interface. Device not available");
+            return false;
+        }
     }
 
     // ----------- Polydriver config ----------- //
-    yarp::os::Property controllerProp;
+    Property controllerProp;
     if(!rf.check("REMOTE_CONTROL_BOARD"))
     {
         yCWarning(NEXT_HEAD_ORIENT,"REMOTE_CONTROL_BOARD section missing in ini file. Using default values.");
@@ -95,7 +102,7 @@ bool NextHeadOrient::configure(yarp::os::ResourceFinder &rf)
     }
     else
     {
-        yarp::os::Searchable& pos_configs = rf.findGroup("REMOTE_CONTROL_BOARD");
+        Searchable& pos_configs = rf.findGroup("REMOTE_CONTROL_BOARD");
         if(pos_configs.check("device")) {controllerProp.put("device", pos_configs.find("device").asString());}
         if(pos_configs.check("local")) {controllerProp.put("local", pos_configs.find("local").asString());}
         if(pos_configs.check("remote")) {controllerProp.put("remote", pos_configs.find("remote").asString());}
@@ -137,120 +144,124 @@ bool NextHeadOrient::configure(yarp::os::ResourceFinder &rf)
     }
 
     // ----------- Configure Head Positions ----------- //
-    std::map<std::string, std::string>  orientations_default{
-        {"pos1", "(0.0 0.0)" },
-        {"pos2" ,"(35.0 0.0)"},
-        {"pos3" ,"(-35.0 0.0)"},
-        {"pos4" ,"(0.0 20.0)"},
-        {"pos5" ,"(35.0 20.0)"},
-        {"pos6" ,"(-35.0 20.0)"},
-        {"pos7" ,"(0.0 -20.0)"},
-        {"pos8" ,"(35.0 -20.0)"},
-        {"pos9" ,"(-35.0 -20.0)"}};
+    map<string, pair<double,double>>  orientations_default{
+        {"pos1" , {0.0, 0.0}    },
+        {"pos2" , {35.0, 0.0}   },
+        {"pos3" , {-35.0, 0.0}  },
+        {"pos4" , {0.0, 20.0}   },
+        {"pos5" , {35.0, 20.0}  },
+        {"pos6" , {-35.0, 20.0} },
+        {"pos7" , {0.0, -20.0}  },
+        {"pos8" , {35.0, -20.0} },
+        {"pos9" , {-35.0, -20.0}}   };
     
-    if(!rf.check("HEAD_POSITIONS"))
+    if (!useFov) 
     {
-        yCWarning(NEXT_HEAD_ORIENT,"HEAD_POSITIONS section missing in ini file. Using default values.");
+        if(!rf.check("HEAD_POSITIONS"))
+        {
+            yCWarning(NEXT_HEAD_ORIENT,"HEAD_POSITIONS section missing in ini file. Using default values.");
 
-        m_orientations = orientations_default;
-        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + std::to_string(i+1), HO_UNCHECKED });}
+            m_orientations = orientations_default;
+            for (size_t i=0; i<orientations_default.size(); i++) {m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });}
+        }
+        else
+        {
+            Searchable& pos_configs = rf.findGroup("HEAD_POSITIONS");
+            bool addPos = true; 
+            int idx {1};
+            while (addPos) 
+            {
+                if (!pos_configs.check("pos" + to_string(idx)))
+                    break;
+
+                stringstream  ss(pos_configs.find("pos" + to_string(idx)).asString());
+                string s; 
+                ss >> s; double n1 = stod(s);
+                ss >> s; double n2 = stod(s);            
+
+                m_orientations.insert({"pos" + to_string(idx), {n1,n2} });
+                m_orientation_status.insert({"pos" + to_string(idx), HO_UNCHECKED });
+                idx++;
+            }
+        }
     }
-    else
+    else 
     {
-        yarp::os::Searchable& pos_configs = rf.findGroup("HEAD_POSITIONS");
-        bool useFov = pos_configs.check("useCameraFOV") ? pos_configs.find("useCameraFOV").asString()=="true" : false;
-
-        if (!useFov) 
+        double verticalFov{0.0}, horizontalFov{0.0};
+        double newVFov{0.0}, newHFov{0.0};
+        bool fovGot = m_iRgbd->getRgbFOV(horizontalFov,verticalFov);
+        if(!fovGot)
         {
-            for (int i=0; i<9; i++) 
-            {
-                using namespace std;
-                m_orientations.insert({"pos" + to_string(i+1), 
-                                        pos_configs.check("pos" + to_string(i+1)) ? pos_configs.find("pos" + to_string(i+1)).asString() : orientations_default.at("pos" + to_string(i+1))});
-                m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });
-            }
+            yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the rgb camera FOV");
         }
-        else 
+        else
         {
-            double verticalFov{0.0}, horizontalFov{0.0};
-            double newVFov{0.0}, newHFov{0.0};
-            bool fovGot = m_iRgbd->getRgbFOV(horizontalFov,verticalFov);
-            if(!fovGot)
-            {
-                yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the rgb camera FOV");
-            }
-            else
-            {
-                //consider the width of the fov to inspect an area of 180 degrees laterally and 90 degrees vertically
-                // overlapping the views by at least 5 degrees
-                newHFov = horizontalFov>60 ?  (90.0 - horizontalFov/2) : (horizontalFov-5.0) ;
-                newVFov = verticalFov>30 ?  (45.0 - verticalFov/2) : (verticalFov-5.0) ;
-            }
-            
-            double min_pos_h {0}, min_pos_v {0};
-            double max_pos_h {100}, max_pos_v {100};
-
-            bool limGotV = m_ilimctrl->getLimits(0, &min_pos_v, &max_pos_v); //pitch
-            bool limGotH = m_ilimctrl->getLimits(1, &min_pos_h, &max_pos_h); //yaw
-            if(!limGotV || !limGotH)
-            {
-                yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the head joint limits");
-            }
-
-
-            double up = limGotV ? std::min(fovGot ? newVFov : 20.0 , max_pos_v) : (fovGot ? newVFov : 20.0);
-            double down = limGotV ? std::max(fovGot ? -newVFov : -20.0 , min_pos_v) : (fovGot ? -newVFov : -20.0);
-            double left = limGotH ? std::min(fovGot ? newHFov : 35.0 , max_pos_h) : (fovGot ? newHFov : 35.0);;
-            double right = limGotH ? std::max(fovGot ? -newHFov : -35.0 , min_pos_h) : (fovGot ? -newHFov : -35.0); 
-
-            m_orientations = {
-                {"pos1", "(0.0 0.0)" },
-                {"pos2" ,"(" + std::to_string(left) + " 0.0)"},                            //left
-                {"pos3" ,"(" + std::to_string(right) + " 0.0)"},                           //right
-                {"pos4" ,"(0.0 " + std::to_string(up) + ")"},                              //up
-                {"pos5" ,"(" + std::to_string(up) + " " + std::to_string(left) + ")"},     //up left
-                {"pos6" ,"(" + std::to_string(up) + " " + std::to_string(right) + ")"},    //up right
-                {"pos7" ,"(0.0 " + std::to_string(down) + ")"},                            //down
-                {"pos8" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"},   //down left
-                {"pos9" ,"(" + std::to_string(down) + " " + std::to_string(left) + ")"}};  //down right
-
-            for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + std::to_string(i+1), HO_UNCHECKED });}
-
-            
-
+            //consider the width of the fov to inspect an area of 180 degrees laterally and 90 degrees vertically
+            // overlapping the views by at least <m_overlap> degrees
+            newHFov = horizontalFov>60 ?  (90.0 - horizontalFov/2) : (horizontalFov-m_overlap) ;
+            newVFov = verticalFov>30 ?  (45.0 - verticalFov/2) : (verticalFov-m_overlap) ;
         }
+        
+        double min_pos_h {0}, min_pos_v {0};
+        double max_pos_h {100}, max_pos_v {100};
+
+        bool limGotV = m_ilimctrl->getLimits(0, &min_pos_v, &max_pos_v); //pitch
+        bool limGotH = m_ilimctrl->getLimits(1, &min_pos_h, &max_pos_h); //yaw
+        if(!limGotV || !limGotH)
+        {
+            yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the head joint limits");
+        }
+
+        double up = limGotV ? min(fovGot ? newVFov : 20.0 , max_pos_v) : (fovGot ? newVFov : 20.0);
+        double down = limGotV ? max(fovGot ? -newVFov : -20.0 , min_pos_v) : (fovGot ? -newVFov : -20.0);
+        double left = limGotH ? min(fovGot ? newHFov : 35.0 , max_pos_h) : (fovGot ? newHFov : 35.0);;
+        double right = limGotH ? max(fovGot ? -newHFov : -35.0 , min_pos_h) : (fovGot ? -newHFov : -35.0); 
+
+        m_orientations = {
+            {"pos1", {0.0,  0.0}  },
+            {"pos2", {left, 0.0}  },   //left
+            {"pos3", {right,0.0}  },   //right
+            {"pos4", {0.0,  up}   },   //up
+            {"pos5", {left, up}   },   //up left
+            {"pos6", {right,up}   },   //up right
+            {"pos7", {0.0,  down} },   //down
+            {"pos8", {left, down} },   //down left
+            {"pos9", {right,down} }};  //down right
+
+        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });}
     }
     
     return true;
 }
 
-bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
+bool NextHeadOrient::respond(const Bottle &cmd, Bottle &reply)
 {
     yCInfo(NEXT_HEAD_ORIENT,"Received: %s",cmd.toString().c_str());
 
-    std::lock_guard<std::mutex> m_lock(m_mutex);
+    lock_guard<mutex> m_lock(m_mutex);
     reply.clear();
-    std::string cmd0 = cmd.get(0).asString();
+    string cmd0 = cmd.get(0).asString();
 
     if(cmd.size() == 1) 
     {
         if (cmd0=="next")
         {
-            std::map<std::string, HeadOrientStatus>::iterator it;
+            map<string, HeadOrientStatus>::iterator it;
             for (it = m_orientation_status.begin(); it != m_orientation_status.end(); it++  ) 
             {
                 if (it->second == HO_UNCHECKED)
                 {
-                    reply.addString(m_orientations.at(it->first));
+                    Bottle& tempList = reply.addList();
+                    pair<double,double> tempPair = m_orientations.at(it->first);
+                    tempList.addFloat32(tempPair.first);
+                    tempList.addFloat32(tempPair.second);
                     it->second = HO_CHECKING;
                     return true;
                 }
-                else if (it == m_orientation_status.end())
-                {
-                    home();
-                    reply.addString("noOrient");
-                }
-            }      
+            }  
+            // if return has not been called before, no unchecked orientation has been found
+            reply.addString("noOrient");   
+            home(); 
         }
         else if (cmd0=="help")
         {
@@ -275,12 +286,13 @@ bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else if (cmd0=="list")
         {
             reply.addVocab32("many");
-            std::map<std::string, std::string>::iterator it;
+            map<string, pair<double,double>>::iterator it;
             for(it = m_orientations.begin(); it != m_orientations.end(); it++)
             {
-                yarp::os::Bottle& tempList = reply.addList();
+                Bottle& tempList = reply.addList();
                 tempList.addString(it->first);
-                tempList.addString(it->second);
+                tempList.addFloat32((it->second).first);
+                tempList.addFloat32((it->second).second);
                 HeadOrientStatus tempStatus = m_orientation_status.at(it->first);
                 if (tempStatus==HO_UNCHECKED) {tempList.addString("Unchecked");}
                 else if (tempStatus==HO_CHECKING) {tempList.addString("Checking");}
@@ -289,7 +301,7 @@ bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         }
         else
         {
-            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
         }
     }
@@ -297,8 +309,8 @@ bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     {
         if (cmd0=="set")
         {
-            std::string cmd1=cmd.get(1).asString();
-            std::string cmd2=cmd.get(2).asString();
+            string cmd1=cmd.get(1).asString();
+            string cmd2=cmd.get(2).asString();
             if(m_orientation_status.find(cmd1) != m_orientation_status.end()) 
             {
                 if (cmd2 == "unchecked" || cmd2 == "Unchecked" || cmd2 == "UNCHECKED")   {m_orientation_status.at(cmd1) = HO_UNCHECKED; }
@@ -306,7 +318,7 @@ bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 else if (cmd2 == "checked" || cmd2 == "Checked" || cmd2 == "CHECKED")    {m_orientation_status.at(cmd1) = HO_CHECKED;  }
                 else 
                 { 
-                    reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+                    reply.addVocab32(Vocab32::encode("nack"));
                     yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
                 }
             }
@@ -317,30 +329,30 @@ bool NextHeadOrient::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                 else if (cmd2 == "checked" || cmd2 == "Checked" || cmd2 == "CHECKED")    { for (auto &p : m_orientation_status ) p.second = HO_CHECKED; }
                 else 
                 { 
-                    reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+                    reply.addVocab32(Vocab32::encode("nack"));
                     yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
                 }
             }
             else
             {
-                reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+                reply.addVocab32(Vocab32::encode("nack"));
                 yCWarning(NEXT_HEAD_ORIENT,"Error: specified location name not found.");
             }
         }
         else
         {
-            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
         }
     }
     else
     {
-        reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+        reply.addVocab32(Vocab32::encode("nack"));
         yCWarning(NEXT_HEAD_ORIENT,"Error: input RPC command bottle has a wrong number of elements.");
     }
     
     if (reply.size()==0)
-        reply.addVocab32(yarp::os::Vocab32::encode("ack")); 
+        reply.addVocab32(Vocab32::encode("ack")); 
     
     return true;
 }

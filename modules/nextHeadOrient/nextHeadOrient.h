@@ -42,7 +42,11 @@
 #define RGBDImageCarrier      "mjpeg"
 #define RGBDDepthCarrier      "fast_tcp"
 
-class NextHeadOrient : public yarp::os::RFModule
+using namespace std;
+using namespace yarp::os;
+using namespace yarp::dev;
+
+class NextHeadOrient : public RFModule
 {
 
 enum HeadOrientStatus {
@@ -53,23 +57,24 @@ enum HeadOrientStatus {
 
 private:
     //Polydriver
-    yarp::dev::PolyDriver            m_Poly;
-    yarp::dev::IRemoteCalibrator*    m_iremcal;       
-    yarp::dev::IControlMode*         m_ictrlmode;     
-    yarp::dev::IPositionControl*     m_iposctrl;
-    yarp::dev::IControlLimits*       m_ilimctrl;      
+    PolyDriver            m_Poly;
+    IRemoteCalibrator*    m_iremcal;       
+    IControlMode*         m_ictrlmode;     
+    IPositionControl*     m_iposctrl;
+    IControlLimits*       m_ilimctrl;      
 
-    yarp::dev::PolyDriver            m_rgbdPoly;
-    yarp::dev::IRGBDSensor*          m_iRgbd{nullptr};
+    PolyDriver            m_rgbdPoly;
+    IRGBDSensor*          m_iRgbd{nullptr};
     
     //Ports
-    yarp::os::RpcServer              m_rpc_server_port;
+    RpcServer             m_rpc_server_port;
 
-    std::map<std::string, std::string>          m_orientations;
-    std::map<std::string, HeadOrientStatus>     m_orientation_status;
+    map<string, pair<double,double>>         m_orientations;
+    map<string, HeadOrientStatus>            m_orientation_status;
 
-    double          m_period;
-    std::mutex      m_mutex;
+    double                m_period;
+    double                m_overlap;
+    mutex                 m_mutex;
 
 public:
     //Constructor/Distructor
@@ -77,13 +82,13 @@ public:
     ~NextHeadOrient(){}
 
     //Internal methods
-    bool configure(yarp::os::ResourceFinder &rf);
+    bool configure(ResourceFinder &rf);
     virtual double getPeriod();
     virtual bool updateModule();
     virtual bool  close();
 
     void home();
-    bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
+    bool respond(const Bottle &cmd, Bottle &reply);
 
 };
 

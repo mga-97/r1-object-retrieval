@@ -96,26 +96,21 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
         yarp::os::Bottle orientReq, orientReply;
 
         orientReq.clear(); orientReply.clear();
-        orientReq.addString("set");
-        orientReq.addString("all");
-        orientReq.addString("unchecked");
+        orientReq.fromString("set all unchecked");
         m_nextOrientPort.write(orientReq,orientReply);
 
-        for (int i=0; i<9; i++)
+        bool newPos = true; 
+        int idx {1};
+        while (newPos)
         {
-            yCDebug(LOOK_FOR_OBJECT_THREAD,"Looking at orientation %d",i);
-
-            //retrieve next head orientation
+             //retrieve next head orientation
             orientReq.clear(); orientReply.clear();
             orientReq.addString("next");
             if (m_nextOrientPort.write(orientReq,orientReply))
-            {
-                yCDebug(LOOK_FOR_OBJECT_THREAD,"orient req %d : %s",i,orientReq.toString().c_str());
-                yCDebug(LOOK_FOR_OBJECT_THREAD,"orient reply %d : %s",i,orientReply.toString().c_str());
-                
-                if (reply.get(0).asVocab32()==yarp::os::Vocab32::encode("ack") )
+            {                
+                if (orientReply.get(0).asString()=="noOrient")
                     break;
-
+                yCInfo(LOOK_FOR_OBJECT_THREAD,"Checking head orientation: pos%d",idx);
                 //gaze target output
                 yarp::os::Bottle&  toSend1 = m_gazeTargetOutPort.prepare();
                 toSend1.clear();
@@ -125,22 +120,20 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 yarp::os::Bottle& targetLocationList = toSend1.addList();
                 targetLocationList.addString("target-location");
                 yarp::os::Bottle& targetList1 = targetLocationList.addList();
-                targetList1.addFloat32(orientReply.get(0).asFloat32());
-                targetList1.addFloat32(orientReply.get(1).asFloat32());
-                yCDebug(LOOK_FOR_OBJECT_THREAD,"To gaze controller: %s",toSend1.toString().c_str());
+                yarp::os::Bottle* tmpBottle = orientReply.get(0).asList();
+                targetList1.addFloat32(tmpBottle->get(0).asFloat32());
+                targetList1.addFloat32(tmpBottle->get(1).asFloat32());
                 m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
-                yarp::os::Time::delay(1.0);  //waiting for the robot tilting its head
+                yarp::os::Time::delay(2.0);  //waiting for the robot tilting its head
 
                 //search for object
                 request.clear(); reply.clear();
                 request.addString("where");
-                request.addString(b.get(0).asString());
+                request.addString(b.get(0).asString()); 
                 if (m_findObjectPort.write(request,reply))
                 {
-                    yCDebug(LOOK_FOR_OBJECT_THREAD,"Fino a qui 1");
                     if (reply.get(0).asString()!="not found")
                     {
-                        yCDebug(LOOK_FOR_OBJECT_THREAD) << "Fino a qui 2" << reply.get(0).asString() << "!!!";
                         objectFound=true;
                         break;
                     } 
@@ -149,20 +142,17 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 {
                     yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with findObject");
                 }
+
+                orientReq.clear(); orientReply.clear();
+                std::string text = "set pos" + std::to_string(idx) + "checked";
+                orientReq.fromString(text);
+                m_nextOrientPort.write(orientReq,orientReply);
+                idx++;
             }
             else
             {
                 yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with headOrient");
-            }
-
-            orientReq.clear(); orientReply.clear();
-            orientReq.addString("set");
-            orientReq.addString("pos" + std::to_string(i));
-            orientReq.addString("checked");
-            m_nextOrientPort.write(orientReq,orientReply);
-
-            yCDebug(LOOK_FOR_OBJECT_THREAD,"To nextOrient: %s",orientReq.toString().c_str());
-            
+            }  
         }
         
         orientReq.clear(); orientReply.clear();
