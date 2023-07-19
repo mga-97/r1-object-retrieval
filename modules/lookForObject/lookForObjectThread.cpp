@@ -124,7 +124,7 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 targetList1.addFloat32(tmpBottle->get(0).asFloat32());
                 targetList1.addFloat32(tmpBottle->get(1).asFloat32());
                 m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
-                yarp::os::Time::delay(2.0);  //waiting for the robot tilting its head
+                yarp::os::Time::delay(4.0);  //waiting for the robot tilting its head
 
                 //search for object
                 request.clear(); reply.clear();
