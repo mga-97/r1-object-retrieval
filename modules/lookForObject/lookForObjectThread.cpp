@@ -118,12 +118,11 @@ bool LookForObjectThread::lookAround(std::string& ob)
     int idx {1};
     while (true)
     {
-        yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
-        
         //retrieve next head orientation
         Bottle replyOrient;
         if (m_nextHeadOrient->next(replyOrient))
-        {                
+        {                        
+            yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
             //gaze target output
             yarp::os::Bottle&  toSend1 = m_gazeTargetOutPort.prepare();
             toSend1.clear();
@@ -172,7 +171,6 @@ bool LookForObjectThread::lookAround(std::string& ob)
 
 void LookForObjectThread::onRead(yarp::os::Bottle &b)
 {
-
     yCInfo(LOOK_FOR_OBJECT_THREAD,"Received: %s",b.toString().c_str());
 
     if(b.size() == 0)
@@ -204,18 +202,18 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 {
                     //turn
                     double theta = reply.get(0).asFloat32();
+                    yCInfo(LOOK_FOR_OBJECT_THREAD) << "Turning" << theta << "degrees";
                     yarp::dev::Nav2D::Map2DLocation loc;
                     m_iNav2D->getCurrentPosition(loc);
                     loc.theta += theta; // <===
                     m_iNav2D->gotoTargetByAbsoluteLocation(loc);
                     yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
                     m_iNav2D->getNavigationStatus(currentStatus);
-                    while (currentStatus == yarp::dev::Nav2D::navigation_status_moving)
+                    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
                     {
                         yarp::os::Time::delay(1.0);
                         m_iNav2D->getNavigationStatus(currentStatus);
                     }
-
                 }
             }
         }
@@ -235,9 +233,6 @@ void LookForObjectThread::threadRelease()
 {
     if(!m_outPort.isClosed())
         m_outPort.close();
-
-    if (m_nextOrientPort.asPort().isOpen())
-        m_nextOrientPort.close();
 
     if (m_findObjectPort.asPort().isOpen())
         m_findObjectPort.close(); 
