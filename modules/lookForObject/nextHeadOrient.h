@@ -34,9 +34,9 @@
 
 //Defaults RGBD sensor
 #define RGBDClient            "RGBDSensorClient"
-#define RGBDLocalImagePort    "/nextHeadOrient/clientRgbPort:i"
-#define RGBDLocalDepthPort    "/nextHeadOrient/clientDepthPort:i"
-#define RGBDLocalRpcPort      "/nextHeadOrient/clientRpcPort"
+#define RGBDLocalImagePort    "/lookForObject/nextHeadOrient/clientRgbPort:i"
+#define RGBDLocalDepthPort    "/lookForObject/nextHeadOrient/clientDepthPort:i"
+#define RGBDLocalRpcPort      "/lookForObject/nextHeadOrient/clientRpcPort"
 #define RGBDRemoteImagePort   "/cer/depthCamera/rgbImage:o"
 #define RGBDRemoteDepthPort   "/cer/depthCamera/depthImage:o"
 #define RGBDRemoteRpcPort     "/cer/depthCamera/rpc:i"
@@ -66,9 +66,6 @@ private:
 
     PolyDriver            m_rgbdPoly;
     IRGBDSensor*          m_iRgbd{nullptr};
-    
-    //Ports
-    RpcServer             m_rpc_server_port;
 
     //head orientations
     map<string, pair<double,double>>         m_orientations;
@@ -79,13 +76,15 @@ private:
     int                   m_max_turns;
     int                   m_current_turn{1};
 
+    //others
     double                m_period;
     double                m_overlap;
     mutex                 m_mutex;
+    ResourceFinder&       m_rf;
 
 public:
     //Constructor/Distructor
-    NextHeadOrient(){}
+    NextHeadOrient(double _period, ResourceFinder &rf);
     ~NextHeadOrient(){}
 
     //Internal methods
@@ -94,9 +93,12 @@ public:
     virtual bool updateModule();
     virtual bool  close();
 
+    bool next(Bottle& reply);
+    bool turn(Bottle& reply);
+    bool set(const string& pos, const string& status);
+    void resetTurns();
     void home();
-    bool respond(const Bottle &cmd, Bottle &reply);
-
+    void help();
 };
 
 #endif 

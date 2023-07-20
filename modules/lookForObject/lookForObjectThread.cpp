@@ -33,7 +33,6 @@ LookForObjectThread::LookForObjectThread(double _period, yarp::os::ResourceFinde
 {
     //Defaults
     m_outPortName = "/lookForObject/out:o";
-    m_nextOrientPortName = "/lookForObject/nextHeadOrient:rpc";
     m_findObjectPortName = "/lookForObject/findObject:rpc";
     m_gazeTargetOutPortName = "/lookForObject/gazeControllerTarget:o";
 }
@@ -42,7 +41,6 @@ bool LookForObjectThread::threadInit()
 {
     // --------- Generic config --------- //
     if (m_rf.check("out_port")) {m_outPortName = m_rf.find("out_port").asString();}
-    if (m_rf.check("next_head_orient_port_rpc")) {m_nextOrientPortName = m_rf.find("next_head_orient_port_rpc").asString();}
     if (m_rf.check("find_object_port_rpc")) {m_findObjectPortName = m_rf.find("find_object_port_rpc").asString();}
     if (m_rf.check("gaze_target_point_port")) {m_gazeTargetOutPortName = m_rf.find("gaze_target_point_port").asString();}
     

@@ -21,25 +21,17 @@
 
 YARP_LOG_COMPONENT(NEXT_HEAD_ORIENT, "r1_obr.nextHeadOrient")
 
+NextHeadOrient::NextHeadOrient(double _period, yarp::os::ResourceFinder &rf) : m_rf(rf)
+{
+    m_period=_period;
+}
+
 bool NextHeadOrient::configure(ResourceFinder &rf)
 {
     //Generic config
     m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
     bool useFov = rf.check("useCameraFOV") ? rf.find("useCameraFOV").asString()=="true" : false;
     m_overlap = rf.check("fov_overlap_degrees")  ? rf.find("fov_overlap_degrees").asFloat32() : 5.0;
-
-    //Open RPC Server Port
-    string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
-    if (!m_rpc_server_port.open(rpcPortName))
-    {
-        yCError(NEXT_HEAD_ORIENT, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
-        return false;
-    }
-    if (!attach(m_rpc_server_port))
-    {
-        yCError(NEXT_HEAD_ORIENT, "attach() error with rpc port %s", rpcPortName.c_str());
-        return false;
-    }
 
     // --------- RGBDSensor config --------- //
     Property rgbdProp;
@@ -249,141 +241,86 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
     return true;
 }
 
-bool NextHeadOrient::respond(const Bottle &cmd, Bottle &reply)
+bool NextHeadOrient::next(Bottle& reply)
 {
-    yCInfo(NEXT_HEAD_ORIENT,"Received: %s",cmd.toString().c_str());
-
     lock_guard<mutex> m_lock(m_mutex);
-    reply.clear();
-    string cmd0 = cmd.get(0).asString();
-
-    if(cmd.size() == 1) 
+    map<string, HeadOrientStatus>::iterator it;
+    for (it = m_orientation_status.begin(); it != m_orientation_status.end(); it++  ) 
     {
-        if (cmd0=="next")
+        if (it->second == HO_UNCHECKED)
         {
-            map<string, HeadOrientStatus>::iterator it;
-            for (it = m_orientation_status.begin(); it != m_orientation_status.end(); it++  ) 
-            {
-                if (it->second == HO_UNCHECKED)
-                {
-                    Bottle& tempList = reply.addList();
-                    pair<double,double> tempPair = m_orientations.at(it->first);
-                    tempList.addFloat32(tempPair.first);
-                    tempList.addFloat32(tempPair.second);
-                    it->second = HO_CHECKING;
-                    return true;
-                }
-            }  
-            // if return has not been called before, no unchecked orientation has been found
-            reply.addString("noOrient");   
-            home(); 
+            Bottle& tempList = reply.addList();
+            pair<double,double> tempPair = m_orientations.at(it->first);
+            tempList.addFloat32(tempPair.first);
+            tempList.addFloat32(tempPair.second);
+            it->second = HO_CHECKING;
+            return true;
         }
-        else if (cmd0=="help")
-        {
-            reply.addVocab32("many");
-            reply.addString("next : responds the next unchecked orientation or noOrient");
-            reply.addString("set <orientation> <status> : sets the status of a location to unchecked, checking or checked");
-            reply.addString("set all <status> : sets the status of all orientations");
-            reply.addString("list : lists all the orientation and their status");
-            reply.addString("home : let the robot head go back to its home position");
-            reply.addString("turn : returns the angle the robot should turn to inspect another area, or 'noTurn'");
-            reply.addString("stop : stops the nextHeadOrient module");
-            reply.addString("help : gets this list");
+    }  
+    // if return has not been called before, no unchecked orientation has been found 
+    return false;
+}
 
-        }
-        else if (cmd0=="stop")
-        {
-            close();
-        }
-        else if (cmd0=="home")
-        {
-            home();
-        }
-        else if (cmd0=="list")
-        {
-            reply.addVocab32("many");
-            map<string, pair<double,double>>::iterator it;
-            for(it = m_orientations.begin(); it != m_orientations.end(); it++)
-            {
-                Bottle& tempList = reply.addList();
-                tempList.addString(it->first);
-                tempList.addFloat32((it->second).first);
-                tempList.addFloat32((it->second).second);
-                HeadOrientStatus tempStatus = m_orientation_status.at(it->first);
-                if (tempStatus==HO_UNCHECKED) {tempList.addString("Unchecked");}
-                else if (tempStatus==HO_CHECKING) {tempList.addString("Checking");}
-                else if (tempStatus==HO_CHECKED) {tempList.addString("Checked");}
-            }
-        }
-        else if (cmd0=="turn")
-        {
-            yCDebug(NEXT_HEAD_ORIENT) << "turning for the time" << m_current_turn << "of" << m_max_turns << "degrees:"<<m_turn_deg;
-            m_current_turn++; 
-            if (m_current_turn<=m_max_turns)
-                reply.addFloat32(m_turn_deg);
-            else
-                reply.addString("noTurn");
-            
-            yCDebug(NEXT_HEAD_ORIENT) << "reply" << reply.toString().c_str();
-        }
-        else
-        {
-            reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
+void NextHeadOrient::help()
+{
+    yCInfo(NEXT_HEAD_ORIENT,"next : responds the next unchecked orientation or noOrient");
+    yCInfo(NEXT_HEAD_ORIENT,"set(<orientation>, <status>): sets the status of a location to unchecked, checking or checked");
+    yCInfo(NEXT_HEAD_ORIENT,"set('all', <status>) : sets the status of all orientations");
+    yCInfo(NEXT_HEAD_ORIENT,"home : let the robot head go back to its home position");
+    yCInfo(NEXT_HEAD_ORIENT,"turn : returns the angle the robot should turn to inspect another area, or 'noTurn'");
+    yCInfo(NEXT_HEAD_ORIENT,"help : gets this list");
+}
+
+bool NextHeadOrient::turn(Bottle& reply)
+{ 
+    lock_guard<mutex> m_lock(m_mutex);
+    if (m_current_turn<=m_max_turns)
+        reply.addFloat32(m_turn_deg);
+    else
+        reply.addString("noTurn");
+    
+    m_current_turn++;
+    return true;
+}
+
+void NextHeadOrient::resetTurns()
+{ 
+    m_current_turn = 0;
+}
+
+bool NextHeadOrient::set(const string& pos, const string& status)
+{
+    lock_guard<mutex> m_lock(m_mutex);
+    if(m_orientation_status.find(pos) != m_orientation_status.end()) 
+    {
+        if (status == "unchecked" || status == "Unchecked" || status == "UNCHECKED")   {m_orientation_status.at(pos) = HO_UNCHECKED; }
+        else if (status == "checking" || status == "Checking" || status == "CHECKING") {m_orientation_status.at(pos) = HO_CHECKING; }
+        else if (status == "checked" || status == "Checked" || status == "CHECKED")    {m_orientation_status.at(pos) = HO_CHECKED;  }
+        else 
+        { 
+            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
+            return false;
         }
     }
-    else if (cmd.size()==3)    //expected 'set <orientation> <status>' or 'set all <status>'
+    else if (pos=="all")
     {
-        if (cmd0=="set")
-        {
-            string cmd1=cmd.get(1).asString();
-            string cmd2=cmd.get(2).asString();
-            if(m_orientation_status.find(cmd1) != m_orientation_status.end()) 
-            {
-                if (cmd2 == "unchecked" || cmd2 == "Unchecked" || cmd2 == "UNCHECKED")   {m_orientation_status.at(cmd1) = HO_UNCHECKED; }
-                else if (cmd2 == "checking" || cmd2 == "Checking" || cmd2 == "CHECKING") {m_orientation_status.at(cmd1) = HO_CHECKING; }
-                else if (cmd2 == "checked" || cmd2 == "Checked" || cmd2 == "CHECKED")    {m_orientation_status.at(cmd1) = HO_CHECKED;  }
-                else 
-                { 
-                    reply.addVocab32(Vocab32::encode("nack"));
-                    yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
-                }
-            }
-            else if (cmd1=="all")
-            {
-                if (cmd2 == "unchecked" || cmd2 == "Unchecked" || cmd2 == "UNCHECKED")   { for (auto &p : m_orientation_status ) p.second = HO_UNCHECKED; }  
-                else if (cmd2 == "checking" || cmd2 == "Checking" || cmd2 == "CHECKING") { for (auto &p : m_orientation_status ) p.second = HO_CHECKING; }
-                else if (cmd2 == "checked" || cmd2 == "Checked" || cmd2 == "CHECKED")    { for (auto &p : m_orientation_status ) p.second = HO_CHECKED; }
-                else 
-                { 
-                    reply.addVocab32(Vocab32::encode("nack"));
-                    yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
-                }
-            }
-            else
-            {
-                reply.addVocab32(Vocab32::encode("nack"));
-                yCWarning(NEXT_HEAD_ORIENT,"Error: specified location name not found.");
-            }
-        }
-        else
-        {
-            reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong RPC command.");
+        if (status == "unchecked" || status == "Unchecked" || status == "UNCHECKED")   { for (auto &p : m_orientation_status ) p.second = HO_UNCHECKED; }  
+        else if (status == "checking" || status == "Checking" || status == "CHECKING") { for (auto &p : m_orientation_status ) p.second = HO_CHECKING; }
+        else if (status == "checked" || status == "Checked" || status == "CHECKED")    { for (auto &p : m_orientation_status ) p.second = HO_CHECKED; }
+        else 
+        { 
+            yCWarning(NEXT_HEAD_ORIENT,"Error: wrong orientation status specified. You should use: unchecked, checking or checked.");
+            return false;
         }
     }
     else
     {
-        reply.addVocab32(Vocab32::encode("nack"));
-        yCWarning(NEXT_HEAD_ORIENT,"Error: input RPC command bottle has a wrong number of elements.");
+        yCWarning(NEXT_HEAD_ORIENT,"Error: specified location name not found.");
+        return false;
     }
-    
-    if (reply.size()==0)
-        reply.addVocab32(Vocab32::encode("ack")); 
     
     return true;
 }
-
 
 void NextHeadOrient::home()
 {    
@@ -421,12 +358,10 @@ bool NextHeadOrient::updateModule()
 bool NextHeadOrient::close()
 {
     if(m_Poly.isValid())
-    {
         m_Poly.close();
-    }
 
-    if (!m_rpc_server_port.asPort().isOpen())
-        m_rpc_server_port.close();
+    if(m_rgbdPoly.isValid())
+        m_rgbdPoly.close();
     
     return true;
 }

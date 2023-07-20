@@ -24,6 +24,7 @@
 #include <yarp/dev/INavigation2D.h>
 #include <yarp/os/all.h>
 #include <math.h>
+#include "nextHeadOrient.h"
 
 
 class LookForObjectThread : public yarp::os::PeriodicThread, 
@@ -37,15 +38,14 @@ protected:
     //Ports
     std::string                                 m_outPortName;
     yarp::os::BufferedPort<yarp::os::Bottle>    m_outPort;
-    std::string                                 m_nextOrientPortName;
-    yarp::os::RpcClient                         m_nextOrientPort;
     std::string                                 m_findObjectPortName;
     yarp::os::RpcClient                         m_findObjectPort;
     std::string                                 m_gazeTargetOutPortName;
     yarp::os::BufferedPort<yarp::os::Bottle>    m_gazeTargetOutPort;
 
     //Others
-    yarp::os::ResourceFinder    &m_rf;
+    yarp::os::ResourceFinder&   m_rf;
+    NextHeadOrient*             m_nextHeadOrient;
 
 
 public:
