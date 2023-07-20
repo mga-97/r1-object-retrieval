@@ -84,11 +84,11 @@ private:
 
 public:
     //Constructor/Distructor
-    NextHeadOrient(double _period, ResourceFinder &rf);
+    NextHeadOrient(ResourceFinder &rf);
     ~NextHeadOrient(){}
 
     //Internal methods
-    bool configure(ResourceFinder &rf);
+    bool configure();
     virtual double getPeriod();
     virtual bool updateModule();
     virtual bool  close();

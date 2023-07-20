@@ -21,17 +21,14 @@
 
 YARP_LOG_COMPONENT(NEXT_HEAD_ORIENT, "r1_obr.nextHeadOrient")
 
-NextHeadOrient::NextHeadOrient(double _period, yarp::os::ResourceFinder &rf) : m_rf(rf)
-{
-    m_period=_period;
-}
+NextHeadOrient::NextHeadOrient(yarp::os::ResourceFinder &rf) : m_rf(rf) {}
 
-bool NextHeadOrient::configure(ResourceFinder &rf)
+bool NextHeadOrient::configure()
 {
     //Generic config
-    m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
-    bool useFov = rf.check("useCameraFOV") ? rf.find("useCameraFOV").asString()=="true" : false;
-    m_overlap = rf.check("fov_overlap_degrees")  ? rf.find("fov_overlap_degrees").asFloat32() : 5.0;
+    m_period = m_rf.check("period")  ? m_rf.find("period").asFloat32() : 1.0;
+    bool useFov = m_rf.check("useCameraFOV") ? m_rf.find("useCameraFOV").asString()=="true" : false;
+    m_overlap = m_rf.check("fov_overlap_degrees")  ? m_rf.find("fov_overlap_degrees").asFloat32() : 5.0;
 
     // --------- RGBDSensor config --------- //
     Property rgbdProp;
@@ -45,14 +42,14 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
     rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
     rgbdProp.put("ImageCarrier", RGBDImageCarrier);
     rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
-    bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
+    bool okRgbdRf = m_rf.check("RGBD_SENSOR_CLIENT");
     if(!okRgbdRf)
     {
         yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
     }
     else
     {
-        Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
+        Searchable& rgbd_config = m_rf.findGroup("RGBD_SENSOR_CLIENT");
         if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
         if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
         if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
@@ -80,19 +77,19 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
 
     // ----------- Polydriver config ----------- //
     Property controllerProp;
-    if(!rf.check("REMOTE_CONTROL_BOARD"))
+    if(!m_rf.check("REMOTE_CONTROL_BOARD"))
     {
         yCWarning(NEXT_HEAD_ORIENT,"REMOTE_CONTROL_BOARD section missing in ini file. Using default values.");
 
         // defaults
         controllerProp.clear();
         controllerProp.put("device","remote_controlboard");
-        controllerProp.put("local","/nextHeadOrient/remote_controlboard");
+        controllerProp.put("local","/lookForObject/nextHeadOrient/remote_controlboard");
         controllerProp.put("remote","/cer/head");
     }
     else
     {
-        Searchable& pos_configs = rf.findGroup("REMOTE_CONTROL_BOARD");
+        Searchable& pos_configs = m_rf.findGroup("REMOTE_CONTROL_BOARD");
         if(pos_configs.check("device")) {controllerProp.put("device", pos_configs.find("device").asString());}
         if(pos_configs.check("local")) {controllerProp.put("local", pos_configs.find("local").asString());}
         if(pos_configs.check("remote")) {controllerProp.put("remote", pos_configs.find("remote").asString());}
@@ -149,7 +146,7 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
     
     if (!useFov) 
     {
-        if(!rf.check("HEAD_POSITIONS"))
+        if(!m_rf.check("HEAD_POSITIONS"))
         {
             yCWarning(NEXT_HEAD_ORIENT,"HEAD_POSITIONS section missing in ini file. Using default values.");
 
@@ -159,7 +156,7 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
         }
         else
         {
-            Searchable& pos_configs = rf.findGroup("HEAD_POSITIONS");
+            Searchable& pos_configs = m_rf.findGroup("HEAD_POSITIONS");
             double maxDeg {0.0}, minDeg {0.0}; 
             int idx {1};
             while (true) 
