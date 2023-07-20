@@ -3,6 +3,5 @@
 # email:  raffaele.colombo@iit.it
 
 add_subdirectory(nextLocPlanner)
-add_subdirectory(nextHeadOrient)
 add_subdirectory(yarpMdetr)
 add_subdirectory(lookForObject)

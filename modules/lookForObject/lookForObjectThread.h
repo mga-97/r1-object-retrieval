@@ -44,6 +44,7 @@ protected:
     yarp::os::BufferedPort<yarp::os::Bottle>    m_gazeTargetOutPort;
 
     //Others
+    double                      m_wait_for_search;
     yarp::os::ResourceFinder&   m_rf;
     NextHeadOrient*             m_nextHeadOrient;
 

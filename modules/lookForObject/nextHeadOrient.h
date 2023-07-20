@@ -47,7 +47,7 @@ using namespace std;
 using namespace yarp::os;
 using namespace yarp::dev;
 
-class NextHeadOrient : public RFModule
+class NextHeadOrient
 {
 
 enum HeadOrientStatus {
@@ -89,8 +89,6 @@ public:
 
     //Internal methods
     bool configure();
-    virtual double getPeriod();
-    virtual bool updateModule();
     virtual bool  close();
 
     bool next(Bottle& reply);

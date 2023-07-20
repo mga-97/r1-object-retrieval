@@ -36,7 +36,7 @@ bool LookForObject::configure(yarp::os::ResourceFinder &rf)
   
 
     std::string portName = "/lookForObject/object:i";
-    if(rf.check("input_object_port")){portName = rf.find("input_question_port").asString();}
+    if(rf.check("input_object_port")){portName = rf.find("input_object_port").asString();}
     bool ret = m_inputPort.open(portName);
     if (!ret)
     {

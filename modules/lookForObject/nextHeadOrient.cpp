@@ -271,7 +271,7 @@ void NextHeadOrient::help()
 bool NextHeadOrient::turn(Bottle& reply)
 { 
     lock_guard<mutex> m_lock(m_mutex);
-    if (m_current_turn<=m_max_turns)
+    if (m_current_turn<m_max_turns)
         reply.addFloat32(m_turn_deg);
     else
         reply.addString("noTurn");
@@ -339,17 +339,6 @@ void NextHeadOrient::home()
         { yCError(NEXT_HEAD_ORIENT) << "Error: The remote calibrator reported that something went wrong during the calibration procedure"; }
     }
     
-}
-
-
-double NextHeadOrient::getPeriod()
-{
-    return m_period;
-}
-
-bool NextHeadOrient::updateModule()
-{   
-    return true;
 }
 
 bool NextHeadOrient::close()

@@ -35,6 +35,7 @@ LookForObjectThread::LookForObjectThread(double _period, yarp::os::ResourceFinde
     m_outPortName = "/lookForObject/out:o";
     m_findObjectPortName = "/lookForObject/findObject:rpc";
     m_gazeTargetOutPortName = "/lookForObject/gazeControllerTarget:o";
+    m_wait_for_search = 4.0;
 }
 
 bool LookForObjectThread::threadInit()
@@ -44,12 +45,15 @@ bool LookForObjectThread::threadInit()
     if (m_rf.check("find_object_port_rpc")) {m_findObjectPortName = m_rf.find("find_object_port_rpc").asString();}
     if (m_rf.check("gaze_target_point_port")) {m_gazeTargetOutPortName = m_rf.find("gaze_target_point_port").asString();}
     
+
     // --------- Next Head Orient initialization --------- //
     m_nextHeadOrient = new NextHeadOrient(m_rf);
     bool headOrientOk = m_nextHeadOrient->configure();
     if (!headOrientOk){
         return false;
     }
+    
+    if (m_rf.check("wait_for_search")) {m_wait_for_search = m_rf.find("wait_for_search").asFloat32();}
     
     // --------- Navigation2DClient config --------- //
     yarp::os::Property nav2DProp;
@@ -91,7 +95,7 @@ bool LookForObjectThread::threadInit()
     }
 
     if(!m_findObjectPort.open(m_findObjectPortName)){
-        yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open nextOrient RPC port with name" << m_findObjectPortName;
+        yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open findObject RPC port with name" << m_findObjectPortName;
         return false;
     }
 
@@ -136,7 +140,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
             targetList1.addFloat32(tmpBottle->get(0).asFloat32());
             targetList1.addFloat32(tmpBottle->get(1).asFloat32());
             m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
-            yarp::os::Time::delay(4.0);  //waiting for the robot tilting its head
+            yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot tilting its head
 
             //search for object
             Bottle request, reply;
@@ -162,8 +166,6 @@ bool LookForObjectThread::lookAround(std::string& ob)
             break;
         }  
     }
-
-    m_nextHeadOrient->resetTurns();
     m_nextHeadOrient->home();
 
     return false;
@@ -217,6 +219,8 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 }
             }
         }
+
+        m_nextHeadOrient->resetTurns();
         
         yarp::os::Bottle&  toSendOut = m_outPort.prepare();
         toSendOut.clear();
@@ -240,6 +244,8 @@ void LookForObjectThread::threadRelease()
     if(!m_gazeTargetOutPort.isClosed()){
         m_gazeTargetOutPort.close();
     }
+
+    m_nextHeadOrient->close();
     
     yCInfo(LOOK_FOR_OBJECT_THREAD, "Thread released");
 
