@@ -20,6 +20,8 @@
 #define LOOK_FOR_OBJECT_THREAD_H
 
 
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/INavigation2D.h>
 #include <yarp/os/all.h>
 #include <math.h>
 
@@ -28,6 +30,10 @@ class LookForObjectThread : public yarp::os::PeriodicThread,
                          public yarp::os::TypedReaderCallback<yarp::os::Bottle>
 {
 protected:
+    //Devices
+    yarp::dev::PolyDriver            m_nav2DPoly;
+    yarp::dev::Nav2D::INavigation2D* m_iNav2D{nullptr};
+
     //Ports
     std::string                                 m_outPortName;
     yarp::os::BufferedPort<yarp::os::Bottle>    m_outPort;
@@ -55,6 +61,8 @@ public:
     //Port inherited from TypedReaderCallback
     using TypedReaderCallback<yarp::os::Bottle>::onRead;
     void onRead(yarp::os::Bottle& b) override;
+
+    bool lookAround(std::string& ob);
 
 };
 

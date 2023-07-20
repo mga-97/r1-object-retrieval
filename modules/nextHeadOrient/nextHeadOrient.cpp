@@ -41,52 +41,50 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
         return false;
     }
 
-    if (useFov) 
+    // --------- RGBDSensor config --------- //
+    Property rgbdProp;
+    // Prepare default prop object
+    rgbdProp.put("device", RGBDClient);
+    rgbdProp.put("localImagePort", RGBDLocalImagePort);
+    rgbdProp.put("localDepthPort", RGBDLocalDepthPort);
+    rgbdProp.put("localRpcPort", RGBDLocalRpcPort);
+    rgbdProp.put("remoteImagePort", RGBDRemoteImagePort);
+    rgbdProp.put("remoteDepthPort", RGBDRemoteDepthPort);
+    rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
+    rgbdProp.put("ImageCarrier", RGBDImageCarrier);
+    rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
+    bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
+    if(!okRgbdRf)
     {
-        // --------- RGBDSensor config --------- //
-        Property rgbdProp;
-        // Prepare default prop object
-        rgbdProp.put("device", RGBDClient);
-        rgbdProp.put("localImagePort", RGBDLocalImagePort);
-        rgbdProp.put("localDepthPort", RGBDLocalDepthPort);
-        rgbdProp.put("localRpcPort", RGBDLocalRpcPort);
-        rgbdProp.put("remoteImagePort", RGBDRemoteImagePort);
-        rgbdProp.put("remoteDepthPort", RGBDRemoteDepthPort);
-        rgbdProp.put("remoteRpcPort", RGBDRemoteRpcPort);
-        rgbdProp.put("ImageCarrier", RGBDImageCarrier);
-        rgbdProp.put("DepthCarrier", RGBDDepthCarrier);
-        bool okRgbdRf = rf.check("RGBD_SENSOR_CLIENT");
-        if(!okRgbdRf)
-        {
-            yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
-        }
-        else
-        {
-            Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
-            if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
-            if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
-            if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
-            if(rgbd_config.check("localRpcPort")) {rgbdProp.put("localRpcPort", rgbd_config.find("localRpcPort").asString());}
-            if(rgbd_config.check("remoteImagePort")) {rgbdProp.put("remoteImagePort", rgbd_config.find("remoteImagePort").asString());}
-            if(rgbd_config.check("remoteDepthPort")) {rgbdProp.put("remoteDepthPort", rgbd_config.find("remoteDepthPort").asString());}
-            if(rgbd_config.check("remoteRpcPort")) {rgbdProp.put("remoteRpcPort", rgbd_config.find("remoteRpcPort").asString());}
-            if(rgbd_config.check("ImageCarrier")) {rgbdProp.put("ImageCarrier", rgbd_config.find("ImageCarrier").asString());}
-            if(rgbd_config.check("DepthCarrier")) {rgbdProp.put("DepthCarrier", rgbd_config.find("DepthCarrier").asString());}
-        }
-
-        m_rgbdPoly.open(rgbdProp);
-        if(!m_rgbdPoly.isValid())
-        {
-            yCError(NEXT_HEAD_ORIENT,"Error opening PolyDriver check parameters");
-            return false;
-        }
-        m_rgbdPoly.view(m_iRgbd);
-        if(!m_iRgbd)
-        {
-            yCError(NEXT_HEAD_ORIENT,"Error opening iRGBD interface. Device not available");
-            return false;
-        }
+        yCWarning(NEXT_HEAD_ORIENT,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
     }
+    else
+    {
+        Searchable& rgbd_config = rf.findGroup("RGBD_SENSOR_CLIENT");
+        if(rgbd_config.check("device")) {rgbdProp.put("device", rgbd_config.find("device").asString());}
+        if(rgbd_config.check("localImagePort")) {rgbdProp.put("localImagePort", rgbd_config.find("localImagePort").asString());}
+        if(rgbd_config.check("localDepthPort")) {rgbdProp.put("localDepthPort", rgbd_config.find("localDepthPort").asString());}
+        if(rgbd_config.check("localRpcPort")) {rgbdProp.put("localRpcPort", rgbd_config.find("localRpcPort").asString());}
+        if(rgbd_config.check("remoteImagePort")) {rgbdProp.put("remoteImagePort", rgbd_config.find("remoteImagePort").asString());}
+        if(rgbd_config.check("remoteDepthPort")) {rgbdProp.put("remoteDepthPort", rgbd_config.find("remoteDepthPort").asString());}
+        if(rgbd_config.check("remoteRpcPort")) {rgbdProp.put("remoteRpcPort", rgbd_config.find("remoteRpcPort").asString());}
+        if(rgbd_config.check("ImageCarrier")) {rgbdProp.put("ImageCarrier", rgbd_config.find("ImageCarrier").asString());}
+        if(rgbd_config.check("DepthCarrier")) {rgbdProp.put("DepthCarrier", rgbd_config.find("DepthCarrier").asString());}
+    }
+
+    m_rgbdPoly.open(rgbdProp);
+    if(!m_rgbdPoly.isValid())
+    {
+        yCError(NEXT_HEAD_ORIENT,"Error opening PolyDriver check parameters");
+        return false;
+    }
+    m_rgbdPoly.view(m_iRgbd);
+    if(!m_iRgbd)
+    {
+        yCError(NEXT_HEAD_ORIENT,"Error opening iRGBD interface. Device not available");
+        return false;
+    }
+    
 
     // ----------- Polydriver config ----------- //
     Property controllerProp;
@@ -145,15 +143,17 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
 
     // ----------- Configure Head Positions ----------- //
     map<string, pair<double,double>>  orientations_default{
-        {"pos1" , {0.0, 0.0}    },
-        {"pos2" , {35.0, 0.0}   },
-        {"pos3" , {-35.0, 0.0}  },
-        {"pos4" , {0.0, 20.0}   },
-        {"pos5" , {35.0, 20.0}  },
-        {"pos6" , {-35.0, 20.0} },
-        {"pos7" , {0.0, -20.0}  },
-        {"pos8" , {35.0, -20.0} },
-        {"pos9" , {-35.0, -20.0}}   };
+        {"pos01" , {0.0, 0.0}    },
+        {"pos02" , {35.0, 0.0}   },
+        {"pos03" , {-35.0, 0.0}  },
+        {"pos04" , {0.0, 20.0}   },
+        {"pos05" , {35.0, 20.0}  },
+        {"pos06" , {-35.0, 20.0} },
+        {"pos07" , {0.0, -20.0}  },
+        {"pos08" , {35.0, -20.0} },
+        {"pos09" , {-35.0, -20.0}}   };
+
+    double visual_span;
     
     if (!useFov) 
     {
@@ -162,27 +162,33 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
             yCWarning(NEXT_HEAD_ORIENT,"HEAD_POSITIONS section missing in ini file. Using default values.");
 
             m_orientations = orientations_default;
-            for (size_t i=0; i<orientations_default.size(); i++) {m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });}
+            for (size_t i=0; i<orientations_default.size(); i++) {m_orientation_status.insert({"pos0" + to_string(i+1), HO_UNCHECKED });}
+            visual_span = 70.0;
         }
         else
         {
             Searchable& pos_configs = rf.findGroup("HEAD_POSITIONS");
-            bool addPos = true; 
+            double maxDeg {0.0}, minDeg {0.0}; 
             int idx {1};
-            while (addPos) 
+            while (true) 
             {
-                if (!pos_configs.check("pos" + to_string(idx)))
+                string pos = "pos" + (string)(idx<10?"0":"") + to_string(idx);
+                if (!pos_configs.check(pos))
                     break;
 
-                stringstream  ss(pos_configs.find("pos" + to_string(idx)).asString());
+                stringstream  ss(pos_configs.find(pos).asString());
                 string s; 
                 ss >> s; double n1 = stod(s);
                 ss >> s; double n2 = stod(s);            
 
-                m_orientations.insert({"pos" + to_string(idx), {n1,n2} });
-                m_orientation_status.insert({"pos" + to_string(idx), HO_UNCHECKED });
+                m_orientations.insert({pos, {n1,n2} });
+                m_orientation_status.insert({pos, HO_UNCHECKED });
                 idx++;
+
+                maxDeg = n1>maxDeg ? n1 : maxDeg;
+                minDeg = n1<minDeg ? n1 : minDeg;
             }
+            visual_span = maxDeg-minDeg;
         }
     }
     else 
@@ -218,19 +224,28 @@ bool NextHeadOrient::configure(ResourceFinder &rf)
         double right = limGotH ? max(fovGot ? -newHFov : -35.0 , min_pos_h) : (fovGot ? -newHFov : -35.0); 
 
         m_orientations = {
-            {"pos1", {0.0,  0.0}  },
-            {"pos2", {left, 0.0}  },   //left
-            {"pos3", {right,0.0}  },   //right
-            {"pos4", {0.0,  up}   },   //up
-            {"pos5", {left, up}   },   //up left
-            {"pos6", {right,up}   },   //up right
-            {"pos7", {0.0,  down} },   //down
-            {"pos8", {left, down} },   //down left
-            {"pos9", {right,down} }};  //down right
+            {"pos01", {0.0,  0.0}  },
+            {"pos02", {left, 0.0}  },   //left
+            {"pos03", {right,0.0}  },   //right
+            {"pos04", {0.0,  up}   },   //up
+            {"pos05", {left, up}   },   //up left
+            {"pos06", {right,up}   },   //up right
+            {"pos07", {0.0,  down} },   //down
+            {"pos08", {left, down} },   //down left
+            {"pos09", {right,down} }};  //down right
 
-        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos" + to_string(i+1), HO_UNCHECKED });}
+        for (int i=0; i<9; i++) {m_orientation_status.insert({"pos0" + to_string(i+1), HO_UNCHECKED });}
+        
+        visual_span = left-right;
     }
+
+    double _v_, horizontalFov{0.0};
+    if(!m_iRgbd->getRgbFOV(horizontalFov,_v_))
+        yCError(NEXT_HEAD_ORIENT,"An error occurred while retrieving the rgb camera FOV");
     
+    m_max_turns = ceil(360.0/(visual_span+horizontalFov));
+    m_turn_deg = 360.0/m_max_turns;
+
     return true;
 }
 
@@ -271,6 +286,7 @@ bool NextHeadOrient::respond(const Bottle &cmd, Bottle &reply)
             reply.addString("set all <status> : sets the status of all orientations");
             reply.addString("list : lists all the orientation and their status");
             reply.addString("home : let the robot head go back to its home position");
+            reply.addString("turn : returns the angle the robot should turn to inspect another area, or 'noTurn'");
             reply.addString("stop : stops the nextHeadOrient module");
             reply.addString("help : gets this list");
 
@@ -298,6 +314,17 @@ bool NextHeadOrient::respond(const Bottle &cmd, Bottle &reply)
                 else if (tempStatus==HO_CHECKING) {tempList.addString("Checking");}
                 else if (tempStatus==HO_CHECKED) {tempList.addString("Checked");}
             }
+        }
+        else if (cmd0=="turn")
+        {
+            yCDebug(NEXT_HEAD_ORIENT) << "turning for the time" << m_current_turn << "of" << m_max_turns << "degrees:"<<m_turn_deg;
+            m_current_turn++; 
+            if (m_current_turn<=m_max_turns)
+                reply.addFloat32(m_turn_deg);
+            else
+                reply.addString("noTurn");
+            
+            yCDebug(NEXT_HEAD_ORIENT) << "reply" << reply.toString().c_str();
         }
         else
         {

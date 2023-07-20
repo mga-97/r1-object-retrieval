@@ -46,7 +46,41 @@ bool LookForObjectThread::threadInit()
     if (m_rf.check("find_object_port_rpc")) {m_findObjectPortName = m_rf.find("find_object_port_rpc").asString();}
     if (m_rf.check("gaze_target_point_port")) {m_gazeTargetOutPortName = m_rf.find("gaze_target_point_port").asString();}
     
-    //open ports
+    
+    // --------- Navigation2DClient config --------- //
+    yarp::os::Property nav2DProp;
+    //Defaults
+    nav2DProp.put("device", "navigation2D_nwc_yarp");
+    nav2DProp.put("local", "/lookForObject/navClient");
+    nav2DProp.put("navigation_server", "/navigation2D_nws_yarp");
+    nav2DProp.put("map_locations_server", "/map2D_nws_yarp");
+    nav2DProp.put("localization_server", "/localization2D_nws_yarp");
+    if(!m_rf.check("NAVIGATION_CLIENT"))
+    {
+        yCWarning(LOOK_FOR_OBJECT_THREAD,"NAVIGATION_CLIENT section missing in ini file. Using the default values");
+    }
+    else
+    {
+        yarp::os::Searchable& nav_config = m_rf.findGroup("NAVIGATION_CLIENT");
+        if(nav_config.check("device")) {nav2DProp.put("device", nav_config.find("device").asString());}
+        if(nav_config.check("local")) {nav2DProp.put("local", nav_config.find("local").asString());}
+        if(nav_config.check("navigation_server")) {nav2DProp.put("navigation_server", nav_config.find("navigation_server").asString());}
+        if(nav_config.check("map_locations_server")) {nav2DProp.put("map_locations_server", nav_config.find("map_locations_server").asString());}
+        if(nav_config.check("localization_server")) {nav2DProp.put("localization_server", nav_config.find("localization_server").asString());}
+        }
+   
+    m_nav2DPoly.open(nav2DProp);
+    if(!m_nav2DPoly.isValid())
+    {
+        yCWarning(LOOK_FOR_OBJECT_THREAD,"Error opening PolyDriver check parameters. Using the default values");
+    }
+    m_nav2DPoly.view(m_iNav2D);
+    if(!m_iNav2D){
+        yCError(LOOK_FOR_OBJECT_THREAD,"Error opening INavigation2D interface. Device not available");
+        return false;
+    }
+    
+    // --------- open ports --------- //
     if(!m_outPort.open(m_outPortName)){
         yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open Out port with name" << m_outPortName;
         return false;
@@ -75,9 +109,79 @@ void LookForObjectThread::run()
     
 }
 
+bool LookForObjectThread::lookAround(std::string& ob)
+{
+    yarp::os::Bottle request, reply;
+    yarp::os::Bottle orientReq, orientReply;
+
+    orientReq.clear(); orientReply.clear();
+    orientReq.fromString("set all unchecked");
+    m_nextOrientPort.write(orientReq,orientReply);
+
+    int idx {1};
+    while (true)
+    {
+        //retrieve next head orientation
+        orientReq.clear(); orientReply.clear();
+        orientReq.addString("next");
+        if (m_nextOrientPort.write(orientReq,orientReply))
+        {                
+            if (orientReply.get(0).asString()=="noOrient")
+                break;
+            
+            yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
+            //gaze target output
+            yarp::os::Bottle&  toSend1 = m_gazeTargetOutPort.prepare();
+            toSend1.clear();
+            yarp::os::Bottle& targetTypeList = toSend1.addList();
+            targetTypeList.addString("target-type");
+            targetTypeList.addString("angular");
+            yarp::os::Bottle& targetLocationList = toSend1.addList();
+            targetLocationList.addString("target-location");
+            yarp::os::Bottle& targetList1 = targetLocationList.addList();
+            yarp::os::Bottle* tmpBottle = orientReply.get(0).asList();
+            targetList1.addFloat32(tmpBottle->get(0).asFloat32());
+            targetList1.addFloat32(tmpBottle->get(1).asFloat32());
+            m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
+            yarp::os::Time::delay(4.0);  //waiting for the robot tilting its head
+
+            //search for object
+            request.clear(); reply.clear();
+            request.addString("where");
+            request.addString(ob); 
+            if (m_findObjectPort.write(request,reply))
+            {
+                if (reply.get(0).asString()!="not found")
+                {
+                    return true;
+                } 
+            }
+            else
+            {
+                yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with findObject");
+            }
+
+            orientReq.clear(); orientReply.clear();
+            std::string text = "set pos" + (std::string)(idx<10?"0":"") + std::to_string(idx) + " checked";
+            orientReq.fromString(text);
+            m_nextOrientPort.write(orientReq,orientReply);
+            idx++;
+        }
+        else
+        {
+            yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with headOrient");
+        }  
+    }
+    
+    orientReq.clear(); orientReply.clear();
+    orientReq.addString("home");
+    m_nextOrientPort.write(orientReq,orientReply);
+
+    return false;
+}
+
 void LookForObjectThread::onRead(yarp::os::Bottle &b)
 {
-
     yCInfo(LOOK_FOR_OBJECT_THREAD,"Received: %s",b.toString().c_str());
 
     if(b.size() == 0)
@@ -91,74 +195,41 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
             yCWarning(LOOK_FOR_OBJECT_THREAD,"The input bottle has the wrong number of elements. Using only the first element.");
         }
 
+        std::string obj {b.get(0).asString()};
         bool objectFound {false};
-        yarp::os::Bottle request, reply;
-        yarp::os::Bottle orientReq, orientReply;
 
-        orientReq.clear(); orientReply.clear();
-        orientReq.fromString("set all unchecked");
-        m_nextOrientPort.write(orientReq,orientReply);
-
-        bool newPos = true; 
-        int idx {1};
-        while (newPos)
+        while (!objectFound)
         {
-             //retrieve next head orientation
-            orientReq.clear(); orientReply.clear();
-            orientReq.addString("next");
-            if (m_nextOrientPort.write(orientReq,orientReply))
-            {                
-                if (orientReply.get(0).asString()=="noOrient")
-                    break;
-                yCInfo(LOOK_FOR_OBJECT_THREAD,"Checking head orientation: pos%d",idx);
-                //gaze target output
-                yarp::os::Bottle&  toSend1 = m_gazeTargetOutPort.prepare();
-                toSend1.clear();
-                yarp::os::Bottle& targetTypeList = toSend1.addList();
-                targetTypeList.addString("target-type");
-                targetTypeList.addString("angular");
-                yarp::os::Bottle& targetLocationList = toSend1.addList();
-                targetLocationList.addString("target-location");
-                yarp::os::Bottle& targetList1 = targetLocationList.addList();
-                yarp::os::Bottle* tmpBottle = orientReply.get(0).asList();
-                targetList1.addFloat32(tmpBottle->get(0).asFloat32());
-                targetList1.addFloat32(tmpBottle->get(1).asFloat32());
-                m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
-                yarp::os::Time::delay(4.0);  //waiting for the robot tilting its head
-
-                //search for object
+            objectFound = lookAround(obj);
+            
+            if (!objectFound)
+            {
+                yarp::os::Bottle request, reply;
                 request.clear(); reply.clear();
-                request.addString("where");
-                request.addString(b.get(0).asString()); 
-                if (m_findObjectPort.write(request,reply))
-                {
-                    if (reply.get(0).asString()!="not found")
-                    {
-                        objectFound=true;
-                        break;
-                    } 
-                }
+                request.addString("turn");
+                m_nextOrientPort.write(request,reply);
+                if (reply.get(0).asString()=="noTurn")
+                    break;
                 else
                 {
-                    yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with findObject");
+                    //turn
+                    double theta = reply.get(0).asFloat32();
+                    yCInfo(LOOK_FOR_OBJECT_THREAD) << "Turning" << theta << "degrees";
+                    yarp::dev::Nav2D::Map2DLocation loc;
+                    m_iNav2D->getCurrentPosition(loc);
+                    loc.theta += theta; // <===
+                    m_iNav2D->gotoTargetByAbsoluteLocation(loc);
+                    yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
+                    m_iNav2D->getNavigationStatus(currentStatus);
+                    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
+                    {
+                        yarp::os::Time::delay(1.0);
+                        m_iNav2D->getNavigationStatus(currentStatus);
+                    }
                 }
-
-                orientReq.clear(); orientReply.clear();
-                std::string text = "set pos" + std::to_string(idx) + "checked";
-                orientReq.fromString(text);
-                m_nextOrientPort.write(orientReq,orientReply);
-                idx++;
             }
-            else
-            {
-                yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with headOrient");
-            }  
         }
         
-        orientReq.clear(); orientReply.clear();
-        orientReq.addString("home");
-        m_nextOrientPort.write(orientReq,orientReply);
-
         yarp::os::Bottle&  toSendOut = m_outPort.prepare();
         toSendOut.clear();
         if (objectFound)
