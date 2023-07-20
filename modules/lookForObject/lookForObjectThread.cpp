@@ -121,7 +121,6 @@ bool LookForObjectThread::lookAround(std::string& ob)
     int idx {1};
     while (true)
     {
-        yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
         //retrieve next head orientation
         orientReq.clear(); orientReply.clear();
         orientReq.addString("next");
@@ -130,6 +129,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
             if (orientReply.get(0).asString()=="noOrient")
                 break;
             
+            yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
             //gaze target output
             yarp::os::Bottle&  toSend1 = m_gazeTargetOutPort.prepare();
             toSend1.clear();
@@ -182,7 +182,6 @@ bool LookForObjectThread::lookAround(std::string& ob)
 
 void LookForObjectThread::onRead(yarp::os::Bottle &b)
 {
-
     yCInfo(LOOK_FOR_OBJECT_THREAD,"Received: %s",b.toString().c_str());
 
     if(b.size() == 0)
@@ -209,33 +208,24 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 request.clear(); reply.clear();
                 request.addString("turn");
                 m_nextOrientPort.write(request,reply);
-                yCDebug(LOOK_FOR_OBJECT_THREAD) << "requested 'turn', replied:" << reply.get(0).asFloat32();
                 if (reply.get(0).asString()=="noTurn")
                     break;
                 else
                 {
                     //turn
                     double theta = reply.get(0).asFloat32();
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "theta:" << theta;
+                    yCInfo(LOOK_FOR_OBJECT_THREAD) << "Turning" << theta << "degrees";
                     yarp::dev::Nav2D::Map2DLocation loc;
                     m_iNav2D->getCurrentPosition(loc);
                     loc.theta += theta; // <===
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "loc.x:" << loc.x;
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "loc.y:" << loc.y;
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "loc.theta:" << loc.theta;
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "loc.map_id:" << loc.map_id;
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "loc.descr:" << loc.description;
                     m_iNav2D->gotoTargetByAbsoluteLocation(loc);
                     yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
                     m_iNav2D->getNavigationStatus(currentStatus);
-                    yCDebug(LOOK_FOR_OBJECT_THREAD) << "current navigation status out:" << *((char*)currentStatus);
-                    while (currentStatus == yarp::dev::Nav2D::navigation_status_moving)
+                    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
                     {
                         yarp::os::Time::delay(1.0);
                         m_iNav2D->getNavigationStatus(currentStatus);
-                        yCDebug(LOOK_FOR_OBJECT_THREAD) << "current navigation status in:" << *((char*)currentStatus);
                     }
-
                 }
             }
         }
