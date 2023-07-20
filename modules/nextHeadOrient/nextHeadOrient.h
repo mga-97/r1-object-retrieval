@@ -30,6 +30,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 
 //Defaults RGBD sensor
 #define RGBDClient            "RGBDSensorClient"
@@ -69,8 +70,14 @@ private:
     //Ports
     RpcServer             m_rpc_server_port;
 
+    //head orientations
     map<string, pair<double,double>>         m_orientations;
     map<string, HeadOrientStatus>            m_orientation_status;
+
+    //turn around
+    double                m_turn_deg;
+    int                   m_max_turns;
+    int                   m_current_turn{1};
 
     double                m_period;
     double                m_overlap;

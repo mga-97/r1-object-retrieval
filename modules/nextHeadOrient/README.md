@@ -26,6 +26,7 @@ Possible RPC commands:
 - `set all <status>` : sets the status of all orientations
 - `list` : lists all the orientations and their status
 - `home` : let the robot head go back to its home position
+- `turn` : returns the angle the robot should turn to inspect another area, or 'noTurn'
 - `stop` : stops the nextHeadOrient module
 - `help` : gets this list
 
