@@ -144,7 +144,6 @@ bool LookForObjectThread::lookAround(std::string& ob)
 
             //search for object
             Bottle request, reply;
-            request.clear(); reply.clear();
             request.addString("where");
             request.addString(ob); 
             if (m_findObjectPort.write(request,reply))
@@ -196,7 +195,6 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
             if (!objectFound)
             {
                 yarp::os::Bottle reply;
-                reply.clear();
                 m_nextHeadOrient->turn(reply);
                 if (reply.get(0).asString()=="noTurn")
                     break;

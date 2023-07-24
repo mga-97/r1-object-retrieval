@@ -206,7 +206,7 @@ if __name__ == '__main__':
     conffile = rf.find("from").asString()
     if not conffile:
         print('Using default conf file')
-        rf.setDefaultConfigFile('yarpMdetr_R1_SIM.ini')
+        rf.setDefaultConfigFile('yarpMdetr_R1.ini')
     else:
         rf.setDefaultConfigFile(rf.find("from").asString())
 
