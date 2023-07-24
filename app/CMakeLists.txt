@@ -5,3 +5,4 @@
 add_subdirectory(nextLocPlanner)
 add_subdirectory(yarpMdetr)
 add_subdirectory(lookForObject)
+add_subdirectory(goAndFindIt)

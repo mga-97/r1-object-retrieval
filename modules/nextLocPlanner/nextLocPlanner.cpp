@@ -205,6 +205,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("next : responds the next unchecked location or noLocation");
             reply.addString("set <locationName> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all locations");
+            reply.addString("find <locationName> : checks if a location is in the list of the available ones");
             reply.addString("list : lists all the locations and their status");
             reply.addString("list2 : lists all the locations divided by their status");
             reply.addString("stop : stops the nextLocationPlanner module");
@@ -270,6 +271,28 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
                     tempList.addString(*it);
                 }
             }
+        }
+        else
+        {
+            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
+        }
+    }
+    else if (cmd.size()==2)    //expected 'find <location>'  
+    {
+        if (cmd_0=="find")
+        {
+            std::string loc=cmd.get(1).asString();
+
+            if (std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), loc) != m_locations_unchecked.end())
+                reply.fromString("ok unchecked");
+            else if(std::find(m_locations_checking.begin(), m_locations_checking.end(), loc) != m_locations_checking.end())
+                reply.fromString("ok checking");
+            else if(std::find(m_locations_checked.begin(), m_locations_checked.end(), loc) != m_locations_checked.end())
+                reply.fromString("ok checked");
+            else 
+                reply.addString("notValid");
+
         }
         else
         {

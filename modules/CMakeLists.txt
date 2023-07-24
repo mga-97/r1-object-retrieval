@@ -4,3 +4,4 @@
 
 add_subdirectory(nextLocPlanner)
 add_subdirectory(lookForObject)
+add_subdirectory(goAndFindIt)
