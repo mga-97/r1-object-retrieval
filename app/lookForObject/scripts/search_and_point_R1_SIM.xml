@@ -1,5 +1,5 @@
 <application>
-   <name>R1_lookForObject_MDETR_SIM</name>
+   <name>R1_search_and_point_MDETR_SIM</name>
 
    <dependencies>
    </dependencies>
@@ -10,11 +10,10 @@
         <prefix></prefix>
     </application>
 
-    <module>
-      <name>cer_gaze-controller</name>
-      <parameters>--cameras::context cameraCalibration --cameras::file cerSimEyes_640x480.ini --robot SIM_CER_ROBOT --joints-limits::pitch "(-20.0 20.0)" --joints-limits::yaw "(-40.0 40.0)"</parameters>
-      <node>console</node>
-   </module>
+    <application>
+        <name>R1_handPointing_SIM</name>
+        <prefix></prefix>
+    </application>
 
     <module>
 		<name>python3</name>
@@ -30,7 +29,7 @@
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from lookForObject_R1_SIM.ini</parameters>
+      <parameters>--context lookForObject --from search_and_point_R1_SIM.ini</parameters>
       <node>console</node>
    </module>
 
