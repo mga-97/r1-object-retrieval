@@ -72,6 +72,7 @@ private:
     map<string, HeadOrientStatus>            m_orientation_status;
 
     //turn around
+    bool                  m_turning;
     double                m_turn_deg;
     int                   m_max_turns;
     int                   m_current_turn{1};

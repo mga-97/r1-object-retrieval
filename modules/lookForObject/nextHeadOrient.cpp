@@ -23,12 +23,16 @@ YARP_LOG_COMPONENT(NEXT_HEAD_ORIENT, "r1_obr.nextHeadOrient")
 
 NextHeadOrient::NextHeadOrient(yarp::os::ResourceFinder &rf) : m_rf(rf) {}
 
+// ********************************************** //
 bool NextHeadOrient::configure()
 {
     //Generic config
     m_period = m_rf.check("period")  ? m_rf.find("period").asFloat32() : 1.0;
-    bool useFov = m_rf.check("useCameraFOV") ? m_rf.find("useCameraFOV").asString()=="true" : false;
     m_overlap = m_rf.check("fov_overlap_degrees")  ? m_rf.find("fov_overlap_degrees").asFloat32() : 5.0;
+    m_turning = m_rf.check("turning")  ? !(m_rf.find("turning").asString() == "false") : true;
+    yCDebug(NEXT_HEAD_ORIENT)<< "m_turning:" << m_turning;
+
+    bool useFov = m_rf.check("useCameraFOV") ? m_rf.find("useCameraFOV").asString()=="true" : false;
 
     // --------- RGBDSensor config --------- //
     Property rgbdProp;
@@ -238,6 +242,7 @@ bool NextHeadOrient::configure()
     return true;
 }
 
+// ********************************************** //
 bool NextHeadOrient::next(Bottle& reply)
 {
     lock_guard<mutex> m_lock(m_mutex);
@@ -258,6 +263,7 @@ bool NextHeadOrient::next(Bottle& reply)
     return false;
 }
 
+// ********************************************** //
 void NextHeadOrient::help()
 {
     yCInfo(NEXT_HEAD_ORIENT,"next : responds the next unchecked orientation or noOrient");
@@ -268,23 +274,29 @@ void NextHeadOrient::help()
     yCInfo(NEXT_HEAD_ORIENT,"help : gets this list");
 }
 
+// ********************************************** //
 bool NextHeadOrient::turn(Bottle& reply)
 { 
     lock_guard<mutex> m_lock(m_mutex);
-    if (m_current_turn<m_max_turns)
+    if (m_turning && m_current_turn<m_max_turns)
+    {
         reply.addFloat32(m_turn_deg);
+        m_current_turn++;
+    }
     else
         reply.addString("noTurn");
     
-    m_current_turn++;
+    
     return true;
 }
 
+// ********************************************** //
 void NextHeadOrient::resetTurns()
 { 
-    m_current_turn = 0;
+    m_current_turn = 1;
 }
 
+// ********************************************** //
 bool NextHeadOrient::set(const string& pos, const string& status)
 {
     lock_guard<mutex> m_lock(m_mutex);
@@ -319,6 +331,7 @@ bool NextHeadOrient::set(const string& pos, const string& status)
     return true;
 }
 
+// ********************************************** //
 void NextHeadOrient::home()
 {    
     // ------ set head to Position control mode ------ //
@@ -341,6 +354,7 @@ void NextHeadOrient::home()
     
 }
 
+// ********************************************** //
 bool NextHeadOrient::close()
 {
     if(m_Poly.isValid())

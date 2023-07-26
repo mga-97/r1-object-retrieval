@@ -90,13 +90,15 @@ class YarpMdetr(yarp.RFModule):
                 reply.addString('not found')
             else:
                 reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
+                bout = self.output_coords_port.prepare()
+                bout.clear()
+                bout.addFloat32(self.x_bbox)
+                bout.addFloat32(self.y_bbox)
+                self.output_coords_port.write()
+            
             self.lock.release()
 
-            bout = self.output_coords_port.prepare()
-            bout.clear()
-            bout.addFloat32(self.x_bbox)
-            bout.addFloat32(self.y_bbox)
-            self.output_coords_port.write()
+            
 
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
