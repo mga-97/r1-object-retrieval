@@ -188,6 +188,11 @@ bool GoAndFindIt::goThereAndCheck(const string& what, const string& there)
     double toomuchtime = Time::now() + m_max_nav_time; //five minutes to reach "there"
     while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
     {
+        if (currentStatus == yarp::dev::Nav2D::navigation_status_aborted)
+        {
+            return false;
+        }
+
         if (Time::now() > toomuchtime)
         {
             yCError(GO_AND_FIND_IT,"Too much time has passed to navigate to %s.",there.c_str());
@@ -250,9 +255,6 @@ void GoAndFindIt::onRead(Bottle& b)
         if(!goThereAndCheck(what,where))
         {
             yCWarning(GO_AND_FIND_IT,"Terminating the search");
-
-            // ////////////////////////////// TO ADD: ask if the user wants to continue the search in the other locations  //////////////////////////////
-
             result = false;
         }
         else
@@ -266,52 +268,69 @@ void GoAndFindIt::onRead(Bottle& b)
         m_nextLoc_rpc_port.write(request,_rep_);
 
     }
-    else if(b.size() == 1)      //expected "<object>"
+    else if(b.size() == 1)      //expected "<object>" or "stop"
     {
         string what = b.get(0).asString();
         string where;
 
         // ////////////////////////////// TO ADD: ask PAVIS if it sees "what"   //////////////////////////////
         // ////////////////////////////// and therefore goThereAndCheck         //////////////////////////////
-
-        bool stillSomeLocationsToCheck {true};
-        while (stillSomeLocationsToCheck)
+        if (what == "stop")
         {
-            Bottle request,reply;
-            request.addString("next");
-            if(m_nextLoc_rpc_port.write(request,reply))
+            m_iNav2D->stopNavigation();
+            return;
+        }
+        else
+        {
+            bool stillSomeLocationsToCheck {true};
+            yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
+
+            while (stillSomeLocationsToCheck)
             {
-                where = reply.get(0).asString(); 
-                if (where != "noLocation")
+                Bottle request,reply;
+                request.addString("next");
+                if(m_nextLoc_rpc_port.write(request,reply))
                 {
-                    if(!goThereAndCheck(what,where))
+                    where = reply.get(0).asString(); 
+                    if (where != "noLocation")
                     {
-                        yCWarning(GO_AND_FIND_IT,"%s not found at %s", what.c_str(), where.c_str());
+                        if(!goThereAndCheck(what,where))
+                        {
+                            yCWarning(GO_AND_FIND_IT,"%s not found at %s", what.c_str(), where.c_str());
+                        }
+                        else
+                        {
+                            yCInfo(GO_AND_FIND_IT,"%s found at %s!", what.c_str(), where.c_str());
+                            result = true;
+                            stillSomeLocationsToCheck = false;
+                        }
+
+                        Bottle request,_rep_;
+                        request.fromString("set " + where + " checked");
+                        m_nextLoc_rpc_port.write(request,_rep_);
+                        
+                        m_iNav2D->getNavigationStatus(currentStatus);
+                        if (currentStatus == yarp::dev::Nav2D::navigation_status_aborted)
+                        {
+                            yCWarning(GO_AND_FIND_IT,"Terminating the search");
+                            break;
+                        }
                     }
-                    else
+                    else 
                     {
-                        yCInfo(GO_AND_FIND_IT,"%s found at %s!", what.c_str(), where.c_str());
-                        result = true;
+                        yCWarning(GO_AND_FIND_IT,"%s not found. Nowhere else to go", what.c_str());
+                        result = false;
                         stillSomeLocationsToCheck = false;
                     }
-
-                    Bottle request,_rep_;
-                    request.fromString("set " + where + " checked");
-                    m_nextLoc_rpc_port.write(request,_rep_);
                 }
-                else 
+                else
                 {
-                    yCWarning(GO_AND_FIND_IT,"%s not found. Nowhere else to go", what.c_str());
-                    result = false;
-                    stillSomeLocationsToCheck = false;
+                    yCError(GO_AND_FIND_IT,"Error trying to contact nextLocPlanner");
+                    break;
                 }
-            }
-            else
-            {
-                yCError(GO_AND_FIND_IT,"Error trying to contact nextLocPlanner");
-                break;
             }
         }
+         
     }
     else
     {
