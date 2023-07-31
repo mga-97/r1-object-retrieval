@@ -30,7 +30,6 @@ bool NextHeadOrient::configure()
     m_period = m_rf.check("period")  ? m_rf.find("period").asFloat32() : 1.0;
     m_overlap = m_rf.check("fov_overlap_degrees")  ? m_rf.find("fov_overlap_degrees").asFloat32() : 5.0;
     m_turning = m_rf.check("turning")  ? !(m_rf.find("turning").asString() == "false") : true;
-    yCDebug(NEXT_HEAD_ORIENT)<< "m_turning:" << m_turning;
 
     bool useFov = m_rf.check("useCameraFOV") ? m_rf.find("useCameraFOV").asString()=="true" : false;
 

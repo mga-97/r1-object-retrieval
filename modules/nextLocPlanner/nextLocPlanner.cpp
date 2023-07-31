@@ -132,37 +132,68 @@ double NextLocPlanner::getPeriod()
 /****************************************************************/
 bool NextLocPlanner::setLocationStatus(const std::string location_name, const std::string& location_status)
 {
-    std::vector<std::string>::iterator findUnchecked {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
-    std::vector<std::string>::iterator findChecking {std::find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
-    std::vector<std::string>::iterator findChecked {std::find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
-    
-    bool locFound { findUnchecked != m_locations_unchecked.end() || findChecking != m_locations_checking.end() || findChecked != m_locations_checked.end()};
-    if (!locFound) 
-    {
-        yCError(NEXT_LOC_PLANNER,"Error: location specified not found");
-        return false;
-    }
-
-    if ( !(location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED" ||
-            location_status == "checking" || location_status == "Checking"  || location_status == "CHECKING"  ||
-            location_status == "checked"  || location_status == "Checked"   || location_status == "CHECKED")  ) 
+    bool uncheckedOk = (location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED" );
+    bool checkingOk  = (location_status == "checking" || location_status == "Checking"  || location_status == "CHECKING"   );
+    bool checkedOk   = (location_status == "checked"  || location_status == "Checked"   || location_status == "CHECKED"    );
+    if ( !(uncheckedOk || checkedOk || checkingOk)  ) 
     { 
         yCError(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
         return false;
     }
 
-    if (findUnchecked != m_locations_unchecked.end())   { m_locations_unchecked.erase(findUnchecked);}
-    else if(findChecking != m_locations_checking.end()) { m_locations_checking.erase(findChecking);  }
-    else if(findChecked != m_locations_checked.end())   { m_locations_checked.erase(findChecked);    }
+    std::vector<std::string>::iterator findUnchecked {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
+    std::vector<std::string>::iterator findChecking {std::find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
+    std::vector<std::string>::iterator findChecked {std::find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
+    bool locFound { findUnchecked != m_locations_unchecked.end() || findChecking != m_locations_checking.end() || findChecked != m_locations_checked.end()};
+
+    if (locFound) 
+    {
+        if (findUnchecked != m_locations_unchecked.end())   { m_locations_unchecked.erase(findUnchecked);}
+        else if(findChecking != m_locations_checking.end()) { m_locations_checking.erase(findChecking);  }
+        else if(findChecked != m_locations_checked.end())   { m_locations_checked.erase(findChecked);    }
 
 
-    if (location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED")  
-        {m_locations_unchecked.push_back(location_name); }
-    else if (location_status == "checking" || location_status == "Checking" || location_status == "CHECKING")  
-        {m_locations_checking.push_back(location_name); }
-    else if (location_status == "checked" || location_status == "Checked" || location_status == "CHECKED")  
-        {m_locations_checked.push_back(location_name); }
+        if (uncheckedOk)  
+            {m_locations_unchecked.push_back(location_name); }
+        else if (checkingOk)  
+            {m_locations_checking.push_back(location_name); }
+        else if (checkedOk)  
+            {m_locations_checked.push_back(location_name); }
+    }
+    else if (location_name=="all")
+    {
+        
+        if (uncheckedOk)   
+        {
+            m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checked.begin(), m_locations_checked.end());
+            m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checking.begin(), m_locations_checking.end());
+            m_locations_checking.clear();
+            m_locations_checked.clear();
+        }
+        else if (checkingOk)    
+        {
+            m_locations_checking.insert(m_locations_checking.end(), m_locations_checked.begin(), m_locations_checked.end());
+            m_locations_checking.insert(m_locations_checking.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
+            m_locations_unchecked.clear();
+            m_locations_checked.clear();
+        }
+        else if (checkedOk)    
+        {
+            m_locations_checked.insert(m_locations_checked.end(), m_locations_checking.begin(), m_locations_checking.end());
+            m_locations_checked.insert(m_locations_checked.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
+            m_locations_unchecked.clear();
+            m_locations_checking.clear();
+        }
 
+    }
+    else
+    {
+        yCError(NEXT_LOC_PLANNER,"Error: specified location name not found.");
+        return false;
+    }
+
+    sortUncheckedLocations();
+    
     return true;
 }
 
@@ -170,7 +201,7 @@ bool NextLocPlanner::setLocationStatus(const std::string location_name, const st
 /****************************************************************/
 bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
 {
-    std::lock_guard<std::mutex> m_lock(m_mutex);
+    std::lock_guard<std::mutex>  lock(m_mutex);
     reply.clear();
     std::string cmd_0=cmd.get(0).asString();
     if (cmd.size()==1)
@@ -307,51 +338,9 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             std::string cmd_1=cmd.get(1).asString();
             std::string cmd_2=cmd.get(2).asString();
 
-            bool locFound {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), cmd_1) != m_locations_unchecked.end() ||
-                           std::find(m_locations_checking.begin(), m_locations_checking.end(), cmd_1) != m_locations_checking.end() ||
-                           std::find(m_locations_checked.begin(), m_locations_checked.end(), cmd_1) != m_locations_checked.end()};
-            if(locFound) 
-            {
-                if(!setLocationStatus(cmd_1, cmd_2))
-                {
-                    reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                }
-            }
-            else if (cmd_1=="all")
-            {
-                
-                if (cmd_2 == "unchecked" || cmd_2 == "Unchecked" || cmd_2 == "UNCHECKED")   
-                {
-                    m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checked.begin(), m_locations_checked.end());
-                    m_locations_unchecked.insert(m_locations_unchecked.end(), m_locations_checking.begin(), m_locations_checking.end());
-                    m_locations_checking.clear();
-                    m_locations_checked.clear();
-                }
-                else if (cmd_2 == "checking" || cmd_2 == "Checking" || cmd_2 == "CHECKING")    
-                {
-                    m_locations_checking.insert(m_locations_checking.end(), m_locations_checked.begin(), m_locations_checked.end());
-                    m_locations_checking.insert(m_locations_checking.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
-                    m_locations_unchecked.clear();
-                    m_locations_checked.clear();
-                }
-                else if (cmd_2 == "checked" || cmd_2 == "Checked" || cmd_2 == "CHECKED")    
-                {
-                    m_locations_checked.insert(m_locations_checked.end(), m_locations_checking.begin(), m_locations_checking.end());
-                    m_locations_checked.insert(m_locations_checked.end(), m_locations_unchecked.begin(), m_locations_unchecked.end());
-                    m_locations_unchecked.clear();
-                    m_locations_checking.clear();
-                }
-                else 
-                { 
-                    yCError(NEXT_LOC_PLANNER,"Error: wrong location status specified. You should use: unchecked, checking or checked.");
-                    reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                }
-
-            }
-            else
+            if(!setLocationStatus(cmd_1, cmd_2))
             {
                 reply.addVocab32(yarp::os::Vocab32::encode("nack"));
-                yCWarning(NEXT_LOC_PLANNER,"Error: specified location name not found.");
             }
         }
         else
@@ -439,9 +428,17 @@ double NextLocPlanner::distRobotLocation(const std::string& location_name)
 bool NextLocPlanner::updateModule()
 {   
     
-    std::lock_guard<std::mutex> m_lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-    // --- Sorting m_locations_unchecked by its distance from the robot  --- //
+    sortUncheckedLocations();
+    
+    return true;
+}
+
+
+/****************************************************************/
+void NextLocPlanner::sortUncheckedLocations()
+{
     std::vector<double> m_unchecked_dist;
     for(size_t i=0; i<m_locations_unchecked.size(); ++i)
     {
@@ -461,6 +458,4 @@ bool NextLocPlanner::updateModule()
 
     // Write the sorted pairs back to the original vectors
     unzip(zipped, m_locations_unchecked, m_unchecked_dist);
-    
-    return true;
 }

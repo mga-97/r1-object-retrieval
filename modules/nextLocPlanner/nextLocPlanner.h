@@ -67,6 +67,7 @@ public:
     bool getCurrentCheckingLocation(std::string& location_name);
     bool getUncheckedLocations(std::vector<std::string>& location_list);
     bool getCheckedLocations(std::vector<std::string>& location_list);
+    void sortUncheckedLocations();
 
 private:
     double distRobotLocation(const std::string& location_name);

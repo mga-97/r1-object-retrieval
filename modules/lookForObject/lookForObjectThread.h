@@ -45,6 +45,7 @@ protected:
 
     //Others
     double                      m_wait_for_search;
+    bool                        m_ext_stop;
     yarp::os::ResourceFinder&   m_rf;
     
     NextHeadOrient*             m_nextHeadOrient;
@@ -65,6 +66,7 @@ public:
     void onRead(yarp::os::Bottle& b) override;
 
     bool lookAround(std::string& ob);
+    void externalStop();
 
 };
 

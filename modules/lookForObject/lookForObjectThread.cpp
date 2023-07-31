@@ -29,7 +29,8 @@ bool print{true};
 LookForObjectThread::LookForObjectThread(double _period, yarp::os::ResourceFinder &rf):
     PeriodicThread(_period),
     TypedReaderCallback(),
-    m_rf(rf)
+    m_rf(rf),
+    m_ext_stop(false)
 {
     //Defaults
     m_outPortName = "/lookForObject/out:o";
@@ -120,7 +121,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
     }
 
     int idx {1};
-    while (true)
+    while (!m_ext_stop)
     {
         //retrieve next head orientation
         Bottle replyOrient;
@@ -140,6 +141,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
             targetList1.addFloat32(tmpBottle->get(0).asFloat32());
             targetList1.addFloat32(tmpBottle->get(1).asFloat32());
             m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
+            
             yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot tilting its head
 
             //search for object
@@ -159,6 +161,8 @@ bool LookForObjectThread::lookAround(std::string& ob)
             string headPosName = "pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
             m_nextHeadOrient->set(headPosName,"checked");
             idx++;
+
+            yarp::os::Time::delay(0.2);
         }
         else
         {
@@ -180,15 +184,24 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
     }
     else 
     {
+        std::string obj {b.get(0).asString()};
+        yCDebug(LOOK_FOR_OBJECT_THREAD, "obj: %s", obj.c_str());
+        
         if(b.size() > 1)
         {
             yCWarning(LOOK_FOR_OBJECT_THREAD,"The input bottle has the wrong number of elements. Using only the first element.");
         }
+        
+        if (obj=="stop") 
+        { 
+            externalStop(); 
+        }
+        else
+            m_ext_stop = false;
 
-        std::string obj {b.get(0).asString()};
         bool objectFound {false};
 
-        while (!objectFound)
+        while (!objectFound && !m_ext_stop)
         {
             objectFound = lookAround(obj);
             
@@ -209,9 +222,9 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                     m_iNav2D->gotoTargetByAbsoluteLocation(loc);
                     yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
                     m_iNav2D->getNavigationStatus(currentStatus);
-                    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
+                    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached  && !m_ext_stop  )
                     {
-                        yarp::os::Time::delay(1.0);
+                        yarp::os::Time::delay(0.2);
                         m_iNav2D->getNavigationStatus(currentStatus);
                     }
                 }
@@ -248,4 +261,19 @@ void LookForObjectThread::threadRelease()
     yCInfo(LOOK_FOR_OBJECT_THREAD, "Thread released");
 
     return;
+}
+
+void LookForObjectThread::externalStop()
+{
+    
+    yCWarning(LOOK_FOR_OBJECT_THREAD, "External stop command received");
+    m_ext_stop = true;
+
+    yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
+    m_iNav2D->getNavigationStatus(currentStatus);
+    if (currentStatus == yarp::dev::Nav2D::navigation_status_moving)
+        m_iNav2D->stopNavigation();
+        yCInfo(LOOK_FOR_OBJECT_THREAD, "Navigation stopped");
+    
+    yCDebug(LOOK_FOR_OBJECT_THREAD) <<  "m_ext_stop:" << (int)m_ext_stop ;
 }
