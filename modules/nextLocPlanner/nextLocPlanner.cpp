@@ -113,7 +113,7 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
 bool NextLocPlanner::close()
 {
 
-    if (!m_rpc_server_port.asPort().isOpen())
+    if (m_rpc_server_port.asPort().isOpen())
         m_rpc_server_port.close();
 
     if(m_nav2DPoly.isValid())
@@ -233,7 +233,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         else if (cmd_0=="help")
         {
             reply.addVocab32("many");
-            reply.addString("next : responds the next unchecked location or noLocation");
+            reply.addString("next : returns the next unchecked location or noLocation");
             reply.addString("set <locationName> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all locations");
             reply.addString("find <locationName> : checks if a location is in the list of the available ones");

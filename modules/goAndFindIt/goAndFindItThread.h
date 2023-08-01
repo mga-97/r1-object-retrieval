@@ -99,6 +99,7 @@ public:
 
     string getWhat();
     string getWhere();
+    string getStatus();
 
 };
 

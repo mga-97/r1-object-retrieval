@@ -36,13 +36,20 @@
 
    <module>
       <name>nextLocPlanner</name>
-      <parameters>--context nextLocPlanner --from nextLocPlanner_R1.ini</parameters>
+      <parameters>--context nextLocPlanner --from nextLocPlanner_R1_SIM.ini</parameters>
       <node>console</node>
    </module>
 
    <module>
       <name>goAndFindIt</name>
-      <parameters>--context goAndFindIt --from goAndFindIt_R1_SIM.ini</parameters>
+      <parameters>--context goAndFindIt --from goAndFindIt_R1.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>yarpmotorgui</name>
+      <parameters></parameters>
+      <workdir>/home/user1/robotology/cer-sim/conf/</workdir>
       <node>console</node>
    </module>
 

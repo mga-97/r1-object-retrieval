@@ -26,17 +26,18 @@ YARP_LOG_COMPONENT(GO_AND_FIND_IT, "r1_obr.goAndFindIt")
 GoAndFindIt::GoAndFindIt() : m_period(1.0) 
 {
     m_input_port_name       = "/goAndFindIt/input:i";
+    m_rpc_server_port_name  = "/goAndFindIt/rpc";
 }
 
 
 /****************************************************************/
-bool GoAndFindIt::configure(yarp::os::ResourceFinder &rf)
+bool GoAndFindIt::configure(ResourceFinder &rf)
 {
     //Generic config
     if(rf.check("period"))
         m_period = rf.find("period").asFloat32();
 
-    //Open ports
+    //Open input port
     if(rf.check("input_port"))
         m_input_port_name = rf.find("input_port").asString();
     m_input_port.useCallback(*this);
@@ -44,6 +45,20 @@ bool GoAndFindIt::configure(yarp::os::ResourceFinder &rf)
         yCError(GO_AND_FIND_IT) << "Cannot open port" << m_input_port_name; 
     else
         yCInfo(GO_AND_FIND_IT) << "opened port" << m_input_port_name;
+
+    //Open RPC Server Port
+    if(rf.check("rpc_port"))
+        m_rpc_server_port_name = rf.find("rpc_port").asString();
+    if (!m_rpc_server_port.open(m_rpc_server_port_name))
+    {
+        yCError(GO_AND_FIND_IT, "open() error could not open rpc port %s, check network", m_rpc_server_port_name.c_str());
+        return false;
+    }
+    if (!attach(m_rpc_server_port))
+    {
+        yCError(GO_AND_FIND_IT, "attach() error with rpc port %s", m_rpc_server_port_name.c_str());
+        return false;
+    }
 
     //Initialize Thread
     m_thread = new GoAndFindItThread(rf);
@@ -60,7 +75,10 @@ bool GoAndFindIt::configure(yarp::os::ResourceFinder &rf)
 bool GoAndFindIt::close()
 {
     if (!m_input_port.isClosed())
-        m_input_port.close();    
+        m_input_port.close(); 
+
+    if (m_rpc_server_port.asPort().isOpen())
+        m_rpc_server_port.close();   
     
     m_thread->stop();
     delete m_thread;
@@ -80,8 +98,6 @@ bool GoAndFindIt::updateModule()
     return true;
 }
 
-
-
 /****************************************************************/
 void GoAndFindIt::onRead(Bottle& b) 
 {
@@ -96,7 +112,7 @@ void GoAndFindIt::onRead(Bottle& b)
         m_thread->setWhatWhere(what,where);
 
     }
-    else if(b.size() == 1)      //expected "<object>" or "stop"
+    else if(b.size() == 1)      //expected "<object>" or "stop"/"reset"/"resume"
     {
         string what = b.get(0).asString();
 
@@ -128,3 +144,96 @@ void GoAndFindIt::onRead(Bottle& b)
     
 }
 
+/****************************************************************/
+bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
+{
+    reply.clear();
+    string cmd_0=cmd.get(0).asString();
+    if (cmd.size()==1)
+    {
+        if (cmd_0=="help")
+        {
+            reply.addVocab32("many");
+            reply.addString("search <what> : starts to search for 'what'");
+            reply.addString("search <what> <where>: starts searching for 'what' at location 'where'");
+            reply.addString("status : returns the current status of the search");
+            reply.addString("what   : returns the object of the current search");
+            reply.addString("where  : returns the location of the current search");
+            reply.addString("stop   : stops search");
+            reply.addString("resume : resumes stopped search");
+            reply.addString("reset  : resets search");
+            reply.addString("help   : gets this list");
+        }
+        else if (cmd_0=="what")
+        {
+            reply.addString(m_thread->getWhat());
+        }
+        else if (cmd_0=="where")
+        {
+            reply.addString(m_thread->getWhere());
+        }
+        else if (cmd_0=="status")
+        {
+            reply.addString(m_thread->getStatus());
+        }
+        else if (cmd_0=="stop")
+        {
+            m_thread->stopSearch();
+            reply.addString("search stopped");
+        }
+        else if (cmd_0=="resume")
+        {
+            m_thread->resumeSearch();
+            reply.addString("search resumed");
+        }
+        else if (cmd_0=="reset")
+        {
+            m_thread->resetSearch();
+            reply.addString("search reset");
+        }
+        else
+        {
+            reply.addVocab32(Vocab32::encode("nack"));
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+        }
+    }
+    else if (cmd.size()==2)
+    {
+        if (cmd_0=="search")
+        {
+            string what=cmd.get(1).asString();
+            m_thread->setWhat(what);
+            reply.addString("searching for '" + what + "'");
+        }
+        else
+        {
+            reply.addVocab32(Vocab32::encode("nack"));
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+        }
+    }
+    else if (cmd.size()==3)
+    {
+        if (cmd_0=="search")
+        {
+            string what=cmd.get(1).asString();
+            string where=cmd.get(2).asString();
+            m_thread->setWhatWhere(what,where);
+            reply.addString("searching for '" + what + "' at '" + where + "'");
+        }
+        else
+        {
+            reply.addVocab32(Vocab32::encode("nack"));
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+        }
+    }
+    else
+    {
+        reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+        yCWarning(GO_AND_FIND_IT,"Error: input RPC command bottle has a wrong number of elements.");
+    }
+
+    if (reply.size()==0)
+        reply.addVocab32(yarp::os::Vocab32::encode("ack")); 
+
+    return true;
+}

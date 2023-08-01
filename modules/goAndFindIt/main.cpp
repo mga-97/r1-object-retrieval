@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultConfigFile("goAndFindIt_R1_SIM.ini");             //overridden by --from parameter
+    rf.setDefaultConfigFile("goAndFindIt_R1.ini");             //overridden by --from parameter
     rf.setDefaultContext("goAndFindIt");                           //overridden by --context parameter
     rf.configure(argc,argv);
     GoAndFindIt mod;

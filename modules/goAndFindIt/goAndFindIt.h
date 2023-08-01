@@ -28,23 +28,27 @@ using namespace yarp::dev;
 
 class GoAndFindIt : public RFModule, public TypedReaderCallback<Bottle>
 {
-    private:
-        double              m_period;
-        GoAndFindItThread*  m_thread;
+private:
+    double              m_period;
+    GoAndFindItThread*  m_thread;
 
-        //Ports
-        BufferedPort<Bottle>    m_input_port;  
-        string                  m_input_port_name;   
-        
-    public:
-        GoAndFindIt();
-        virtual bool configure(ResourceFinder &rf);
-        virtual bool close();
-        virtual double getPeriod();
-        virtual bool updateModule();
+    //Ports
+    BufferedPort<Bottle>    m_input_port; 
+    RpcServer               m_rpc_server_port; 
+    string                  m_input_port_name; 
+    string                  m_rpc_server_port_name;  
+    
+public:
+    GoAndFindIt();
+    virtual bool configure(ResourceFinder &rf);
+    virtual bool close();
+    virtual double getPeriod();
+    virtual bool updateModule();
 
-        using TypedReaderCallback<Bottle>::onRead;
-        void onRead(Bottle& btl) override;
+    using TypedReaderCallback<Bottle>::onRead;
+    void onRead(Bottle& btl) override;
+
+    bool respond(const Bottle &cmd, Bottle &reply);
 };
 
 #endif 

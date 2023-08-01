@@ -37,8 +37,8 @@ GoAndFindItThread::GoAndFindItThread(yarp::os::ResourceFinder &rf) :
     m_lookObject_port_name  = "/goAndFindIt/lookForObject/object:o";
     m_objectFound_port_name = "/goAndFindIt/lookForObject/result:i";
     m_output_port_name      = "/goAndFindIt/output:o";
-    m_max_nav_time = 300.0;
-    m_max_search_time = 120.0;
+    m_max_nav_time          = 300.0;
+    m_max_search_time       = 120.0;
 }
 
 /****************************************************************/
@@ -124,7 +124,7 @@ bool GoAndFindItThread::threadInit()
 void GoAndFindItThread::threadRelease()
 {
        
-    if (!m_nextLoc_rpc_port.asPort().isOpen())
+    if (m_nextLoc_rpc_port.asPort().isOpen())
         m_nextLoc_rpc_port.close();  
 
     if (!m_lookObject_port.isClosed())
@@ -154,13 +154,25 @@ void GoAndFindItThread::run()
         if (m_status == GaFI_NEW_SEARCH)
         {
             lock_guard<mutex> lock(m_mutex);
-            nextWhere();
+            if(m_what != "")
+                nextWhere();
+            else 
+            {
+                yCError(GO_AND_FIND_IT_THREAD,"Invalid object to search");
+                m_status = GaFI_IDLE;
+            }
         }
 
         else if (m_status == GaFI_NAVIGATING)
         {
             lock_guard<mutex> lock(m_mutex);
-            goThere();
+            if(m_what != "")
+                goThere();
+            else 
+            {
+                yCError(GO_AND_FIND_IT_THREAD,"Invalid object to search");
+                m_status = GaFI_IDLE;
+            }
         }
 
         else if (m_status == GaFI_ARRIVED)
@@ -202,6 +214,7 @@ void GoAndFindItThread::run()
     }
 
 }
+
 
 /****************************************************************/
 void GoAndFindItThread::setWhat(string& what)
@@ -470,6 +483,8 @@ bool GoAndFindItThread::resetSearch()
 {
     stopSearch();
     m_where_specified = false;
+    m_what = "";
+    m_where = "";
 
     Bottle request,reply;
     request.fromString("set all unchecked");
@@ -488,6 +503,43 @@ string GoAndFindItThread::getWhat()
 string GoAndFindItThread::getWhere()
 {
     return m_where;
+}
+
+/****************************************************************/
+string GoAndFindItThread::getStatus()
+{
+    string str;
+    switch (m_status)
+    {
+    case GaFI_IDLE:
+        str = "idle";
+        break;
+    case GaFI_NEW_SEARCH:
+        str = "new_search";
+        break;
+    case GaFI_NAVIGATING:
+        str = "navigating";
+        break;
+    case GaFI_ARRIVED:
+        str = "arrived";
+        break;
+    case GaFI_SEARCHING:
+        str = "searching";
+        break;
+    case GaFI_OBJECT_FOUND:
+        str = "object_found";
+        break;
+    case GaFI_OBJECT_NOT_FOUND:
+        str = "object_not_found";
+        break;
+    case GaFI_STOP:
+        str = "stop";
+        break;
+    default:
+        break;
+    };
+
+    return str;
 }
 
 /****************************************************************/

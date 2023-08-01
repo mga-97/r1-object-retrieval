@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultConfigFile("nextLocPlanner_R1.ini");             //overridden by --from parameter
+    rf.setDefaultConfigFile("nextLocPlanner_R1.ini");                 //overridden by --from parameter
     rf.setDefaultContext("nextLocPlanner");                           //overridden by --context parameter
     rf.configure(argc,argv);
     NextLocPlanner nlp;

@@ -7,7 +7,7 @@ An RPC port is also opened (default name: /nextLocPlanner/request/rpc)
 
 ## Usage:
 Possible RPC commands:
-- `next` : responds the next unchecked location or noLocation
+- `next` : returns the next unchecked location or noLocation
 - `set <locationName> <status>` : sets the status of a location to unchecked, checking or checked
 - `set all <status>` : sets the status of all locations
 - `find <locationName>` : checks if a location is in the list of the available ones
