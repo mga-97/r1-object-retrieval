@@ -60,6 +60,13 @@
       <node>console</node>
    </module>
 
+   <module>
+      <name>./goHome.sh</name>
+      <parameters></parameters>
+      <workdir>/home/user1/robotology/cer/app/handPointing/scripts/</workdir>
+      <node>console</node>
+   </module>
+
    <!--  CONNECTIONS  -->
    <connection>
       <from>/cer/realsense_repeater/rgbImage:o</from>
