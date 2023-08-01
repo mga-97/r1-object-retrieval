@@ -27,9 +27,19 @@
 #include "nextHeadOrient.h"
 
 
-class LookForObjectThread : public yarp::os::PeriodicThread, 
-                         public yarp::os::TypedReaderCallback<yarp::os::Bottle>
+class LookForObjectThread : public yarp::os::Thread, 
+                            public yarp::os::TypedReaderCallback<yarp::os::Bottle>
 {
+enum LfO_status 
+{
+    LfO_IDLE,
+    LfO_SEARCHING,
+    LfO_TURNING,
+    LfO_OBJECT_FOUND,
+    LfO_OBJECT_NOT_FOUND,
+    LfO_STOP      
+};
+
 protected:
     //Devices
     yarp::dev::PolyDriver            m_nav2DPoly;
@@ -44,6 +54,8 @@ protected:
     yarp::os::BufferedPort<yarp::os::Bottle>    m_gazeTargetOutPort;
 
     //Others
+    LfO_status                  m_status;
+    std::string                 m_object;
     double                      m_wait_for_search;
     bool                        m_ext_stop;
     yarp::os::ResourceFinder&   m_rf;
@@ -53,19 +65,22 @@ protected:
 
 public:
     //Contructor and distructor
-    LookForObjectThread(double _period, yarp::os::ResourceFinder &rf);
+    LookForObjectThread(yarp::os::ResourceFinder &rf);
     ~LookForObjectThread() = default;
 
     //methods inherited from PeriodicThread
     virtual void run() override;
     virtual bool threadInit() override;
     virtual void threadRelease() override;
+    virtual void onStop() override;
 
     //Port inherited from TypedReaderCallback
     using TypedReaderCallback<yarp::os::Bottle>::onRead;
     void onRead(yarp::os::Bottle& b) override;
 
     bool lookAround(std::string& ob);
+    bool turn();
+    bool writeResult(bool objFound);
     void externalStop();
 
 };

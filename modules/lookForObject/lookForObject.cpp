@@ -29,11 +29,7 @@ LookForObject::LookForObject() :
 bool LookForObject::configure(yarp::os::ResourceFinder &rf) 
 {   
 
-    if(rf.check("period")){m_period = rf.find("period").asFloat32();}
-
-    double threadPeriod = 0.02;
-    if(rf.check("thread_period")){threadPeriod = rf.find("thread_period").asFloat32();}
-  
+    if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
 
     std::string portName = "/lookForObject/object:i";
     if(rf.check("input_object_port")){portName = rf.find("input_object_port").asString();}
@@ -45,7 +41,7 @@ bool LookForObject::configure(yarp::os::ResourceFinder &rf)
     }
    
     // --------- Thread initialization --------- //
-    m_innerThread = new LookForObjectThread(threadPeriod,rf);
+    m_innerThread = new LookForObjectThread(rf);
     bool threadOk = m_innerThread->start();
     if (!threadOk){
         return false;

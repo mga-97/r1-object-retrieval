@@ -104,6 +104,10 @@ void GoAndFindIt::onRead(Bottle& b)
         {
             m_thread->stopSearch();            
         }
+        else if (what == "resume")
+        {
+            m_thread->resumeSearch();            
+        }
         else if (what == "reset")
         {
             m_thread->resetSearch();            

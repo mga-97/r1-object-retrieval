@@ -154,25 +154,19 @@ void GoAndFindItThread::run()
         if (m_status == GaFI_NEW_SEARCH)
         {
             lock_guard<mutex> lock(m_mutex);
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_NEW_SEARCH what:" << m_what.c_str() << "where:" << m_where.c_str() << "WHERE_SPECIF:" << m_where_specified; 
             nextWhere();
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_NEW_SEARCH END what:" << m_what.c_str() << "where:" << m_where.c_str() << "status:" << int(m_status) << "WHERE_SPECIF:" << m_where_specified;
         }
 
         else if (m_status == GaFI_NAVIGATING)
         {
             lock_guard<mutex> lock(m_mutex);
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_NAVIGATING -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "WHERE_SPECIF:" << m_where_specified;
             goThere();
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_NAVIGATING END -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "status:" << int(m_status) << "WHERE_SPECIF:" << m_where_specified;
         }
 
         else if (m_status == GaFI_ARRIVED)
         {
             lock_guard<mutex> lock(m_mutex);
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_ARRIVED -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "WHERE_SPECIF:" << m_where_specified;
-            search();   
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_ARRIVED END -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "status:" << int(m_status) << "WHERE_SPECIF:" << m_where_specified;        
+            search(); 
         }
 
         else if (m_status == GaFI_SEARCHING && Time::now() - m_searching_time > m_max_search_time) //two minutes to find "m_what"
@@ -184,17 +178,13 @@ void GoAndFindItThread::run()
         else if (m_status == GaFI_OBJECT_FOUND)
         {
             lock_guard<mutex> lock(m_mutex);
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_OBJECT_FOUND -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "WHERE_SPECIF:" << m_where_specified;
             objFound();   
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_OBJECT_FOUND END -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "status:" << int(m_status) << "WHERE_SPECIF:" << m_where_specified;        
         } 
 
         else if (m_status == GaFI_OBJECT_NOT_FOUND)
         {
             lock_guard<mutex> lock(m_mutex);
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_OBJECT_NOT_FOUND -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "WHERE_SPECIF:" << m_where_specified;
             objNotFound();   
-            yCDebug(GO_AND_FIND_IT_THREAD) << "GaFI_OBJECT_NOT_FOUND END -- what:" << m_what.c_str() << "where:" << m_where.c_str() << "status:" << int(m_status) << "WHERE_SPECIF:" << m_where_specified;        
         } 
 
         else if (m_status == GaFI_IDLE)
@@ -216,7 +206,6 @@ void GoAndFindItThread::run()
 /****************************************************************/
 void GoAndFindItThread::setWhat(string& what)
 { 
-    lock_guard<mutex> lock(m_mutex);
     m_where_specified = false;
     
     if (what == m_what && m_status != GaFI_IDLE)
@@ -225,7 +214,15 @@ void GoAndFindItThread::setWhat(string& what)
     }
     else 
     {
-        resetSearch();  
+        if (m_status == GaFI_NAVIGATING)
+        {
+            resetSearch();
+            Time::delay(1.0);
+        }
+        else
+            resetSearch();
+ 
+        m_where = "";
         
         m_status = GaFI_NEW_SEARCH;  
         m_what = what;    
@@ -235,15 +232,20 @@ void GoAndFindItThread::setWhat(string& what)
 /****************************************************************/
 void GoAndFindItThread::setWhatWhere(string& what, string& where)
 {
-    lock_guard<mutex> lock(m_mutex);
-    
     if (what == m_what && where == m_where && m_status != GaFI_IDLE)
     {
         yCWarning(GO_AND_FIND_IT_THREAD, "Already looking for %s in location %s. If you want to perform a new search, please send reset command.", m_what.c_str(), m_where.c_str());
     }
     else 
     {
-        resetSearch();  
+        if (m_status == GaFI_NAVIGATING)
+        {
+            resetSearch();
+            Time::delay(1.0);
+        }
+        else
+            resetSearch();
+        
         m_where_specified = true;
 
         m_status = GaFI_NAVIGATING;
@@ -316,7 +318,7 @@ bool GoAndFindItThread::goThere()
 
     while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
     {
-        if (currentStatus == yarp::dev::Nav2D::navigation_status_aborted || m_status == GaFI_IDLE)
+        if (currentStatus == yarp::dev::Nav2D::navigation_status_aborted || m_status != GaFI_NAVIGATING)
         {
             yCWarning(GO_AND_FIND_IT_THREAD,"Navigation has been interrupted. Location not reached.");
             m_status = GaFI_IDLE;
@@ -414,6 +416,7 @@ bool GoAndFindItThread::objNotFound()
     request.fromString("set " + m_where + " checked");
     m_nextLoc_rpc_port.write(request,_rep_);
 
+
     return true;
 }
 
@@ -436,9 +439,28 @@ bool GoAndFindItThread::stopSearch()
     }
 
     m_status = GaFI_IDLE;
-    m_what = "";
-    m_where = "";
-    m_where_specified = false;
+
+    return true;
+}
+
+/****************************************************************/
+bool GoAndFindItThread::resumeSearch()
+{
+    if (m_where != "")
+    {
+        Bottle request,reply,btl;
+        request.fromString("find " + m_where);
+        m_nextLoc_rpc_port.write(request,reply);
+        
+        btl.fromString("ok checking") ;
+        if (reply == btl)
+        {
+            request.fromString("set " + m_where + " unchecked");
+            m_nextLoc_rpc_port.write(request,reply);
+        } 
+    }
+
+    m_status = GaFI_NEW_SEARCH;
 
     return true;
 }
@@ -447,6 +469,7 @@ bool GoAndFindItThread::stopSearch()
 bool GoAndFindItThread::resetSearch()
 {
     stopSearch();
+    m_where_specified = false;
 
     Bottle request,reply;
     request.fromString("set all unchecked");

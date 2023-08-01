@@ -5,4 +5,5 @@ To `/goAndFindIt/input:i` :
 - `<object> <where>`
 - `<object>`
 - `stop`
-- `reset`: stops search and reset locations status
+- `resume`
+- `reset`: stops search, resets what and where and reset locations status
