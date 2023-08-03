@@ -257,7 +257,10 @@ bool LookForObjectThread::lookAround(std::string& ob)
             if (m_findObjectPort.write(request,reply))
             {
                 if (reply.get(0).asString()!="not found")
+                {
                     objectFound = true;
+                    break;
+                }
             }
             else
             {

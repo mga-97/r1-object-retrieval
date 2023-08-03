@@ -1,20 +1,19 @@
 <application>
-   <name>R1_lookForObject_MDETR_SIM</name>
+   <name>R1_search_and_point_MDETR</name>
 
    <dependencies>
    </dependencies>
    
    <!--  MODULES  -->
    <application>
-        <name>Navigation_ROS2_R1_SIM</name>
+        <name>Navigation_ROS2_R1SN003</name>
         <prefix></prefix>
     </application>
 
-    <module>
-      <name>cer_gaze-controller</name>
-      <parameters>--cameras::context cameraCalibration --cameras::file cerSimEyes_640x480.ini --robot SIM_CER_ROBOT --joints-limits::pitch "(-20.0 20.0)" --joints-limits::yaw "(-40.0 40.0)"</parameters>
-      <node>console</node>
-   </module>
+    <application>
+        <name>R1_handPointing</name>
+        <prefix></prefix>
+    </application>
 
     <module>
 		<name>python3</name>
@@ -30,16 +29,29 @@
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from lookForObject_R1_SIM.ini</parameters>
+      <parameters>--context lookForObject --from search_and_point_R1.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>yarpmotorgui</name>
+      <parameters></parameters>
+      <workdir>/home/user1/robotology/robots-configuration/R1SN003/</workdir>
       <node>console</node>
    </module>
 
    <!--  CONNECTIONS  -->
    <connection>
-      <from>/SIM_CER_ROBOT/depthCamera/rgbImage:o</from>
+      <from>/cer/realsense_repeater/rgbImage:o</from>
       <to>/yarpMdetr/image:i</to>
       <protocol>tcp</protocol>
    </connection>
+   
+   <connection>
+      <from>/yarpMdetr/where_coords:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
 
    <connection>
       <from>/yarpMdetr/image:o</from>

@@ -41,7 +41,7 @@
    </connection>
    
    <connection>
-      <from>/yarpMdetr/bbox_coords:o</from>
+      <from>/yarpMdetr/where_coords:o</from>
       <to>/handPointing/clicked_point:i</to>
       <protocol>tcp</protocol>
    </connection> 
@@ -60,7 +60,7 @@
 
    <connection>
       <from>/lookForObject/findObject:rpc</from>
-      <to>/object_retrieval/command/rpc</to>
+      <to>/yarpMdetr/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
       

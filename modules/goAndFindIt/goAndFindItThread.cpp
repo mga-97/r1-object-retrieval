@@ -31,7 +31,8 @@ GoAndFindItThread::GoAndFindItThread(yarp::os::ResourceFinder &rf) :
     m_what(""),
     m_where(""),
     m_where_specified(false),
-    m_status(GaFI_IDLE)
+    m_status(GaFI_IDLE),
+    m_in_nav_position(false)
 {
     m_nextLoc_rpc_port_name = "/goAndFindIt/nextLocPlanner:rpc";
     m_lookObject_port_name  = "/goAndFindIt/lookForObject/object:o";
@@ -39,6 +40,7 @@ GoAndFindItThread::GoAndFindItThread(yarp::os::ResourceFinder &rf) :
     m_output_port_name      = "/goAndFindIt/output:o";
     m_max_nav_time          = 300.0;
     m_max_search_time       = 120.0;
+    m_setNavPos_time        = 3.0;
 }
 
 /****************************************************************/
@@ -49,6 +51,8 @@ bool GoAndFindItThread::threadInit()
         m_max_nav_time = m_rf.find("max_nav_time").asFloat32();
     if(m_rf.check("max_search_time"))
         m_max_search_time = m_rf.find("max_search_time").asFloat32();
+    if(m_rf.check("set_nav_pos_time"))
+        m_setNavPos_time = m_rf.find("set_nav_pos_time").asFloat32();
 
     //Open ports
     if(m_rf.check("nextLoc_rpc_port"))
@@ -117,6 +121,15 @@ bool GoAndFindItThread::threadInit()
         return false;
     }
 
+    // --------- getReadyToNav config --------- //
+    m_getReadyToNav = new GetReadyToNav();
+    bool ok{m_getReadyToNav->configure(m_rf)};
+    if(!ok)
+    {
+        yCError(GO_AND_FIND_IT_THREAD,"GetReadyToNav configuration failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -138,6 +151,8 @@ void GoAndFindItThread::threadRelease()
 
     if(m_nav2DPoly.isValid())
         m_nav2DPoly.close();
+    
+    m_getReadyToNav->close();
     
     yCInfo(GO_AND_FIND_IT_THREAD, "Thread released");
 
@@ -215,7 +230,6 @@ void GoAndFindItThread::run()
 
 }
 
-
 /****************************************************************/
 void GoAndFindItThread::setWhat(string& what)
 { 
@@ -282,14 +296,8 @@ void GoAndFindItThread::nextWhere()
         }
         else 
         {
-            yCWarning(GO_AND_FIND_IT_THREAD,"%s not found. Nowhere else to go", m_what.c_str());
-            
-            Bottle&  toSend = m_output_port.prepare();
-            toSend.clear();
-            toSend.addInt8(0);  //Search failed
-            m_output_port.write();
-            
-            m_status = GaFI_IDLE;
+            yCWarning(GO_AND_FIND_IT_THREAD,"Nowhere else to go");
+            m_status = GaFI_OBJECT_NOT_FOUND;
         }
     }
     else
@@ -299,9 +307,20 @@ void GoAndFindItThread::nextWhere()
     }
 }
 
+
+/****************************************************************/
+bool GoAndFindItThread::setNavigationPosition()
+{
+    m_getReadyToNav->navPosition();
+    m_in_nav_position = true;
+    Time::delay(m_setNavPos_time);
+
+    return true;
+}
+
 /****************************************************************/
 bool GoAndFindItThread::goThere()
-{
+{   
     //check if "m_where" is a valid location
     Bottle request,reply;
     request.fromString("find " + m_where);
@@ -320,6 +339,10 @@ bool GoAndFindItThread::goThere()
             return false;
         }   
     }
+
+    //setting navigation position, if needed
+    if(!m_in_nav_position)
+        setNavigationPosition();
 
     //navigating to "m_where"
     m_iNav2D->gotoTargetByLocationName(m_where);
@@ -400,6 +423,8 @@ bool GoAndFindItThread::objFound()
     request.fromString("set " + m_where + " checked");
     m_nextLoc_rpc_port.write(request,_rep_);
 
+    m_in_nav_position = false;
+
     return true;
 }
 
@@ -429,6 +454,7 @@ bool GoAndFindItThread::objNotFound()
     request.fromString("set " + m_where + " checked");
     m_nextLoc_rpc_port.write(request,_rep_);
 
+    m_in_nav_position = false;
 
     return true;
 }
@@ -437,11 +463,12 @@ bool GoAndFindItThread::objNotFound()
 bool GoAndFindItThread::stopSearch()
 {
     if (m_status == GaFI_NAVIGATING)
-    {
+    {        
         yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
         m_iNav2D->getNavigationStatus(currentStatus);
         if (currentStatus == yarp::dev::Nav2D::navigation_status_moving)
             m_iNav2D->stopNavigation();
+        yCInfo(GO_AND_FIND_IT_THREAD, "Navigation and search stopped");
     } 
     else if (m_status == GaFI_SEARCHING)
     {
@@ -449,6 +476,7 @@ bool GoAndFindItThread::stopSearch()
         ask.clear();
         ask.addString("stop");
         m_lookObject_port.write();
+        yCInfo(GO_AND_FIND_IT_THREAD, "Search stopped");
     }
 
     m_status = GaFI_IDLE;
@@ -482,6 +510,8 @@ bool GoAndFindItThread::resumeSearch()
 bool GoAndFindItThread::resetSearch()
 {
     stopSearch();
+
+    m_in_nav_position = false;
     m_where_specified = false;
     m_what = "";
     m_where = "";
@@ -492,6 +522,7 @@ bool GoAndFindItThread::resetSearch()
 
     return true;
 }
+
 
 /****************************************************************/
 string GoAndFindItThread::getWhat()

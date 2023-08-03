@@ -55,7 +55,7 @@
 
    <connection>
       <from>/lookForObject/findObject:rpc</from>
-      <to>/object_retrieval/command/rpc</to>
+      <to>/yarpMdetr/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
       

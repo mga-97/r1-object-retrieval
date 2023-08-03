@@ -128,10 +128,19 @@ void GoAndFindIt::onRead(Bottle& b)
         {
             m_thread->resetSearch();            
         }
+        else if (what == "navpos")
+        {
+            if (m_thread->getStatus() != "navigating" && m_thread->getStatus() != "searching")
+            {
+                m_thread->setNavigationPosition();
+            }
+            else
+            {
+                yCError(GO_AND_FIND_IT,"Doing something else now, cannot set navigation position. Please send a stop command first");
+            }           
+        }
         else
         {
-        // ////////////////////////////// TO ADD: ask PAVIS if it sees "what"   //////////////////////////////
-
            m_thread->setWhat(what);
         }
          
@@ -162,6 +171,7 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
             reply.addString("stop   : stops search");
             reply.addString("resume : resumes stopped search");
             reply.addString("reset  : resets search");
+            reply.addString("navpos : sets the robot in navigation position");
             reply.addString("help   : gets this list");
         }
         else if (cmd_0=="what")
@@ -190,6 +200,20 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
         {
             m_thread->resetSearch();
             reply.addString("search reset");
+        }
+        else if (cmd_0=="navpos")
+        {
+            if (m_thread->getStatus() != "navigating" && m_thread->getStatus() != "searching")
+            {
+                m_thread->setNavigationPosition();
+                reply.addString("setting robot in navigation position");
+            }
+            else
+            {
+                yCError(GO_AND_FIND_IT,"Doing something else now, cannot set navigation position. Please send a stop command first");
+                reply.addVocab32(Vocab32::encode("nack"));
+            }
+            
         }
         else
         {

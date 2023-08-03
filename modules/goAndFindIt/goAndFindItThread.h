@@ -23,6 +23,7 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/INavigation2D.h>
 #include <yarp/os/all.h>
+#include "getReadyToNav.h"
 
 using namespace std;
 using namespace yarp::os;
@@ -43,15 +44,6 @@ enum GaFI_status
 };
 
 private:
-    mutex                   m_mutex;
-    double                  m_max_nav_time;
-    double                  m_max_search_time;
-    double                  m_searching_time;
-    string                  m_what;
-    string                  m_where;
-    bool                    m_where_specified;
-    GaFI_status             m_status;
-
     //Ports
     RpcClient               m_nextLoc_rpc_port;     //next location planner
     BufferedPort<Bottle>    m_lookObject_port;      //object research
@@ -69,6 +61,20 @@ private:
 
     //ResourceFinder
     ResourceFinder&         m_rf;
+
+    //Others
+    GaFI_status             m_status;
+    mutex                   m_mutex;
+    double                  m_max_nav_time;
+    double                  m_max_search_time;
+    double                  m_searching_time;
+    string                  m_what;
+    string                  m_where;
+    bool                    m_where_specified;
+
+    GetReadyToNav*          m_getReadyToNav;
+    bool                    m_in_nav_position;
+    double                  m_setNavPos_time;
 
 public:
     //Contructor and distructor
@@ -89,6 +95,7 @@ public:
     void setWhat(string& what);
     void setWhatWhere(string& what, string& where);
     void nextWhere();
+    bool setNavigationPosition();
     bool goThere();
     bool search();
     bool objFound();

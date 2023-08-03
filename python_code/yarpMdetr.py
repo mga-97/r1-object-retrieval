@@ -28,7 +28,7 @@ class YarpMdetr(yarp.RFModule):
 
         # Opening ports
         self.cmd_port = yarp.Port()
-        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/object_retrieval/command/rpc' 
+        commandPortName = rf.find('command_port').asString() if rf.check('command_port') else '/yarpMdetr/command/rpc' 
         self.cmd_port.open(commandPortName)
         print('{:s} opened'.format(commandPortName))
         self.attach(self.cmd_port)
@@ -44,7 +44,7 @@ class YarpMdetr(yarp.RFModule):
         print('{:s} opened'.format(imageOutPortName))
 
         self.output_coords_port = yarp.BufferedPortBottle()
-        coordsOutPortName = rf.find('bbox_coord_port').asString() if rf.check('bbox_coord_port') else '/yarpMdetr/bbox_coords:o' 
+        coordsOutPortName = rf.find('where_coord_port').asString() if rf.check('where_coord_port') else '/yarpMdetr/bbox_coords:o' 
         self.output_coords_port.open(coordsOutPortName)
         print('{:s} opened'.format(coordsOutPortName))
 

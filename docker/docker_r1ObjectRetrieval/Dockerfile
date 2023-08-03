@@ -301,7 +301,6 @@ ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh
 RUN echo "mkdir build && cd build && cmake .. && make -j11" >> update_repo.sh
-RUN ln -s ${user1_home}/tour-guide-robot/app/navigation2/scripts/start_sim.sh start_sim.sh
 RUN sudo chmod 777 update_repo.sh
 
 # ------------------------------------------------------------------------------ #
