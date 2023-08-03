@@ -1,17 +1,17 @@
 <application>
-   <name>R1_search_and_point_MDETR</name>
+   <name>R1_look_and_point_MDETR_SIM</name>
 
    <dependencies>
    </dependencies>
    
    <!--  MODULES  -->
    <application>
-        <name>Navigation_ROS2_R1SN003</name>
+        <name>Navigation_ROS2_R1_SIM</name>
         <prefix></prefix>
     </application>
 
     <application>
-        <name>R1_handPointing</name>
+        <name>R1_handPointing_SIM</name>
         <prefix></prefix>
     </application>
 
@@ -29,20 +29,13 @@
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from search_and_point_R1.ini</parameters>
-      <node>console</node>
-   </module>
-
-   <module>
-      <name>yarpmotorgui</name>
-      <parameters></parameters>
-      <workdir>/home/user1/robotology/robots-configuration/R1SN003/</workdir>
+      <parameters>--context lookForObject --from look_and_point_R1_SIM.ini</parameters>
       <node>console</node>
    </module>
 
    <!--  CONNECTIONS  -->
    <connection>
-      <from>/cer/realsense_repeater/rgbImage:o</from>
+      <from>/SIM_CER_ROBOT/depthCamera/rgbImage:o</from>
       <to>/yarpMdetr/image:i</to>
       <protocol>tcp</protocol>
    </connection>

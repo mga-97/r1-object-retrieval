@@ -503,7 +503,10 @@ bool GoAndFindItThread::resumeSearch()
         } 
     }
 
-    m_status = GaFI_NEW_SEARCH;
+    if (m_where_specified)
+        m_status = GaFI_NAVIGATING;
+    else
+        m_status = GaFI_NEW_SEARCH;
 
     return true;
 }
