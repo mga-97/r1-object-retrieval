@@ -32,11 +32,14 @@ class GetReadyToNav
 private:
     //Polydriver
     yarp::dev::PolyDriver           m_drivers[4];
-    yarp::dev::IRemoteCalibrator*   m_iremcal[4];       //to command HomingWholePart to arms and head
     yarp::dev::IControlMode*        m_ictrlmode[4];     //to set the Position control mode
     yarp::dev::IPositionControl*    m_iposctrl[4];      //to retrieve the number of joints of each part
 
     std::string                     m_set_nav_position_file;
+    yarp::os::Bottle                m_right_arm_pos;
+    yarp::os::Bottle                m_left_arm_pos;
+    yarp::os::Bottle                m_head_pos;
+    yarp::os::Bottle                m_torso_pos;
 
 public:
     //Constructor/Distructor
@@ -45,10 +48,8 @@ public:
 
     //Internal methods
     bool configure(yarp::os::ResourceFinder &rf);
-    void home();
     void navPosition();
     void setPosCtrlMode(const int part);
-    void homePart(const int part);
     void close();
 };
 

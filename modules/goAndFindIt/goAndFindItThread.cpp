@@ -313,7 +313,6 @@ bool GoAndFindItThread::setNavigationPosition()
 {
     m_getReadyToNav->navPosition();
     m_in_nav_position = true;
-    Time::delay(m_setNavPos_time);
 
     return true;
 }
@@ -342,7 +341,10 @@ bool GoAndFindItThread::goThere()
 
     //setting navigation position, if needed
     if(!m_in_nav_position)
+    {
         setNavigationPosition();
+        Time::delay(m_setNavPos_time);
+    }
 
     //navigating to "m_where"
     m_iNav2D->gotoTargetByLocationName(m_where);

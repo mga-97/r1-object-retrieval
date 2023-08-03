@@ -23,22 +23,43 @@ YARP_LOG_COMPONENT(GET_READY_TO_NAV, "r1_obr.goAndFindIt.getReadyToNav")
 GetReadyToNav::GetReadyToNav()
 {
     m_set_nav_position_file = "/home/user1/r1-object-retrieval/app/goAndFindIt/scripts/set_navigation_position_sim.sh";
+    m_right_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
+    m_left_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
+    m_head_pos.fromString("0.0 0.0");
+    m_torso_pos.fromString("0.012");
 }
 
 
 bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
 {
     std::string robot=rf.check("robot",yarp::os::Value("cer")).asString();
+    bool okConfig = rf.check("SET_NAVIGATION_POSITION");
+    if(!okConfig)
+    {
+        yCWarning(GET_READY_TO_NAV,"SET_NAVIGATION_POSITION section missing in ini file. Using the default values");
+    }
+    else
+    {
+        yarp::os::Searchable& config = rf.findGroup("SET_NAVIGATION_POSITION");
+        if(config.check("set_navigation_pos_file")) 
+            m_set_nav_position_file = config.find("set_navigation_pos_file").asString();
+        if(config.check("right_arm_pos")) 
+            m_right_arm_pos.fromString(config.find("right_arm_pos").asString());
+        if(config.check("left_arm_pos")) 
+            m_left_arm_pos.fromString(config.find("left_arm_pos").asString());
+        if(config.check("head_pos")) 
+            m_head_pos.fromString(config.find("head_pos").asString());
+        if(config.check("torso_pos")) 
+            m_torso_pos.fromString(config.find("torso_pos").asString());
+    }
 
-    if(rf.check("set_navigation_pos_file"))
-        m_set_nav_position_file = rf.find("set_navigation_pos_file").asString();
-
+    
     // ----------- Polydriver config ----------- //
     yarp::os::Property prop;
 
     prop.put("device","remote_controlboard");
     prop.put("local","/goAndFindIt/getReadyToNavRArm");
-    prop.put("remote","/cer/right_arm");
+    prop.put("remote","/"+robot+"/right_arm");
     if (!m_drivers[0].open(prop))
     {
         yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/right_arm").c_str());
@@ -48,7 +69,7 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
     prop.clear();
     prop.put("device","remote_controlboard");
     prop.put("local","/goAndFindIt/getReadyToNavLArm");
-    prop.put("remote","/cer/left_arm");
+    prop.put("remote","/"+robot+"/left_arm");
     if (!m_drivers[1].open(prop))
     {
         yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/left_arm").c_str());
@@ -58,7 +79,7 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
     prop.clear();
     prop.put("device","remote_controlboard");
     prop.put("local","/goAndFindIt/getReadyToNavHead");
-    prop.put("remote","/cer/head");
+    prop.put("remote","/"+robot+"/head");
     if (!m_drivers[2].open(prop))
     {
         yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/head").c_str());
@@ -68,21 +89,11 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
     prop.clear();
     prop.put("device","remote_controlboard");
     prop.put("local","/goAndFindIt/getReadyToNavTorso");
-    prop.put("remote","/cer/torso");
+    prop.put("remote","/"+robot+"/torso");
     if (!m_drivers[3].open(prop))
     {
         yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/torso").c_str());
         close();
-        return false;
-    }
-    
-    m_drivers[0].view(m_iremcal[0]);
-    m_drivers[1].view(m_iremcal[1]);
-    m_drivers[2].view(m_iremcal[2]);
-    m_drivers[3].view(m_iremcal[3]);
-    if(!m_iremcal[0] || !m_iremcal[1] || !m_iremcal[2] || !m_iremcal[3])
-    {
-        yCError(GET_READY_TO_NAV,"Error opening iRemoteCalibrator interfaces. Devices not available");
         return false;
     }
 
@@ -110,14 +121,13 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
 }
 
 
-
-void GetReadyToNav::home()
-{    
-    for (int i = 0 ; i<=3 ; i++)
-    {
-        homePart(i);
-    }
+void GetReadyToNav::setPosCtrlMode(const int part)
+{
+    int NUMBER_OF_JOINTS;
+    m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
+    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++){ m_ictrlmode[part]->setControlMode(i_joint, VOCAB_CM_POSITION); } 
 }
+
 
 void GetReadyToNav::navPosition()
 {    
@@ -127,37 +137,37 @@ void GetReadyToNav::navPosition()
     }
 
     yCInfo(GET_READY_TO_NAV, "Setting navigation position");
-    system(m_set_nav_position_file.c_str());
-}
-
-void GetReadyToNav::setPosCtrlMode(const int part)
-{
-    int NUMBER_OF_JOINTS;
-    m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
-    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++){ m_ictrlmode[part]->setControlMode(i_joint, VOCAB_CM_POSITION); } 
-}
-
-void GetReadyToNav::homePart(const int part)
-{     
-    // 0 = right arm
-    // 1 = left arm
-    // 2 = head
-    // 3 = torso
-
-    setPosCtrlMode(part);
-
-    bool ok = m_iremcal[part]->homingWholePart();
-    if (!ok)  
-    {
-        bool isCalib = false;
-        m_iremcal[part]->isCalibratorDevicePresent(&isCalib);
-        if (!isCalib) // (SIM_CER_ROBOT does not have a calibrator!)
-            { yCError(GET_READY_TO_NAV) << "Error with part: " << part << ". No calibrator device was configured to perform this action, please verify that the wrapper config file for the part has the 'Calibrator' keyword in the attach phase"; }
-        else
-            { yCError(GET_READY_TO_NAV) << "Error with part: " << part << ". The remote calibrator reported that something went wrong during the calibration procedure"; }
-    }
+    //system(m_set_nav_position_file.c_str());
     
+    
+    //right arm
+    m_iposctrl[0]->positionMove(0, m_right_arm_pos.get(0).asFloat32());
+    m_iposctrl[0]->positionMove(1, m_right_arm_pos.get(1).asFloat32());
+    m_iposctrl[0]->positionMove(2, m_right_arm_pos.get(2).asFloat32());
+    m_iposctrl[0]->positionMove(3, m_right_arm_pos.get(3).asFloat32());
+    m_iposctrl[0]->positionMove(4, m_right_arm_pos.get(4).asFloat32());
+    m_iposctrl[0]->positionMove(5, m_right_arm_pos.get(5).asFloat32());
+    m_iposctrl[0]->positionMove(6, m_right_arm_pos.get(6).asFloat32());
+    m_iposctrl[0]->positionMove(7, m_right_arm_pos.get(7).asFloat32());
+    
+    //left arm
+    m_iposctrl[1]->positionMove(0, m_left_arm_pos.get(0).asFloat32());
+    m_iposctrl[1]->positionMove(1, m_left_arm_pos.get(1).asFloat32());
+    m_iposctrl[1]->positionMove(2, m_left_arm_pos.get(2).asFloat32());
+    m_iposctrl[1]->positionMove(3, m_left_arm_pos.get(3).asFloat32());
+    m_iposctrl[1]->positionMove(4, m_left_arm_pos.get(4).asFloat32());
+    m_iposctrl[1]->positionMove(5, m_left_arm_pos.get(5).asFloat32());
+    m_iposctrl[1]->positionMove(6, m_left_arm_pos.get(6).asFloat32());
+    m_iposctrl[1]->positionMove(7, m_left_arm_pos.get(7).asFloat32());
+    
+    //head
+    m_iposctrl[2]->positionMove(0, m_head_pos.get(0).asFloat32());
+    m_iposctrl[2]->positionMove(1, m_head_pos.get(1).asFloat32());
+    
+    //torso
+    m_iposctrl[3]->positionMove(0, m_torso_pos.get(0).asFloat32());
 }
+
 
 void GetReadyToNav::close()
 {
