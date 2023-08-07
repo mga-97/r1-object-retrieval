@@ -2,7 +2,7 @@
 
 ## Requirements
 - opencv
-- see python_code/requirements.txt
+- see mdetr_python_code/requirements.txt
 
 ## Usage
 When running the Python script, four ports will be created:
