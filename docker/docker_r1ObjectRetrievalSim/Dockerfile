@@ -266,6 +266,9 @@ RUN python3 -m pip install torchmultimodal-nightly
 
 RUN python3 -c "import torch; torch.hub.load('ashkamath/mdetr:main', 'mdetr_resnet101', pretrained=True, return_postprocessor=True);"
 
+# Install YOLO requirements
+RUN pip install ultralytics
+
 # r1-object-retrieval
 WORKDIR ${user1_home}
 RUN git clone https://github.com/colombraf/r1-object-retrieval.git
