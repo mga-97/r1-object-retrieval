@@ -489,6 +489,8 @@ bool GoAndFindItThread::stopSearch()
 /****************************************************************/
 bool GoAndFindItThread::resumeSearch()
 {
+    yCInfo(GO_AND_FIND_IT_THREAD, "Resuming search");
+    
     if (m_where != "")
     {
         Bottle request,reply,btl;
