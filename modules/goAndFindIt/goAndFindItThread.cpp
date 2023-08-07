@@ -397,7 +397,7 @@ bool GoAndFindItThread::search()
 /****************************************************************/
 void GoAndFindItThread::onRead(Bottle& b)
 {
-    yCInfo(GO_AND_FIND_IT_THREAD,"Received from lookForObject: %s",b.toString().c_str());
+    yCInfo(GO_AND_FIND_IT_THREAD,"Received at location %s finished",m_where.c_str());
 
     string result = b.get(0).asString();
     if (m_status == GaFI_SEARCHING)
