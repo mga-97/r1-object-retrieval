@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 torch.set_grad_enabled(False)
 import yarp
-from python_code.models.model import mdetr_resnet101
+from mdetr_python_code.models.model import mdetr_resnet101
 
 
 # Initialise YARP

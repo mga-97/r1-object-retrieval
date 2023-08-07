@@ -7,7 +7,7 @@ torch.set_grad_enabled(False)
 from PIL import Image
 import torchvision.transforms as T
 from collections import defaultdict
-from python_code.models.model import mdetr_resnet101
+from mdetr_python_code.models.model import mdetr_resnet101
 
 
 import yarp

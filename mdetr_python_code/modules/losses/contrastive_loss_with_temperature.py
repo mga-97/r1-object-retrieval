@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, OrderedDict, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-from python_code.utils.distributed import gather_tensor
+from mdetr_python_code.utils.distributed import gather_tensor
 
 
 @dataclass

@@ -3,8 +3,8 @@ from typing import Callable, NamedTuple, Optional
 
 import torch
 from torch import nn, Tensor
-from python_code.modules.layers.mlp import MLP
-from python_code.utils.common import get_clones
+from mdetr_python_code.modules.layers.mlp import MLP
+from mdetr_python_code.utils.common import get_clones
 
 
 class MDETRTransformerOutput(NamedTuple):

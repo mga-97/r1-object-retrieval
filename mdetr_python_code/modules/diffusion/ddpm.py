@@ -6,10 +6,10 @@ from typing import Dict, Generator, Iterable, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-from python_code.modules.diffusion.predictors import Predictor
+from mdetr_python_code.modules.diffusion.predictors import Predictor
 
-from python_code.modules.diffusion.schedules import DiffusionSchedule
-from python_code.utils.diffusion_utils import DiffusionOutput
+from mdetr_python_code.modules.diffusion.schedules import DiffusionSchedule
+from mdetr_python_code.utils.diffusion_utils import DiffusionOutput
 
 
 class DDPModule(nn.Module):

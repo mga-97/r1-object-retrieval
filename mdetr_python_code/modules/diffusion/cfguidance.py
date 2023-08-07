@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional, Union
 import torch
 from torch import nn, Tensor
 
-from python_code.utils.diffusion_utils import DiffusionOutput
+from mdetr_python_code.utils.diffusion_utils import DiffusionOutput
 
 
 class CFGuidance(nn.Module):

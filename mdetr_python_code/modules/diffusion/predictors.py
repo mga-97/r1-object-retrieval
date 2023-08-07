@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
 from torch import Tensor
-from python_code.modules.diffusion.schedules import DiffusionSchedule
+from mdetr_python_code.modules.diffusion.schedules import DiffusionSchedule
 
 
 class Predictor(ABC):

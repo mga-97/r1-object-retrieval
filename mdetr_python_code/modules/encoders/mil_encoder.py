@@ -4,7 +4,7 @@ from typing import Callable, List, Optional, Union
 
 import torch
 from torch import nn, Tensor
-from python_code.modules.fusions.deepset_fusion import (
+from mdetr_python_code.modules.fusions.deepset_fusion import (
     DeepsetFusionModule,
     DeepsetFusionWithTransformer,
 )

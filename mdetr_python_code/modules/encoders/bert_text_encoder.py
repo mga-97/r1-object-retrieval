@@ -3,12 +3,12 @@ from typing import Callable, Optional
 
 import torch
 from torch import nn, Tensor
-from python_code.modules.layers.text_embedding import BERTTextEmbeddings
-from python_code.modules.layers.transformer import (
+from mdetr_python_code.modules.layers.text_embedding import BERTTextEmbeddings
+from mdetr_python_code.modules.layers.transformer import (
     TransformerEncoder,
     TransformerOutput,
 )
-from python_code.utils.attention import get_extended_attention_mask
+from mdetr_python_code.utils.attention import get_extended_attention_mask
 
 
 class BERTTextEncoder(nn.Module):
@@ -20,9 +20,9 @@ class BERTTextEncoder(nn.Module):
 
     Attributes:
         embeddings (nn.Module): Module that projects text token ids into embeddings.
-            See :py:class: `python_code.modules.layers.text_embedding.BERTTextEmbeddings` for interface.
+            See :py:class: `mdetr_python_code.modules.layers.text_embedding.BERTTextEmbeddings` for interface.
         encoder (nn.Module): Module for transformer encoder. See :py:class:
-            `python_code.modules.layers.transformer.TransformerEncoder` for interface.
+            `mdetr_python_code.modules.layers.transformer.TransformerEncoder` for interface.
         layernorm (nn.Module, optional): Module for layernorm to be applied after encoder. Defaults to ``None``.
         pooler (nn.Module, optional): Module for pooler to be applied after layernorm. Defaults to ``None``.
         weight_init_fn (Callable, optional): function for custom weight initialization of both the transformer
@@ -141,8 +141,8 @@ def bert_text_encoder(
     """
     Returns a BERTTextEncoder with default params identical to HuggingFace's ``bert-base-uncased``.
     Ref: https://huggingface.co/bert-base-uncased/resolve/main/config.json. See :py:class:
-    `python_code.modules.layers.text_embedding.BERTTextEmbeddings` and :py:class:
-    `python_code.modules.layers.transformer.TransformerEncoder` for details on parameters.
+    `mdetr_python_code.modules.layers.text_embedding.BERTTextEmbeddings` and :py:class:
+    `mdetr_python_code.modules.layers.transformer.TransformerEncoder` for details on parameters.
     """
     embeddings = BERTTextEmbeddings(
         hidden_size=hidden_size,

@@ -6,9 +6,9 @@
 from typing import Callable, List, NamedTuple, Optional, Tuple, Union
 
 from torch import nn, Tensor
-from python_code.modules.layers.attention import MultiHeadAttention, SelfAttention
-from python_code.modules.layers.mlp import MLP
-from python_code.modules.layers.normalizations import Fp32LayerNorm
+from mdetr_python_code.modules.layers.attention import MultiHeadAttention, SelfAttention
+from mdetr_python_code.modules.layers.mlp import MLP
+from mdetr_python_code.modules.layers.normalizations import Fp32LayerNorm
 
 
 class TransformerOutput(NamedTuple):
