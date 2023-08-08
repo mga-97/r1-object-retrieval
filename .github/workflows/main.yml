@@ -15,7 +15,7 @@ jobs:
        echo "Event type: ${{github.event_name}}"
     - name: prune docker
       run: |
-       docker system prune -a
+       docker system prune --force --all
     - name: Change docker to experimental mode
       run: |
        sudo rm -rf /etc/docker/daemon.json
