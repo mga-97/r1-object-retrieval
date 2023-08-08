@@ -13,6 +13,12 @@ jobs:
     - name: Info
       run: |
        echo "Event type: ${{github.event_name}}"
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 512
+        swap-size-mb: 1024
+        remove-dotnet: 'true'
     - name: Change docker to experimental mode
       run: |
        sudo rm -rf /etc/docker/daemon.json
@@ -25,6 +31,10 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build
+      run: |
+        echo "Free space:"
+        df -h
     - name: Build the R1 Object Retrieval Sim Docker image
       working-directory: docker/docker_r1ObjectRetrievalSim/
       run: sudo docker build --build-arg ros_distro="humble" -t "colombraf/r1images:r1ObjectRetrievalSim" .
