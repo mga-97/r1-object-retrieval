@@ -13,6 +13,9 @@ jobs:
     - name: Info
       run: |
        echo "Event type: ${{github.event_name}}"
+    - name: prune docker
+      run: |
+       docker system prune -a
     - name: Change docker to experimental mode
       run: |
        sudo rm -rf /etc/docker/daemon.json
@@ -28,29 +31,8 @@ jobs:
     - name: Build the R1 Object Retrieval Sim Docker image
       working-directory: docker/docker_r1ObjectRetrievalSim/
       run: sudo docker build --build-arg ros_distro="humble" -t "colombraf/r1images:r1ObjectRetrievalSim" .
+    - name: Info abut remaining space
+      run: |
+       df -h
     - name: Push R1 Object Retrieval Sim Docker image
       run: docker push colombraf/r1images:r1ObjectRetrievalSim
-
-  build-docker-r1Obr:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Info
-      run: |
-       echo "Event type: ${{github.event_name}}"
-    - name: Change docker to experimental mode
-      run: |
-       sudo rm -rf /etc/docker/daemon.json
-       echo '{"experimental": true}' | sudo tee -a /etc/docker/daemon.json
-    - name: Restart docker daemon
-      run: sudo systemctl restart docker
-    - uses: actions/checkout@v3
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build the R1 Object Retrieval Docker image
-      working-directory: docker/docker_r1ObjectRetrieval/
-      run: sudo docker build --build-arg ros_distro="humble" -t "colombraf/r1images:r1ObjectRetrieval" .
-    - name: Push R1 Object Retrieval Docker image
-      run: docker push colombraf/r1images:r1ObjectRetrieval
