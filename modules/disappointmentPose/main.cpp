@@ -16,80 +16,131 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "getReadyToNav.h"
+#include <yarp/os/Network.h>
+#include <yarp/os/Log.h>
+#include <yarp/os/LogStream.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/os/Time.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/RFModule.h>
+#include <yarp/dev/ControlBoardInterfaces.h>
 
-YARP_LOG_COMPONENT(GET_READY_TO_NAV, "r1_obr.goAndFindIt.getReadyToNav")
+YARP_LOG_COMPONENT(DISAPPOINTMENT_POSE, "r1_obr.disappointmentPose")
 
-GetReadyToNav::GetReadyToNav()
+using namespace yarp::os;
+using namespace yarp::dev;
+using namespace std;
+
+class DisappointmentPose : public RFModule, public TypedReaderCallback<Bottle>
 {
+private:
+    //Polydriver
+    PolyDriver           m_drivers[3];
+    IControlMode*        m_ictrlmode[3];  
+    IPositionControl*    m_iposctrl[3];   \
+
+    //Port
+    BufferedPort<Bottle> m_input_port;
+    string               m_input_port_name;
+
+    Bottle               m_right_arm_pos;
+    Bottle               m_left_arm_pos;
+    Bottle               m_head_pos;
+
+    double               m_period;
+
+public:
+    //Constructor/Distructor
+    DisappointmentPose();
+    ~DisappointmentPose() = default;
+
+    //Internal methods
+    virtual bool configure(ResourceFinder &rf);
+    virtual bool close();
+    virtual double getPeriod();
+    virtual bool updateModule();
+
+    using TypedReaderCallback<Bottle>::onRead;
+    void onRead(Bottle& btl) override;
+
+    void setPosition();
+    void setPosCtrlMode(const int part);
+};
+
+DisappointmentPose::DisappointmentPose()
+{
+    //Default is the navigation position
     m_right_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
     m_left_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
     m_head_pos.fromString("0.0 0.0");
-    m_torso_pos.fromString("0.012");
 }
 
 
-bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
+bool DisappointmentPose::configure(ResourceFinder &rf)
 {
-    std::string robot=rf.check("robot",yarp::os::Value("cer")).asString();
-    bool okConfig = rf.check("SET_NAVIGATION_POSITION");
+    
+    //Generic config
+    if(rf.check("period")) {m_period = rf.find("period").asFloat32();}
+    string robot=rf.check("robot",Value("cer")).asString();
+
+
+    //Open input port
+    if(rf.check("input_port"))
+        m_input_port_name = rf.find("input_port").asString();
+    m_input_port.useCallback(*this);
+    if(!m_input_port.open(m_input_port_name))
+        yCError(DISAPPOINTMENT_POSE) << "Cannot open port" << m_input_port_name; 
+    else
+        yCInfo(DISAPPOINTMENT_POSE) << "opened port" << m_input_port_name;
+
+
+    //Config arms and head pose
+    bool okConfig = rf.check("ACTIVE");
     if(!okConfig)
     {
-        yCWarning(GET_READY_TO_NAV,"SET_NAVIGATION_POSITION section missing in ini file. Using the default values");
+        yCWarning(DISAPPOINTMENT_POSE,"There is no ACTIVE section in ini file. Using the default values");
     }
     else
     {
-        yarp::os::Searchable& config = rf.findGroup("SET_NAVIGATION_POSITION");
+        Searchable& config = rf.findGroup("ACTIVE");
         if(config.check("right_arm_pos")) 
             m_right_arm_pos.fromString(config.find("right_arm_pos").asString());
         if(config.check("left_arm_pos")) 
             m_left_arm_pos.fromString(config.find("left_arm_pos").asString());
         if(config.check("head_pos")) 
             m_head_pos.fromString(config.find("head_pos").asString());
-        if(config.check("torso_pos")) 
-            m_torso_pos.fromString(config.find("torso_pos").asString());
     }
 
     
-    // ----------- Polydriver config ----------- //
-    yarp::os::Property prop;
+    // Polydriver config
+    Property prop;
 
     prop.put("device","remote_controlboard");
-    prop.put("local","/goAndFindIt/getReadyToNavRArm");
+    prop.put("local","/disappointmentPose/right_arm");
     prop.put("remote","/"+robot+"/right_arm");
     if (!m_drivers[0].open(prop))
     {
-        yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/right_arm").c_str());
+        yCError(DISAPPOINTMENT_POSE,"Unable to connect to %s",("/"+robot+"/right_arm").c_str());
         close();
         return false;
     }
     prop.clear();
     prop.put("device","remote_controlboard");
-    prop.put("local","/goAndFindIt/getReadyToNavLArm");
+    prop.put("local","/disappointmentPose/left_arm");
     prop.put("remote","/"+robot+"/left_arm");
     if (!m_drivers[1].open(prop))
     {
-        yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/left_arm").c_str());
+        yCError(DISAPPOINTMENT_POSE,"Unable to connect to %s",("/"+robot+"/left_arm").c_str());
         close();
         return false;
     }
     prop.clear();
     prop.put("device","remote_controlboard");
-    prop.put("local","/goAndFindIt/getReadyToNavHead");
+    prop.put("local","/disappointmentPose/head");
     prop.put("remote","/"+robot+"/head");
     if (!m_drivers[2].open(prop))
     {
-        yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/head").c_str());
-        close();
-        return false;
-    }
-    prop.clear();
-    prop.put("device","remote_controlboard");
-    prop.put("local","/goAndFindIt/getReadyToNavTorso");
-    prop.put("remote","/"+robot+"/torso");
-    if (!m_drivers[3].open(prop))
-    {
-        yCError(GET_READY_TO_NAV,"Unable to connect to %s",("/"+robot+"/torso").c_str());
+        yCError(DISAPPOINTMENT_POSE,"Unable to connect to %s",("/"+robot+"/head").c_str());
         close();
         return false;
     }
@@ -97,28 +148,42 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
     m_drivers[0].view(m_iposctrl[0]);
     m_drivers[1].view(m_iposctrl[1]);
     m_drivers[2].view(m_iposctrl[2]);
-    m_drivers[3].view(m_iposctrl[3]);
-    if(!m_iposctrl[0] || !m_iposctrl[1] || !m_iposctrl[2] || !m_iposctrl[3])
+    if(!m_iposctrl[0] || !m_iposctrl[1] || !m_iposctrl[2] )
     {
-        yCError(GET_READY_TO_NAV,"Error opening iPositionControl interfaces. Devices not available");
+        yCError(DISAPPOINTMENT_POSE,"Error opening iPositionControl interfaces. Devices not available");
         return false;
     }
 
     m_drivers[0].view(m_ictrlmode[0]);
     m_drivers[1].view(m_ictrlmode[1]);
     m_drivers[2].view(m_ictrlmode[2]);
-    m_drivers[3].view(m_ictrlmode[3]);
-    if(!m_ictrlmode[0] || !m_ictrlmode[1] || !m_ictrlmode[2] || !m_ictrlmode[3])
+    if(!m_ictrlmode[0] || !m_ictrlmode[1] || !m_ictrlmode[2])
     {
-        yCError(GET_READY_TO_NAV,"Error opening iControlMode interfaces. Devices not available");
+        yCError(DISAPPOINTMENT_POSE,"Error opening iControlMode interfaces. Devices not available");
         return false;
     }
 
     return true;
 }
 
+bool DisappointmentPose::updateModule()
+{
+    return true;
+}
 
-void GetReadyToNav::setPosCtrlMode(const int part)
+double DisappointmentPose::getPeriod()
+{
+    return m_period;
+}
+
+void DisappointmentPose::onRead(Bottle& b) 
+{
+    
+    yCInfo(DISAPPOINTMENT_POSE,"Received something. Not a good thing probably. Therefore I am setting a disappointment pose");
+    setPosition();
+}
+
+void DisappointmentPose::setPosCtrlMode(const int part)
 {
     int NUMBER_OF_JOINTS;
     m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
@@ -126,14 +191,12 @@ void GetReadyToNav::setPosCtrlMode(const int part)
 }
 
 
-void GetReadyToNav::navPosition()
+void DisappointmentPose::setPosition()
 {    
-    for (int i = 0 ; i<=3 ; i++)
+    for (int i = 0 ; i<=2 ; i++)
     {
         setPosCtrlMode(i);
     }
-
-    yCInfo(GET_READY_TO_NAV, "Setting navigation position");    
     
     //right arm
     m_iposctrl[0]->positionMove(0, m_right_arm_pos.get(0).asFloat32());
@@ -158,13 +221,10 @@ void GetReadyToNav::navPosition()
     //head
     m_iposctrl[2]->positionMove(0, m_head_pos.get(0).asFloat32());
     m_iposctrl[2]->positionMove(1, m_head_pos.get(1).asFloat32());
-    
-    //torso
-    m_iposctrl[3]->positionMove(0, m_torso_pos.get(0).asFloat32());
 }
 
 
-void GetReadyToNav::close()
+bool DisappointmentPose::close()
 {
     if(m_drivers[0].isValid())
     {
@@ -181,8 +241,24 @@ void GetReadyToNav::close()
         m_drivers[2].close();
     }
 
-    if(m_drivers[3].isValid())
+    return true;
+}
+
+int main(int argc, char *argv[])
+{
+    yarp::os::Network yarp;
+    if (!yarp.checkNetwork())
     {
-        m_drivers[3].close();
+        yError("check Yarp network.\n");
+        return -1;
     }
+
+    yarp::os::ResourceFinder rf;
+    rf.setVerbose(true);
+    rf.setDefaultConfigFile("disappointmentPose.ini");          //overridden by --from parameter
+    rf.setDefaultContext("disappointmentPose");                 //overridden by --context parameter
+    rf.configure(argc,argv);
+    DisappointmentPose mod;
+    
+    return mod.runModule(rf);
 }
