@@ -129,6 +129,10 @@ void OrchestratorThread::run()
 
         else if (m_status == R1_SEARCHING)
         {
+            Bottle rep, req{"status"};
+            if(forwardRequest(req).get(0).asString() == "idle") 
+                m_status = R1_IDLE;
+
             Bottle* result = m_goandfindit_result_port.read(false); 
             if(result != nullptr)
             {
@@ -145,8 +149,7 @@ void OrchestratorThread::run()
                     }
                     else
                         m_status = R1_OBJECT_NOT_FOUND;
-                }
-                    
+                }     
             }
         }
 
@@ -162,7 +165,10 @@ void OrchestratorThread::run()
 
         else if (m_status == R1_OBJECT_NOT_FOUND)
         {
+            
             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object not found");
+            Bottle req{"reset"};
+            forwardRequest(req);
             Bottle&  sendKo = m_negative_outcome_port.prepare();
             sendKo.clear();
             sendKo.addInt8(0);
@@ -290,9 +296,14 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
 /****************************************************************/
 Bottle OrchestratorThread::resume()
 {
-    Bottle request{"resume"};
-    Bottle rep = forwardRequest(request); 
-    m_status = R1_SEARCHING;
+    Bottle rep, request{"resume"};
+    rep = forwardRequest(request); 
+
+    request.clear();
+    request.addString("status");
+    if(forwardRequest(request).get(0).asString() != "idle") 
+        m_status = R1_SEARCHING;
+    
     return rep;
 }
 
