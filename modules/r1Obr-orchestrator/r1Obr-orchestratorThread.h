@@ -78,8 +78,13 @@ public:
     using TypedReaderCallback<Bottle>::onRead;
     void onRead(Bottle& b) override;
 
-    Bottle forwardRequest(Bottle& b);
+    Bottle forwardRequest(const Bottle& b);
+    void search(const Bottle& btl);
+    void resizeSearchBottle(const Bottle& btl);
     bool askNetwork();
+    Bottle stopOrReset(const string& cmd);
+    Bottle resume();
+    bool answer(const string& ans);
     string getStatus();
 
 };

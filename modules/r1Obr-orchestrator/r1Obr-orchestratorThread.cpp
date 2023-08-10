@@ -200,41 +200,13 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
 
         if (m_status == R1_WAITING_FOR_ANSWER)
         {
-            if (cmd=="yes") 
-            {
-                Bottle request{"resume"};
-                forwardRequest(request); 
-                m_status = R1_SEARCHING;
-                m_question_count = 0;
-            }
-            else if (cmd=="no") 
-            {
-                m_status = R1_OBJECT_NOT_FOUND;
-                m_question_count = 0;
-            }
-            else
-            {
-                if (m_question_count<3)
-                {
-                    yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Say 'yes' or 'no'");
-                    m_question_count++;
-                }
-                else
-                {
-                    yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Stopping the search.");
-                    m_status = R1_IDLE;
-                }
-
-                
-            }
+            answer(cmd);
         }
         else
         {
             if (cmd=="stop" || cmd=="reset") 
             { 
-                Bottle request{cmd};
-                forwardRequest(request); 
-                m_status = R1_IDLE;
+                stopOrReset(cmd);
             }
             else if (cmd=="navpos") 
             {
@@ -243,18 +215,15 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
             }
             else if (cmd=="resume") 
             {
-                Bottle request{cmd};
-                forwardRequest(request); 
-                m_status = R1_SEARCHING;
+                resume();
             }
             else if (cmd=="search")
             {
-                m_request = b;
-                m_status = R1_ASKING_NETWORK;              
+                search(b);            
             }
             else
             {
-                yCError(R1OBR_ORCHESTRATOR_THREAD, "Error: RPC command not valid");
+                yCError(R1OBR_ORCHESTRATOR_THREAD, "Error: input command bottle not valid");
             }
         }
     }
@@ -269,7 +238,7 @@ void OrchestratorThread::onStop()
 }
 
 /****************************************************************/
-Bottle OrchestratorThread::forwardRequest(Bottle& request)
+Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 {
     Bottle _rep_;
     m_goandfindit_rpc_port.write(request,_rep_);
@@ -278,26 +247,83 @@ Bottle OrchestratorThread::forwardRequest(Bottle& request)
 }
 
 /****************************************************************/
-bool OrchestratorThread::askNetwork()
+void OrchestratorThread::search(const Bottle& btl)
 {
-    Bottle tmp = m_request;
-    int sz = m_request.size();
+    resizeSearchBottle(btl);
+    m_status = R1_ASKING_NETWORK;  
+}
+
+/****************************************************************/
+void OrchestratorThread::resizeSearchBottle(const Bottle& btl)
+{
+    int sz = btl.size();
     m_request.clear();
     for (int i=0; i < min(sz,3); i++)
     {
-        m_request.addString(tmp.get(i).asString());
+        m_request.addString(btl.get(i).asString());
     }
 
+    if (sz > 2)
+        m_where_specified = true;
+    else 
+        m_where_specified = false;
+}
+
+/****************************************************************/
+bool OrchestratorThread::askNetwork()
+{
+    
     // NOT IMPLEMENTED YET
 
-    if (sz == 2)
-    {}
-    else if (sz > 2)
-    {
-        m_where_specified = true;
-    }
-
     return false;
+}
+
+/****************************************************************/
+Bottle OrchestratorThread::stopOrReset(const string& cmd)
+{
+    Bottle request{cmd};
+    Bottle rep = forwardRequest(request); 
+    m_status = R1_IDLE;
+    return rep;
+}
+
+/****************************************************************/
+Bottle OrchestratorThread::resume()
+{
+    Bottle request{"resume"};
+    Bottle rep = forwardRequest(request); 
+    m_status = R1_SEARCHING;
+    return rep;
+}
+
+/****************************************************************/
+bool OrchestratorThread::answer(const string& ans)
+{
+    if (ans=="yes") 
+    {
+        resume();
+        m_question_count = 0;
+    }
+    else if (ans=="no") 
+    {
+        m_status = R1_OBJECT_NOT_FOUND;
+        m_question_count = 0;
+    }
+    else
+    {
+        if (m_question_count<3)
+        {
+            yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Say 'yes' or 'no'");
+            m_question_count++;
+        }
+        else
+        {
+            yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Stopping the search.");
+            m_status = R1_IDLE;
+        }
+        return false;
+    }
+    return true;
 }
 
 /****************************************************************/

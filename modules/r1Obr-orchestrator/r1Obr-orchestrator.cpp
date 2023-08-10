@@ -27,7 +27,7 @@ Orchestrator::Orchestrator() :
     m_rpc_server_port_name  = "/r1Obr-orchestrator/rpc";
 }
 
-bool Orchestrator::configure(yarp::os::ResourceFinder &rf) 
+bool Orchestrator::configure(ResourceFinder &rf) 
 {   
 
     if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
@@ -113,3 +113,75 @@ bool Orchestrator::updateModule()
     return true;
 }
 
+
+
+bool Orchestrator::respond(const Bottle &request, Bottle &reply)
+{
+    reply.clear();
+    string cmd=request.get(0).asString();
+    if (request.size()==1 || cmd == "search")
+    {
+        if (cmd=="help")
+        {
+            reply.addVocab32("many");
+            reply.addString("help   : gets this list");
+            reply.addString("status : returns the current status of the search");
+            reply.addString("what   : returns the object of the current search");
+            reply.addString("where  : returns the location of the current search");
+            reply.addString("stop   : stops search");
+            reply.addString("reset  : resets search");
+            reply.addString("navpos : sets the robot in navigation position");
+            reply.addString("");
+            reply.addString(" ---> The following commands cannot be sent if the status is 'waiting_for_answer'");
+            reply.addString("search <what> : starts to search for 'what'");
+            reply.addString("search <what> <where>: starts searching for 'what' at location 'where'");
+            reply.addString("resume : resumes stopped search");
+        }
+        else if (cmd=="status")
+        {
+            reply.addString(m_inner_thread->getStatus());
+        }
+        else if (cmd=="stop" || cmd=="reset")
+        {
+            reply = m_inner_thread->stopOrReset(cmd);
+        }
+        else if (cmd=="what" || cmd=="where" || cmd=="navpos")
+        {
+            reply = m_inner_thread->forwardRequest(request);
+        }
+        else if (m_inner_thread->getStatus() == "waiting_for_answer")
+        {
+            if(m_inner_thread->answer(cmd))
+                reply.addVocab32(Vocab32::encode("ack"));
+            else
+            {
+                reply.addVocab32(Vocab32::encode("nack"));
+                reply.addString("Answer not recognized. Say 'yes' or 'no'");
+            }
+        }
+        else if (cmd=="search")
+        {
+            m_inner_thread->search(request);
+            reply.addString("searching for '" + request.get(1).asString() + "'");
+        }
+        else if (cmd=="resume")
+        {
+            reply = m_inner_thread->resume();
+        }
+        else
+        {
+            reply.addVocab32(Vocab32::encode("nack"));
+            yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command.");
+        }
+    }
+    else
+    {
+        reply.addVocab32(Vocab32::encode("nack"));
+        yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command.");
+    }
+
+    if (reply.size()==0)
+        reply.addVocab32(Vocab32::encode("ack")); 
+
+    return true;
+}
