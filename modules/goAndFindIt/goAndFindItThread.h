@@ -71,6 +71,7 @@ private:
     string                  m_what;
     string                  m_where;
     bool                    m_where_specified;
+    bool                    m_nowhere_else;
 
     GetReadyToNav*          m_getReadyToNav;
     bool                    m_in_nav_position;

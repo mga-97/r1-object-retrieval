@@ -5,3 +5,4 @@
 add_subdirectory(nextLocPlanner)
 add_subdirectory(lookForObject)
 add_subdirectory(goAndFindIt)
+add_subdirectory(r1Obr-orchestrator)

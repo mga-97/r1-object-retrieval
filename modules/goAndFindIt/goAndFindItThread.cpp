@@ -297,6 +297,7 @@ void GoAndFindItThread::nextWhere()
         else 
         {
             yCWarning(GO_AND_FIND_IT_THREAD,"Nowhere else to go");
+            m_nowhere_else = true;
             m_status = GaFI_OBJECT_NOT_FOUND;
         }
     }
@@ -397,7 +398,7 @@ bool GoAndFindItThread::search()
 /****************************************************************/
 void GoAndFindItThread::onRead(Bottle& b)
 {
-    yCInfo(GO_AND_FIND_IT_THREAD,"Received at location %s finished",m_where.c_str());
+    yCInfo(GO_AND_FIND_IT_THREAD,"Search at location %s finished",m_where.c_str());
 
     string result = b.get(0).asString();
     if (m_status == GaFI_SEARCHING)
@@ -433,9 +434,12 @@ bool GoAndFindItThread::objFound()
 /****************************************************************/
 bool GoAndFindItThread::objNotFound()
 {
-    if(m_where_specified)
+    if(m_where_specified || m_nowhere_else)
     {
-        yCInfo(GO_AND_FIND_IT_THREAD,"%s not found at %s", m_what.c_str(), m_where.c_str());;
+        if (m_nowhere_else)
+            yCInfo(GO_AND_FIND_IT_THREAD,"%s not found", m_what.c_str());
+        else
+            yCInfo(GO_AND_FIND_IT_THREAD,"%s not found at %s", m_what.c_str(), m_where.c_str());
 
         Bottle&  toSend = m_output_port.prepare();
         toSend.clear();
@@ -505,10 +509,7 @@ bool GoAndFindItThread::resumeSearch()
         } 
     }
 
-    if (m_where_specified)
-        m_status = GaFI_NAVIGATING;
-    else
-        m_status = GaFI_NEW_SEARCH;
+    m_status = GaFI_NEW_SEARCH;
 
     return true;
 }
