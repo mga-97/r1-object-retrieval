@@ -19,7 +19,7 @@
 
 #define _USE_MATH_DEFINES
 
-#include "r1Obr-orchestratorThread.h"
+#include "orchestratorThread.h"
 
 
 YARP_LOG_COMPONENT(R1OBR_ORCHESTRATOR_THREAD, "r1_obr.orchestrator.orchestratorThread")
@@ -86,6 +86,14 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
+    // --------- Nav2Home config --------- //
+    m_nav2home = new Nav2Home();
+    if(!m_nav2home->configure(m_rf))
+    {
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"Nav2Home configuration failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -106,6 +114,8 @@ void OrchestratorThread::threadRelease()
 
     if(!m_negative_outcome_port.isClosed())
         m_negative_outcome_port.close();
+    
+    m_nav2home->close();
 
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Orchestrator thread released");
 
@@ -167,8 +177,16 @@ void OrchestratorThread::run()
         {
             
             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object not found");
-            Bottle req{"reset"};
-            forwardRequest(req);
+
+            Bottle req{"reset"};  forwardRequest(req);
+
+            m_nav2home->go();
+            bool arrived{false};
+            while (!arrived && m_status == R1_OBJECT_NOT_FOUND )
+            {
+                arrived = m_nav2home->areYouArrived();
+            }
+
             Bottle&  sendKo = m_negative_outcome_port.prepare();
             sendKo.clear();
             sendKo.addInt8(0);
@@ -289,6 +307,7 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
 {
     Bottle request{cmd};
     Bottle rep = forwardRequest(request); 
+    
     m_status = R1_IDLE;
     return rep;
 }

@@ -19,8 +19,8 @@
 #ifndef R1OBR_ORCHESTRATOR_THREAD_H
 #define R1OBR_ORCHESTRATOR_THREAD_H
 
-
 #include <yarp/os/all.h>
+#include "nav2home.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -39,6 +39,7 @@ enum R1_status
 };
 
 protected:
+    
     // Ports
     string                  m_sensor_network_rpc_port_name;
     RpcClient               m_sensor_network_rpc_port;
@@ -60,6 +61,8 @@ protected:
     Bottle                  m_request;
     int                     m_question_count;
     bool                    m_where_specified;
+
+    Nav2Home*               m_nav2home;
 
     ResourceFinder&         m_rf;
 

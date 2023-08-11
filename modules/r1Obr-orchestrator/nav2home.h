@@ -16,44 +16,39 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef R1OBR_ORCHESTRATOR_H
-#define R1OBR_ORCHESTRATOR_H
+#ifndef NAV_2_HOME_H
+#define NAV_2_HOME_H
 
-#include <yarp/os/all.h>
-
-#include "orchestratorThread.h"
-#include "input_collector.h"
+#include <yarp/os/Log.h>
+#include <yarp/os/LogStream.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/INavigation2D.h>
+#include <yarp/os/Time.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/RFModule.h>
 
 using namespace yarp::os;
+using namespace yarp::dev;
+using namespace yarp::dev::Nav2D;
 using namespace std;
 
-class Orchestrator : public RFModule
+class Nav2Home
 {
-protected:
+private:
     
-    //Input Collector
-    InputCollector*             m_input_collector;
-    BufferedPort<Bottle>        m_input_port;
-
-    //Callback thread
-    OrchestratorThread*         m_inner_thread;
-    
-    //RPC Server
-    RpcServer                   m_rpc_server_port;
-    string                      m_rpc_server_port_name;
-
-    //Others
-    double                      m_period;
-
+    // Devices
+    PolyDriver              m_nav2DPoly;
+    Nav2D::INavigation2D*   m_iNav2D{nullptr};
 
 public:
-    Orchestrator();
-    virtual bool configure(ResourceFinder &rf);
-    virtual bool close();
-    virtual double getPeriod();
-    virtual bool updateModule();
+    Nav2Home(){}
+    ~Nav2Home(){}
 
-    bool respond(const Bottle &cmd, Bottle &reply);
+    bool configure(yarp::os::ResourceFinder &rf);
+    void close();
+    bool go();
+    bool stop();
+    bool areYouArrived();
 };
 
-#endif
+#endif //NAV_2_HOME_H
