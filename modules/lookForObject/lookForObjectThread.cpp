@@ -278,13 +278,14 @@ bool LookForObjectThread::lookAround(std::string& ob)
             break;
         }  
     }
-    m_nextHeadOrient->home();
 
-    
     if (objectFound)
         m_status = LfO_OBJECT_FOUND;
     else if (!m_ext_stop)
+    {
+        m_nextHeadOrient->home();
         m_status = LfO_TURNING;
+    }
     
     return true;
 }
