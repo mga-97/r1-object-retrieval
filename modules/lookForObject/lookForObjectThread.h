@@ -50,6 +50,8 @@ protected:
     yarp::os::BufferedPort<yarp::os::Bottle>    m_outPort;
     std::string                                 m_findObjectPortName;
     yarp::os::RpcClient                         m_findObjectPort;
+    std::string                                 m_objectCoordsPortName;
+    yarp::os::BufferedPort<yarp::os::Bottle>    m_objectCoordsPort;
     std::string                                 m_gazeTargetOutPortName;
     yarp::os::BufferedPort<yarp::os::Bottle>    m_gazeTargetOutPort;
 

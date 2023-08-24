@@ -70,6 +70,7 @@ private:
     double                  m_searching_time;
     string                  m_what;
     string                  m_where;
+    Bottle*                 m_coords;
     bool                    m_where_specified;
     bool                    m_nowhere_else;
 

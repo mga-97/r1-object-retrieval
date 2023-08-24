@@ -1,0 +1,30 @@
+<application>
+   <name>R1_Orchestrator_YOLO_SIM</name>
+
+   <dependencies>
+   </dependencies>
+   
+   <application>
+      <name>R1_goAndFindIt_YOLO_SIM</name>
+      <prefix></prefix>
+   </application>
+
+   <module>
+      <name>r1Obr-orchestrator</name>
+      <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1_SIM.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <connection>
+      <from>/r1Obr-orchestrator/goAndFindIt/request:rpc</from>
+      <to>/goAndFindIt/rpc</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/goAndFindIt/output:o</from>
+      <to>/r1Obr-orchestrator/goAndFindIt/result:i</to>
+      <protocol>tcp</protocol>
+   </connection>
+      
+</application>

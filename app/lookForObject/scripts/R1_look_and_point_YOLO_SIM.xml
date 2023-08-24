@@ -1,5 +1,5 @@
 <application>
-   <name>R1_lookForObject_MDETR_SIM</name>
+   <name>R1_look_and_point_YOLO_SIM</name>
 
    <dependencies>
    </dependencies>
@@ -10,40 +10,45 @@
         <prefix></prefix>
     </application>
 
-    <module>
-      <name>cer_gaze-controller</name>
-      <parameters>--cameras::context cameraCalibration --cameras::file cerSimEyes_640x480.ini --robot SIM_CER_ROBOT --joints-limits::pitch "(-20.0 20.0)" --joints-limits::yaw "(-40.0 40.0)"</parameters>
-      <node>console</node>
-   </module>
+    <application>
+        <name>R1_handPointing_SIM</name>
+        <prefix></prefix>
+    </application>
 
-    <module>
+   <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
+		<parameters>/home/user1/r1-object-retrieval/modules/yarpYolo/yarpYolo.py --from yarpYolo_R1.ini</parameters>
 		<node>console</node>
 	</module>
 
    <module>
       <name>yarpview</name>
-      <parameters>--name /view/mdetrView:i </parameters>
+      <parameters>--name /view/yoloView:i </parameters>
       <node>console</node>
    </module>
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from lookForObject_R1_SIM.ini</parameters>
+      <parameters>--context lookForObject --from look_and_point_R1_SIM.ini</parameters>
       <node>console</node>
    </module>
 
    <!--  CONNECTIONS  -->
    <connection>
       <from>/SIM_CER_ROBOT/depthCamera/rgbImage:o</from>
-      <to>/yarpMdetr/image:i</to>
+      <to>/yarpYolo/image:i</to>
       <protocol>tcp</protocol>
    </connection>
+   
+   <connection>
+      <from>/yarpYolo/where_coords:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
 
    <connection>
-      <from>/yarpMdetr/image:o</from>
-      <to>/view/mdetrView:i</to>
+      <from>/yarpYolo/image:o</from>
+      <to>/view/yoloView:i</to>
       <protocol>tcp</protocol>
    </connection>
 
@@ -55,14 +60,8 @@
 
    <connection>
       <from>/lookForObject/findObject:rpc</from>
-      <to>/yarpMdetr/command/rpc</to>
+      <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
-   <connection>
-      <from>/yarpMdetr/where_coords:o</from>
-      <to>/lookForObject/objectCoordinates:i</to>
-      <protocol>tcp</protocol>
-   </connection> 
       
 </application>

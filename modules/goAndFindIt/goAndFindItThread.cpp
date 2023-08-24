@@ -403,10 +403,13 @@ void GoAndFindItThread::onRead(Bottle& b)
     string result = b.get(0).asString();
     if (m_status == GaFI_SEARCHING)
     {
-        if (result == "Object Found!")
-            m_status = GaFI_OBJECT_FOUND;   
+        if (result == "object not found")
+            m_status = GaFI_OBJECT_NOT_FOUND;   
         else 
-            m_status = GaFI_OBJECT_NOT_FOUND;    
+        {
+            m_coords = b.get(1).asList();
+            m_status = GaFI_OBJECT_FOUND;
+        }    
     }
 }
 
@@ -415,9 +418,11 @@ bool GoAndFindItThread::objFound()
 {
     yCInfo(GO_AND_FIND_IT_THREAD,"%s found at %s!", m_what.c_str(), m_where.c_str());
         
-    Bottle&  toSend = m_output_port.prepare();
+    Bottle&  toSend = m_output_port.prepare();     //Search successfull
     toSend.clear();
-    toSend.addInt8(1);      //Search successfull
+    toSend.addString(m_what);  
+    Bottle&  coords = toSend.addList();
+    coords = *m_coords;      
     m_output_port.write();
     m_status = GaFI_IDLE;
     
@@ -443,7 +448,7 @@ bool GoAndFindItThread::objNotFound()
 
         Bottle&  toSend = m_output_port.prepare();
         toSend.clear();
-        toSend.addInt8(0);      //Search failed
+        toSend.addString("not found");      //Search failed
         m_output_port.write();
 
         m_status = GaFI_IDLE;

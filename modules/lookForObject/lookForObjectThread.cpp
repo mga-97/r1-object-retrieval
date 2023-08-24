@@ -36,6 +36,7 @@ LookForObjectThread::LookForObjectThread(yarp::os::ResourceFinder &rf):
     m_outPortName = "/lookForObject/out:o";
     m_findObjectPortName = "/lookForObject/findObject:rpc";
     m_gazeTargetOutPortName = "/lookForObject/gazeControllerTarget:o";
+    m_objectCoordsPortName = "/lookForObject/objectCoordinates:i";
     m_wait_for_search = 4.0;
     m_object = "";
 }
@@ -47,7 +48,7 @@ bool LookForObjectThread::threadInit()
     if (m_rf.check("out_port")) {m_outPortName = m_rf.find("out_port").asString();}
     if (m_rf.check("find_object_port_rpc")) {m_findObjectPortName = m_rf.find("find_object_port_rpc").asString();}
     if (m_rf.check("gaze_target_point_port")) {m_gazeTargetOutPortName = m_rf.find("gaze_target_point_port").asString();}
-    
+    if (m_rf.check("object_coords_port")) {m_objectCoordsPortName = m_rf.find("object_coords_port").asString();}    
 
     // --------- Next Head Orient initialization --------- //
     m_nextHeadOrient = new NextHeadOrient(m_rf);
@@ -103,9 +104,15 @@ bool LookForObjectThread::threadInit()
     }
 
     if(!m_gazeTargetOutPort.open(m_gazeTargetOutPortName)){
-        yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open nextOrient RPC port with name" << m_gazeTargetOutPortName;
+        yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open port with name" << m_gazeTargetOutPortName;
         return false;
     }
+
+    if(!m_objectCoordsPort.open(m_objectCoordsPortName)){
+        yCError(LOOK_FOR_OBJECT_THREAD) << "Cannot open port with name" << m_objectCoordsPortName;
+        return false;
+    }
+    
 
     return true;
 }
@@ -121,6 +128,10 @@ void LookForObjectThread::threadRelease()
     
     if(!m_gazeTargetOutPort.isClosed()){
         m_gazeTargetOutPort.close();
+    }
+    
+    if(!m_objectCoordsPort.isClosed()){
+        m_objectCoordsPort.close();
     }
 
     m_nextHeadOrient->close();
@@ -275,10 +286,11 @@ bool LookForObjectThread::lookAround(std::string& ob)
         }
         else
         {
+            m_nextHeadOrient->home();
             break;
         }  
     }
-    m_nextHeadOrient->home();
+    
 
     
     if (objectFound)
@@ -327,9 +339,18 @@ bool LookForObjectThread::writeResult(bool objFound)
     yarp::os::Bottle&  toSendOut = m_outPort.prepare();
     toSendOut.clear();
     if (objFound)
-        toSendOut.addString("Object Found!");
+    {
+        toSendOut.addString(m_object);
+        Bottle& coordList = toSendOut.addList();
+
+        Bottle* objCoords= m_objectCoordsPort.read(false); 
+        if(objCoords  != nullptr)
+        {
+            coordList = *objCoords;
+        }
+    }
     else
-        toSendOut.addString("Object not found :(");
+        toSendOut.addString("object not found");
     m_outPort.write();
 
     m_object = "";

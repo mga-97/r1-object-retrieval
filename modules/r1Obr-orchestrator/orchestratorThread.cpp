@@ -146,9 +146,8 @@ void OrchestratorThread::run()
             Bottle* result = m_goandfindit_result_port.read(false); 
             if(result != nullptr)
             {
-                if (result->get(0).asInt16())
-                    m_status = R1_OBJECT_FOUND;
-                else
+                m_result = *result;
+                if (result->get(0).asString() == "not found")  
                 {
                     if(m_where_specified)
                     {
@@ -159,7 +158,11 @@ void OrchestratorThread::run()
                     }
                     else
                         m_status = R1_OBJECT_NOT_FOUND;
-                }     
+                }
+                else     
+                {
+                    m_status = R1_OBJECT_FOUND;
+                }
             }
         }
 
@@ -168,7 +171,7 @@ void OrchestratorThread::run()
             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
             Bottle&  sendOk = m_positive_outcome_port.prepare();
             sendOk.clear();
-            sendOk.addInt8(1);
+            sendOk = m_result;
             m_positive_outcome_port.write();
             m_status = R1_IDLE;
         }
@@ -185,11 +188,12 @@ void OrchestratorThread::run()
             while (!arrived && m_status == R1_OBJECT_NOT_FOUND )
             {
                 arrived = m_nav2home->areYouArrived();
+                Time::delay(0.5);
             }
 
             Bottle&  sendKo = m_negative_outcome_port.prepare();
             sendKo.clear();
-            sendKo.addInt8(0);
+            sendKo = m_result;
             m_negative_outcome_port.write();
             m_status = R1_IDLE;
         } 
@@ -264,6 +268,8 @@ void OrchestratorThread::onStop()
 /****************************************************************/
 Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 {
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Requested: %s", request.toString().c_str());
+
     Bottle _rep_;
     m_goandfindit_rpc_port.write(request,_rep_);
 
@@ -305,9 +311,21 @@ bool OrchestratorThread::askNetwork()
 /****************************************************************/
 Bottle OrchestratorThread::stopOrReset(const string& cmd)
 {
-    Bottle request{cmd};
-    Bottle rep = forwardRequest(request); 
-    
+    Bottle rep;
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Stopping");
+    if (m_status == R1_SEARCHING)
+    {
+        Bottle request{cmd};
+        rep = forwardRequest(request); 
+    }
+    else if (m_status == R1_OBJECT_NOT_FOUND)
+    {
+        m_nav2home->stop();
+    } 
+
+    if (rep.size() == 0)
+        rep.addVocab32(Vocab32::encode("ack"));
+
     m_status = R1_IDLE;
     return rep;
 }
@@ -315,6 +333,8 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
 /****************************************************************/
 Bottle OrchestratorThread::resume()
 {
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Resuming");
+
     Bottle rep, request{"resume"};
     rep = forwardRequest(request); 
 

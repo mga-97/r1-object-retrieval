@@ -59,6 +59,7 @@ protected:
     // Others
     R1_status               m_status;
     Bottle                  m_request;
+    Bottle                  m_result;
     int                     m_question_count;
     bool                    m_where_specified;
 
