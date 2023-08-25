@@ -134,12 +134,13 @@ void OrchestratorThread::run()
             {
                 forwardRequest(m_request);
                 m_status = R1_SEARCHING;
+                yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Requested: %s", m_request.toString().c_str());
             }
         }
 
         else if (m_status == R1_SEARCHING)
         {
-            Bottle rep, req{"status"};
+            Bottle req{"status"};
             if(forwardRequest(req).get(0).asString() == "idle") 
                 m_status = R1_IDLE;
 
@@ -173,7 +174,6 @@ void OrchestratorThread::run()
             sendOk.clear();
             sendOk = m_result;
             m_positive_outcome_port.write();
-            m_status = R1_IDLE;
         }
 
         else if (m_status == R1_OBJECT_NOT_FOUND)
@@ -247,6 +247,9 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
             }
             else if (cmd=="search")
             {
+                if (m_status == R1_OBJECT_FOUND || m_status == R1_OBJECT_NOT_FOUND )
+                    stopOrReset("stop");
+                
                 search(b);            
             }
             else
@@ -268,8 +271,6 @@ void OrchestratorThread::onStop()
 /****************************************************************/
 Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 {
-    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Requested: %s", request.toString().c_str());
-
     Bottle _rep_;
     m_goandfindit_rpc_port.write(request,_rep_);
 
@@ -297,6 +298,8 @@ void OrchestratorThread::resizeSearchBottle(const Bottle& btl)
         m_where_specified = true;
     else 
         m_where_specified = false;
+    
+    yCDebug(R1OBR_ORCHESTRATOR_THREAD, "m_where_specified: %d", (int)m_where_specified);
 }
 
 /****************************************************************/
@@ -321,6 +324,13 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
     else if (m_status == R1_OBJECT_NOT_FOUND)
     {
         m_nav2home->stop();
+    } 
+    else if (m_status == R1_OBJECT_FOUND)
+    {
+        Bottle&  send = m_positive_outcome_port.prepare();
+        send.clear();
+        send.addString("stop");
+        m_positive_outcome_port.write();
     } 
 
     if (rep.size() == 0)

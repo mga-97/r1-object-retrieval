@@ -28,7 +28,7 @@
 #include <yarp/math/Math.h>
 #include <cmath>
 
-#include "approachObjectExecutor.h"
+#include "approachObjectThread.h"
 
 
 using namespace std;
@@ -45,7 +45,7 @@ private:
     BufferedPort<Bottle>        m_input_port;  
     string                      m_input_port_name;  
 
-    ApproachObjectExecutor*     m_executor;    
+    ApproachObjectThread*     m_thread;    
     
 public:
     ApproachObject();

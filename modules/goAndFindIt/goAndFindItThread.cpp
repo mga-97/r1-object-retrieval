@@ -351,13 +351,13 @@ bool GoAndFindItThread::goThere()
     m_iNav2D->gotoTargetByLocationName(m_where);
     yCInfo(GO_AND_FIND_IT_THREAD, "Going to location %s", m_where.c_str());
 
-    yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
+    Nav2D::NavigationStatusEnum currentStatus;
     m_iNav2D->getNavigationStatus(currentStatus);
     double toomuchtime = Time::now() + m_max_nav_time; //five minutes to reach "m_where"
 
-    while (currentStatus != yarp::dev::Nav2D::navigation_status_goal_reached)
+    while (currentStatus != Nav2D::navigation_status_goal_reached)
     {
-        if (currentStatus == yarp::dev::Nav2D::navigation_status_aborted || m_status != GaFI_NAVIGATING)
+        if (currentStatus == Nav2D::navigation_status_aborted || m_status != GaFI_NAVIGATING)
         {
             yCWarning(GO_AND_FIND_IT_THREAD,"Navigation has been interrupted. Location not reached.");
             m_status = GaFI_IDLE;
@@ -475,9 +475,9 @@ bool GoAndFindItThread::stopSearch()
 {
     if (m_status == GaFI_NAVIGATING)
     {        
-        yarp::dev::Nav2D::NavigationStatusEnum currentStatus;
+        Nav2D::NavigationStatusEnum currentStatus;
         m_iNav2D->getNavigationStatus(currentStatus);
-        if (currentStatus == yarp::dev::Nav2D::navigation_status_moving)
+        if (currentStatus == Nav2D::navigation_status_moving)
             m_iNav2D->stopNavigation();
         yCInfo(GO_AND_FIND_IT_THREAD, "Navigation and search stopped");
     } 

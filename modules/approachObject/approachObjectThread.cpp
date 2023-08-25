@@ -16,15 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "approachObjectExecutor.h"
+#include "approachObjectThread.h"
 
 
-YARP_LOG_COMPONENT(APPROACH_OBJECT_EXECUTOR, "r1_obr.approachObject.approachObjectExecutor")
+YARP_LOG_COMPONENT(APPROACH_OBJECT_THREAD, "r1_obr.approachObject.approachObjectThread")
 
 
 /****************************************************************/
-ApproachObjectExecutor::ApproachObjectExecutor(ResourceFinder &rf):
+ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFinder &rf):
+    PeriodicThread(_period),
     m_rf(rf),
+    m_ext_start(false),
     m_ext_stop(false)
 {
     m_gaze_target_port_name         = "/approachObject/gaze_target:o";
@@ -33,46 +35,48 @@ ApproachObjectExecutor::ApproachObjectExecutor(ResourceFinder &rf):
     m_object_finder_result_port_name= "/approachObject/object_finder_result:i";
     m_camera_frame_id   = "depth_center";
     m_base_frame_id     = "base_link";
+    m_world_frame_id    = "map";
     m_safe_distance     = 1.0;
 }
 
 
 /****************************************************************/
-bool ApproachObjectExecutor::configure()
+bool ApproachObjectThread::threadInit()
 {
     // ------------ Generic config ------------ //
     if(m_rf.check("camera_frame_id")) {m_camera_frame_id = m_rf.find("camera_frame_id").asString();}
     if(m_rf.check("base_frame_id")) {m_base_frame_id = m_rf.find("base_frame_id").asString();}
+    if(m_rf.check("world_frame_id")) {m_world_frame_id = m_rf.find("world_frame_id").asString();}
     if(m_rf.check("safe_distance")) {m_safe_distance = m_rf.find("safe_distance").asFloat32();}
 
 
     // ------------ Open ports ------------ //
     if(m_rf.check("gaze_target_port")) {m_gaze_target_port_name = m_rf.find("gaze_target_port").asString();}
     if(!m_gaze_target_port.open(m_gaze_target_port_name))
-        yCError(APPROACH_OBJECT_EXECUTOR) << "Cannot open port" << m_gaze_target_port_name; 
+        yCError(APPROACH_OBJECT_THREAD) << "Cannot open port" << m_gaze_target_port_name; 
     else
-        yCInfo(APPROACH_OBJECT_EXECUTOR) << "opened port" << m_gaze_target_port_name;
+        yCInfo(APPROACH_OBJECT_THREAD) << "opened port" << m_gaze_target_port_name;
 
 
     if(m_rf.check("object_finder_rpc_port")) {m_object_finder_rpc_port_name = m_rf.find("object_finder_rpc_port").asString();}
     if(!m_object_finder_rpc_port.open(m_object_finder_rpc_port_name))
-        yCError(APPROACH_OBJECT_EXECUTOR) << "Cannot open port" << m_object_finder_rpc_port_name; 
+        yCError(APPROACH_OBJECT_THREAD) << "Cannot open port" << m_object_finder_rpc_port_name; 
     else
-        yCInfo(APPROACH_OBJECT_EXECUTOR) << "opened port" << m_object_finder_rpc_port_name;
+        yCInfo(APPROACH_OBJECT_THREAD) << "opened port" << m_object_finder_rpc_port_name;
 
 
     if(m_rf.check("object_finder_result_port")) {m_object_finder_result_port_name = m_rf.find("object_finder_result_port").asString();}
     if(!m_object_finder_result_port.open(m_object_finder_result_port_name))
-        yCError(APPROACH_OBJECT_EXECUTOR) << "Cannot open port" << m_object_finder_result_port_name; 
+        yCError(APPROACH_OBJECT_THREAD) << "Cannot open port" << m_object_finder_result_port_name; 
     else
-        yCInfo(APPROACH_OBJECT_EXECUTOR) << "opened port" << m_object_finder_result_port_name;
+        yCInfo(APPROACH_OBJECT_THREAD) << "opened port" << m_object_finder_result_port_name;
 
 
     if(m_rf.check("output_coordinates_port")) {m_output_coordinates_port_name = m_rf.find("output_coordinates_port").asString();}
     if(!m_output_coordinates_port.open(m_output_coordinates_port_name))
-        yCError(APPROACH_OBJECT_EXECUTOR) << "Cannot open port" << m_output_coordinates_port_name; 
+        yCError(APPROACH_OBJECT_THREAD) << "Cannot open port" << m_output_coordinates_port_name; 
     else
-        yCInfo(APPROACH_OBJECT_EXECUTOR) << "opened port" << m_output_coordinates_port_name;
+        yCInfo(APPROACH_OBJECT_THREAD) << "opened port" << m_output_coordinates_port_name;
     
     
     // ------------ TransformClient config ------------ //
@@ -84,7 +88,7 @@ bool ApproachObjectExecutor::configure()
     bool okTransformRf = m_rf.check("TRANSFORM_CLIENT");
     if(!okTransformRf)
     {
-        yCWarning(APPROACH_OBJECT_EXECUTOR,"TRANSFORM_CLIENT section missing in ini file Using default values");
+        yCWarning(APPROACH_OBJECT_THREAD,"TRANSFORM_CLIENT section missing in ini file Using default values");
         tcProp.put("filexml_option","ftc_yarp_only.xml");
     }
     else {
@@ -106,20 +110,20 @@ bool ApproachObjectExecutor::configure()
         }
         else
         {
-            yCError(APPROACH_OBJECT_EXECUTOR,"TRANSFORM_CLIENT is missing information about the frameTransformClient device configuration. Check your config. RETURNING");
+            yCError(APPROACH_OBJECT_THREAD,"TRANSFORM_CLIENT is missing information about the frameTransformClient device configuration. Check your config. RETURNING");
             return false;
         }
     }
     m_tcPoly.open(tcProp);
     if(!m_tcPoly.isValid())
     {
-        yCError(APPROACH_OBJECT_EXECUTOR,"Error opening PolyDriver check parameters");
+        yCError(APPROACH_OBJECT_THREAD,"Error opening PolyDriver check parameters");
         return false;
     }
     m_tcPoly.view(m_iTc);
     if(!m_iTc)
     {
-        yCError(APPROACH_OBJECT_EXECUTOR,"Error opening iFrameTransform interface. Device not available");
+        yCError(APPROACH_OBJECT_THREAD,"Error opening iFrameTransform interface. Device not available");
         return false;
     }
 
@@ -128,7 +132,7 @@ bool ApproachObjectExecutor::configure()
     Property nav2DProp;
     if(!m_rf.check("NAVIGATION_CLIENT"))
     {
-        yCWarning(APPROACH_OBJECT_EXECUTOR,"NAVIGATION_CLIENT section missing in ini file. Using the default values");
+        yCWarning(APPROACH_OBJECT_THREAD,"NAVIGATION_CLIENT section missing in ini file. Using the default values");
     }
     Searchable& nav_config = m_rf.findGroup("NAVIGATION_CLIENT");
     nav2DProp.put("device", nav_config.check("device", Value("navigation2D_nwc_yarp")));
@@ -140,11 +144,11 @@ bool ApproachObjectExecutor::configure()
     m_nav2DPoly.open(nav2DProp);
     if(!m_nav2DPoly.isValid())
     {
-        yCWarning(APPROACH_OBJECT_EXECUTOR,"Error opening PolyDriver check parameters. Using the default values");
+        yCWarning(APPROACH_OBJECT_THREAD,"Error opening PolyDriver check parameters. Using the default values");
     }
     m_nav2DPoly.view(m_iNav2D);
     if(!m_iNav2D){
-        yCError(APPROACH_OBJECT_EXECUTOR,"Error opening INavigation2D interface. Device not available");
+        yCError(APPROACH_OBJECT_THREAD,"Error opening INavigation2D interface. Device not available");
         return false;
     }
 
@@ -164,7 +168,7 @@ bool ApproachObjectExecutor::configure()
     bool okRgbdRf = m_rf.check("RGBD_SENSOR_CLIENT");
     if(!okRgbdRf)
     {
-        yCWarning(APPROACH_OBJECT_EXECUTOR,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
+        yCWarning(APPROACH_OBJECT_THREAD,"RGBD_SENSOR_CLIENT section missing in ini file. Using default values");
     }
     else
     {
@@ -183,13 +187,13 @@ bool ApproachObjectExecutor::configure()
     m_rgbdPoly.open(rgbdProp);
     if(!m_rgbdPoly.isValid())
     {
-        yCError(APPROACH_OBJECT_EXECUTOR,"Error opening PolyDriver check parameters");
+        yCError(APPROACH_OBJECT_THREAD,"Error opening PolyDriver check parameters");
         return false;
     }
     m_rgbdPoly.view(m_iRgbd);
     if(!m_iRgbd)
     {
-        yCError(APPROACH_OBJECT_EXECUTOR,"Error opening iRGBD interface. Device not available");
+        yCError(APPROACH_OBJECT_THREAD,"Error opening iRGBD interface. Device not available");
         return false;
     }
    
@@ -198,7 +202,7 @@ bool ApproachObjectExecutor::configure()
     if(!propintr){
         return false;
     }
-    yCInfo(APPROACH_OBJECT_EXECUTOR) << "Depth Intrinsics:" << m_propIntrinsics.toString();
+    yCInfo(APPROACH_OBJECT_THREAD) << "Depth Intrinsics:" << m_propIntrinsics.toString();
     m_intrinsics.fromProperty(m_propIntrinsics);
 
 
@@ -207,7 +211,7 @@ bool ApproachObjectExecutor::configure()
 
 
 /****************************************************************/
-void ApproachObjectExecutor::close()
+void ApproachObjectThread::threadRelease()
 {
     if(m_tcPoly.isValid())
         m_tcPoly.close();
@@ -227,90 +231,123 @@ void ApproachObjectExecutor::close()
 
 
 /****************************************************************/
-void ApproachObjectExecutor::exec(Bottle& b) 
+void ApproachObjectThread::exec(Bottle& b) 
 {
-    string  object = b.get(0).asString();
-    Bottle* coords = b.get(1).asList();
-    
-    double u = coords->get(0).asFloat32();
-    double v = coords->get(1).asFloat32();
+    m_object = b.get(0).asString();
+    m_coords = b.get(1).asList();
 
-    //get depth image from camera
-    ImageOf<float>  depth_image;  
-    bool depth_ok = m_iRgbd->getDepthImage(depth_image);
-    if (!depth_ok)
+    m_ext_start = true;
+}   
+
+
+/****************************************************************/
+void ApproachObjectThread::run() 
+{
+    if (m_ext_start && !m_ext_stop)
     {
-        yCError(APPROACH_OBJECT_EXECUTOR, "getDepthImage failed");
-        return;
-    }
-    if (depth_image.getRawImage()==nullptr)
-    {
-        yCError(APPROACH_OBJECT_EXECUTOR, "invalid image received");
-        return;
-    }
+        yCInfo(APPROACH_OBJECT_THREAD,"Calculating approaching position");
+        double u = m_coords->get(0).asFloat32();
+        double v = m_coords->get(1).asFloat32();
 
-    //transforming pixel coordinates in space coordinates wrt camera frame
-    Vector tempPoint(4,1.0);
-    tempPoint[0] = (u - m_intrinsics.principalPointX) / m_intrinsics.focalLengthX * depth_image.pixel(u, v);
-    tempPoint[1] = (v - m_intrinsics.principalPointY) / m_intrinsics.focalLengthY * depth_image.pixel(u, v);
-    tempPoint[2] = depth_image.pixel(u, v);
+        //get depth image from camera
+        ImageOf<float>  depth_image;  
+        bool depth_ok = m_iRgbd->getDepthImage(depth_image);
+        if (!depth_ok)
+        {
+            yCError(APPROACH_OBJECT_THREAD, "getDepthImage failed");
+            return;
+        }
+        if (depth_image.getRawImage()==nullptr)
+        {
+            yCError(APPROACH_OBJECT_THREAD, "invalid image received");
+            return;
+        }
 
-    //computing the transformation matrix from the camera to the base reference frame
-    Matrix transform_mtrx;
-    bool base_frame_exists = m_iTc->getTransform(m_camera_frame_id, m_base_frame_id, transform_mtrx);
-    if (!base_frame_exists)
-    {
-        yCError(APPROACH_OBJECT_EXECUTOR, "unable to found transformation matrix");
-        return;
-    }
+        //transforming pixel coordinates in space coordinates wrt camera frame
+        Vector tempPoint(4,1.0);
+        tempPoint[0] = (u - m_intrinsics.principalPointX) / m_intrinsics.focalLengthX * depth_image.pixel(u, v);
+        tempPoint[1] = (v - m_intrinsics.principalPointY) / m_intrinsics.focalLengthY * depth_image.pixel(u, v);
+        tempPoint[2] = depth_image.pixel(u, v);
 
-    //point in space coordinates wrt base frame
-    Vector v1 = transform_mtrx*tempPoint;
+        //computing the transformation matrix from the camera to the base reference frame
+        Matrix transform_mtrx;
+        bool base_frame_exists = m_iTc->getTransform(m_camera_frame_id, m_base_frame_id, transform_mtrx);
+        if (!base_frame_exists)
+        {
+            yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (base)");
+            return;
+        }
 
-    //navigation to target at safe distance from point
-    yCInfo(APPROACH_OBJECT_EXECUTOR,"Approaching object");
-    double theta = atan2(v1[1], v1[0]);
-    double x_target = v1[0] - m_safe_distance*cos(theta);
-    double y_target = v1[1] - m_safe_distance*sin(theta);
-    if (m_iNav2D->gotoTargetByRelativeLocation(x_target, y_target, theta*180/M_PI) )  
-    {
-        yCError(APPROACH_OBJECT_EXECUTOR, "navigation to target failed");
-        return;
-    }   
-    NavigationStatusEnum currentStatus;
-    m_iNav2D->getNavigationStatus(currentStatus);
+        //point in space coordinates in base ref frame
+        Vector v1 = transform_mtrx*tempPoint;
 
-    while (currentStatus != navigation_status_goal_reached  && !m_ext_stop  )
-    {
-        Time::delay(0.2);
+        //define target at safe distance from point (on a line connecting robot and point) in base ref frame
+        Vector& v_target_base = v1;
+        v_target_base[0] = v1[0] - m_safe_distance*cos(atan2(v1[1], v1[0]));
+        v_target_base[1] = v1[1] - m_safe_distance*sin(atan2(v1[1], v1[0]));
+
+        //define navigation target in world ref frame
+        bool world_frame_exists = m_iTc->getTransform(m_base_frame_id, m_world_frame_id, transform_mtrx);
+        if (!world_frame_exists)
+        {
+            yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (world)");
+            return;
+        }
+        Vector v_target_world = transform_mtrx*v_target_base;
+        Map2DLocation loc;
+        m_iNav2D->getCurrentPosition(loc);
+        loc.x = v_target_world[0];
+        loc.y = v_target_world[1];
+        
+        //navigation to target
+        yCInfo(APPROACH_OBJECT_THREAD,"Approaching object");
+            // if (m_iNav2D->gotoTargetByRelativeLocation(x_target, y_target, theta*180/M_PI) )  
+        if (m_iNav2D->gotoTargetByAbsoluteLocation(loc))
+        {
+            yCError(APPROACH_OBJECT_THREAD, "navigation to target failed");
+            return;
+        }   
+        NavigationStatusEnum currentStatus;
         m_iNav2D->getNavigationStatus(currentStatus);
-    }
 
-    //look again for object
-    yCInfo(APPROACH_OBJECT_EXECUTOR,"Looking for object again");
-    if (!m_ext_stop)
-    {
-        if(lookAgain(object))
+        while (currentStatus != navigation_status_goal_reached  && !m_ext_stop  )
         {
-            Bottle* new_coords = m_object_finder_result_port.read(false); 
-            if(new_coords  != nullptr)
+            Time::delay(0.2);
+            m_iNav2D->getNavigationStatus(currentStatus);
+        }
+
+        //look again for object
+        yCInfo(APPROACH_OBJECT_THREAD,"Looking for object again");
+        if (!m_ext_stop)
+        {
+            if(lookAgain(m_object))
             {
-                Bottle&  toSend = m_output_coordinates_port.prepare();
-                toSend.clear();
-                toSend = *new_coords;
-                m_output_coordinates_port.write();
+                Bottle* new_coords = m_object_finder_result_port.read(false); 
+                if(new_coords  != nullptr)
+                {
+                    Bottle&  toSend = m_output_coordinates_port.prepare();
+                    toSend.clear();
+                    toSend = *new_coords;
+                    m_output_coordinates_port.write();
+                }
             }
-        }
-        else
-        {
-            yCError(APPROACH_OBJECT_EXECUTOR,"I cannot find the object again");
-        }
-    }    
+            else
+            {
+                yCError(APPROACH_OBJECT_THREAD,"I cannot find the object again");
+            }
+        }   
+    } 
+
+    if (m_ext_start)
+        m_ext_start = false;
+
+    if (m_ext_stop)
+        m_ext_stop = false;
 }
 
 
 /****************************************************************/
-bool ApproachObjectExecutor::lookAgain(string object ) 
+bool ApproachObjectThread::lookAgain(string object ) 
 {
     vector<pair<double,double>> head_positions = {
         {0.0,  0.0 }  ,   //front
@@ -350,7 +387,7 @@ bool ApproachObjectExecutor::lookAgain(string object )
         }
         else
         {
-            yCError(APPROACH_OBJECT_EXECUTOR,"Unable to communicate with object finder");
+            yCError(APPROACH_OBJECT_THREAD,"Unable to communicate with object finder");
             return false;
         }
     }
@@ -360,10 +397,15 @@ bool ApproachObjectExecutor::lookAgain(string object )
 
 
 /****************************************************************/
-bool ApproachObjectExecutor::externalStop()
+bool ApproachObjectThread::externalStop()
 {
-    yCInfo(APPROACH_OBJECT_EXECUTOR,"Stopping approaching executions");
+    yCInfo(APPROACH_OBJECT_THREAD,"Stopping approaching executions");
     m_ext_stop = true;
+
+    NavigationStatusEnum currentStatus;
+    m_iNav2D->getNavigationStatus(currentStatus);
+    if (currentStatus == navigation_status_moving)
+        m_iNav2D->stopNavigation();
 
     return true;
 

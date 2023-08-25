@@ -38,9 +38,11 @@ bool ApproachObject::configure(ResourceFinder &rf)
     if(rf.check("input_port")) {m_input_port_name = rf.find("input_port").asString();}
     
 
-    // --------- Executor initialization --------- //
-    m_executor = new ApproachObjectExecutor(rf);
-    bool execOk = m_executor->configure();
+    // --------- Thread initialization --------- //
+    double threadPeriod = 0.02;
+    if(rf.check("thread_period")){threadPeriod = rf.find("thread_period").asFloat32();}
+    m_thread = new ApproachObjectThread(threadPeriod,rf);
+    bool execOk = m_thread->start();
     if (!execOk){
         return false;
     }
@@ -67,9 +69,9 @@ bool ApproachObject::configure(ResourceFinder &rf)
 /****************************************************************/
 bool ApproachObject::close()
 {
-    m_executor->externalStop();
-    delete m_executor;
-    m_executor =NULL;
+    m_thread->stop();
+    delete m_thread;
+    m_thread =NULL;
     
     if (!m_input_port.isClosed())
         m_input_port.close(); 
@@ -90,7 +92,7 @@ bool ApproachObject::updateModule()
 {
     if (isStopping())
     {
-        if (m_executor) m_executor->externalStop();
+        if (m_thread) m_thread->externalStop();
         return false;
     }
     return true;
@@ -103,12 +105,12 @@ void ApproachObject::onRead(Bottle& b)
     yCInfo(APPROACH_OBJECT,"Received:  %s",b.toString().c_str());
     if(b.size() == 2)
     {
-        m_executor->exec(b);
+        m_thread->exec(b);
     }
     else if(b.size() == 1)
     {
         if (b.get(0).asString() == "stop")
-            m_executor->externalStop();
+            m_thread->externalStop();
     }
 }
 

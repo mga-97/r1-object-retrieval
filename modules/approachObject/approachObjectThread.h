@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef APPROACH_OBJECT_EXECUTOR_H
-#define APPROACH_OBJECT_EXECUTOR_H
+#ifndef APPROACH_OBJECT_THREAD_H
+#define APPROACH_OBJECT_THREAD_H
 
 #include <yarp/os/all.h>
 #include <yarp/dev/PolyDriver.h>
@@ -27,7 +27,6 @@
 #include <yarp/dev/IRGBDSensor.h> 
 #include <yarp/math/Math.h>
 #include <cmath>
-#include <map>
 
 
 using namespace std;
@@ -36,12 +35,16 @@ using namespace yarp::dev;
 using namespace yarp::dev::Nav2D;
 using namespace yarp::sig;
 
-class ApproachObjectExecutor 
+class ApproachObjectThread : public PeriodicThread
 {
 private:
-    double                  m_safe_distance;
     ResourceFinder&         m_rf;
+    bool                    m_ext_start;
     bool                    m_ext_stop;
+
+    string                  m_object;
+    Bottle*                 m_coords;
+    double                  m_safe_distance;
 
     //Ports
     BufferedPort<Bottle>    m_gaze_target_port;
@@ -62,17 +65,19 @@ private:
     IRGBDSensor*            m_iRgbd{nullptr}; 
 
     //Computation related attributes
+    string                  m_world_frame_id;
     string                  m_base_frame_id;
     string                  m_camera_frame_id; 
     Property                m_propIntrinsics;
     IntrinsicParams         m_intrinsics;       
     
 public:
-    ApproachObjectExecutor(ResourceFinder &rf);
-    ~ApproachObjectExecutor() = default;
+    ApproachObjectThread(double _period, ResourceFinder &rf);
+    ~ApproachObjectThread() = default;
+    virtual void run() override;
+    virtual bool threadInit() override;
+    virtual void threadRelease() override;
 
-    bool configure();
-    void close();
     void exec(Bottle& b);
     bool lookAgain(string object);
     bool externalStop();    

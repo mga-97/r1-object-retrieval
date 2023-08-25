@@ -265,6 +265,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
             Bottle request, reply;
             request.addString("where");
             request.addString(ob); 
+            yCDebug(LOOK_FOR_OBJECT_THREAD, "request to object finder: %s", request.toString().c_str());
             if (m_findObjectPort.write(request,reply))
             {
                 if (reply.get(0).asString()!="not found")
