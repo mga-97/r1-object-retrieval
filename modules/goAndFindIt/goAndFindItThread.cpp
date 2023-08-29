@@ -31,6 +31,7 @@ GoAndFindItThread::GoAndFindItThread(yarp::os::ResourceFinder &rf) :
     m_what(""),
     m_where(""),
     m_where_specified(false),
+    m_nowhere_else(false),
     m_status(GaFI_IDLE),
     m_in_nav_position(false)
 {
@@ -526,6 +527,7 @@ bool GoAndFindItThread::resetSearch()
 
     m_in_nav_position = false;
     m_where_specified = false;
+    m_nowhere_else = false;
     m_what = "";
     m_where = "";
 

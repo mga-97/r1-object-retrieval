@@ -255,11 +255,13 @@ void ApproachObjectThread::run()
         if (!depth_ok)
         {
             yCError(APPROACH_OBJECT_THREAD, "getDepthImage failed");
+            m_ext_start = false;
             return;
         }
         if (depth_image.getRawImage()==nullptr)
         {
             yCError(APPROACH_OBJECT_THREAD, "invalid image received");
+            m_ext_start = false;
             return;
         }
 
@@ -275,6 +277,7 @@ void ApproachObjectThread::run()
         if (!base_frame_exists)
         {
             yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (base)");
+            m_ext_start = false;
             return;
         }
 
@@ -282,7 +285,7 @@ void ApproachObjectThread::run()
         Vector v1 = transform_mtrx*tempPoint;
 
         //define target at safe distance from point (on a line connecting robot and point) in base ref frame
-        Vector& v_target_base = v1;
+        Vector v_target_base = v1;
         v_target_base[0] = v1[0] - m_safe_distance*cos(atan2(v1[1], v1[0]));
         v_target_base[1] = v1[1] - m_safe_distance*sin(atan2(v1[1], v1[0]));
 
@@ -291,25 +294,26 @@ void ApproachObjectThread::run()
         if (!world_frame_exists)
         {
             yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (world)");
+            m_ext_start = false;
             return;
         }
         Vector v_target_world = transform_mtrx*v_target_base;
         Map2DLocation loc;
         m_iNav2D->getCurrentPosition(loc);
+        yCDebug(APPROACH_OBJECT_THREAD,) << "current location"<< loc.toString();
+
+        Vector v1_world = transform_mtrx*v1;
+        loc.theta = atan2((v1_world[1]-loc.y), (v1_world[0]-loc.x)) / M_PI * 180;
         loc.x = v_target_world[0];
         loc.y = v_target_world[1];
         
         //navigation to target
         yCInfo(APPROACH_OBJECT_THREAD,"Approaching object");
-            // if (m_iNav2D->gotoTargetByRelativeLocation(x_target, y_target, theta*180/M_PI) )  
-        if (m_iNav2D->gotoTargetByAbsoluteLocation(loc))
-        {
-            yCError(APPROACH_OBJECT_THREAD, "navigation to target failed");
-            return;
-        }   
+        yCDebug(APPROACH_OBJECT_THREAD,) << "loc approach:"<< loc.toString();
+        m_iNav2D->gotoTargetByAbsoluteLocation(loc);
+
         NavigationStatusEnum currentStatus;
         m_iNav2D->getNavigationStatus(currentStatus);
-
         while (currentStatus != navigation_status_goal_reached  && !m_ext_stop  )
         {
             Time::delay(0.2);
@@ -317,7 +321,7 @@ void ApproachObjectThread::run()
         }
 
         //look again for object
-        yCInfo(APPROACH_OBJECT_THREAD,"Looking for object again");
+        yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
         if (!m_ext_stop)
         {
             if(lookAgain(m_object))
@@ -371,6 +375,7 @@ bool ApproachObjectThread::lookAgain(string object )
         targetList.addFloat32(head_positions[i].first);
         targetList.addFloat32(head_positions[i].second);
         m_gaze_target_port.write(); //sending output command to gaze-controller 
+        yCDebug(APPROACH_OBJECT_THREAD) << "to gaze controller:" << toSend1.toString().c_str();
         
         yarp::os::Time::delay(2.0);  //waiting for the robot to tilt its head
 
@@ -380,6 +385,7 @@ bool ApproachObjectThread::lookAgain(string object )
         request.addString(object); 
         if (m_object_finder_rpc_port.write(request,reply))
         {
+            yCDebug(APPROACH_OBJECT_THREAD) << "reply da yolo:" << reply.toString().c_str();
             if (reply.get(0).asString()!="not found")
             {
                 return true;

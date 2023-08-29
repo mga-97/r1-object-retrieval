@@ -112,6 +112,10 @@ void ApproachObject::onRead(Bottle& b)
         if (b.get(0).asString() == "stop")
             m_thread->externalStop();
     }
+    else
+    {
+        yCError(APPROACH_OBJECT,"Wrong input bottle size");
+    }
 }
 
 
