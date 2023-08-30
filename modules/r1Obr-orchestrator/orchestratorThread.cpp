@@ -163,17 +163,18 @@ void OrchestratorThread::run()
                 else     
                 {
                     m_status = R1_OBJECT_FOUND;
+                    Bottle&  sendOk = m_positive_outcome_port.prepare();
+                    sendOk.clear();
+                    sendOk = m_result;
+                    m_positive_outcome_port.write();
+                    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
                 }
             }
         }
 
         else if (m_status == R1_OBJECT_FOUND)
         {
-            yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
-            Bottle&  sendOk = m_positive_outcome_port.prepare();
-            sendOk.clear();
-            sendOk = m_result;
-            m_positive_outcome_port.write();
+            
         }
 
         else if (m_status == R1_OBJECT_NOT_FOUND)
@@ -195,7 +196,7 @@ void OrchestratorThread::run()
             sendKo.clear();
             sendKo = m_result;
             m_negative_outcome_port.write();
-            m_status = R1_IDLE;
+            
         } 
 
         else if (m_status == R1_IDLE || m_status == R1_WAITING_FOR_ANSWER )

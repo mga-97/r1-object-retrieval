@@ -1,5 +1,5 @@
 <application>
-   <name>R1_approachObject_MDETR_SIM</name>
+   <name>R1_approachObject_YOLO_SIM</name>
 
    <dependencies>
    </dependencies>
@@ -18,13 +18,26 @@
 
    <connection>
       <from>/approachObject/object_finder/rpc</from>
-      <to>/yarpMdetr/command/rpc</to>
+      <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
 
    <connection>
-      <from>/yarpMdetr/bbox_coords:o</from>
+      <from>/yarpYolo/where_coords:o</from>
       <to>/approachObject/object_finder_result:i</to>
       <protocol>tcp</protocol>
    </connection>
+
+   <connection>
+      <from>/r1Obr-orchestrator/positive_outcome:o</from>
+      <to>/approachObject/input_coords:i</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/approachObject/output_coords:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>tcp</protocol>
+   </connection>
+
 </application>

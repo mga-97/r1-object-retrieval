@@ -501,6 +501,9 @@ bool GoAndFindItThread::resumeSearch()
 {
     yCInfo(GO_AND_FIND_IT_THREAD, "Resuming search");
     
+    if (m_status != GaFI_IDLE)
+        return false;
+
     if (m_where != "")
     {
         Bottle request,reply,btl;
@@ -514,7 +517,7 @@ bool GoAndFindItThread::resumeSearch()
             m_nextLoc_rpc_port.write(request,reply);
         } 
     }
-
+    
     m_status = GaFI_NEW_SEARCH;
 
     return true;
