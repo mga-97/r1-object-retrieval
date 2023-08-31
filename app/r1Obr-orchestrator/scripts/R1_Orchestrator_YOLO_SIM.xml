@@ -16,6 +16,12 @@
    </module>
 
    <connection>
+      <from>/r1Obr-orchestrator/nextLocPlanner/request:rpc</from>
+      <to>/nextLocPlanner/request/rpc</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
       <from>/r1Obr-orchestrator/goAndFindIt/request:rpc</from>
       <to>/goAndFindIt/rpc</to>
       <protocol>tcp</protocol>

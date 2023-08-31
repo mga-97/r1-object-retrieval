@@ -44,6 +44,9 @@ protected:
     string                  m_sensor_network_rpc_port_name;
     RpcClient               m_sensor_network_rpc_port;
 
+    string                  m_nextLoc_rpc_port_name;
+    RpcClient               m_nextLoc_rpc_port;
+
     string                  m_goandfindit_rpc_port_name;
     RpcClient               m_goandfindit_rpc_port;
 
@@ -84,7 +87,7 @@ public:
 
     Bottle forwardRequest(const Bottle& b);
     void search(const Bottle& btl);
-    void resizeSearchBottle(const Bottle& btl);
+    bool resizeSearchBottle(const Bottle& btl);
     bool askNetwork();
     Bottle stopOrReset(const string& cmd);
     Bottle resume();

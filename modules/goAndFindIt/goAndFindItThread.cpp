@@ -234,9 +234,8 @@ void GoAndFindItThread::run()
 /****************************************************************/
 void GoAndFindItThread::setWhat(string& what)
 { 
-    m_where_specified = false;
     
-    if (what == m_what && m_status != GaFI_IDLE)
+    if (what == m_what && m_status != GaFI_IDLE && m_where_specified == false)
     {
         yCWarning(GO_AND_FIND_IT_THREAD, "Already looking for %s. If you want to perform a new search, please send reset command.", m_what.c_str());
     }
@@ -250,6 +249,7 @@ void GoAndFindItThread::setWhat(string& what)
         else
             resetSearch();
  
+        m_where_specified = false;
         m_where = "";
         
         m_status = GaFI_NEW_SEARCH;  
@@ -260,7 +260,7 @@ void GoAndFindItThread::setWhat(string& what)
 /****************************************************************/
 void GoAndFindItThread::setWhatWhere(string& what, string& where)
 {
-    if (what == m_what && where == m_where && m_status != GaFI_IDLE)
+    if (what == m_what && where == m_where && m_status != GaFI_IDLE && m_where_specified == true)
     {
         yCWarning(GO_AND_FIND_IT_THREAD, "Already looking for %s in location %s. If you want to perform a new search, please send reset command.", m_what.c_str(), m_where.c_str());
     }

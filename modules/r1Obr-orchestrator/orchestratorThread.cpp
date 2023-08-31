@@ -35,6 +35,7 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
 {
     //Defaults
     m_sensor_network_rpc_port_name  = "/r1Obr-orchestrator/sensor_network:rpc";
+    m_nextLoc_rpc_port_name         = "/r1Obr-orchestrator/nextLocPlanner/request:rpc";
     m_goandfindit_rpc_port_name     = "/r1Obr-orchestrator/goAndFindIt/request:rpc";
     m_goandfindit_result_port_name  = "/r1Obr-orchestrator/goAndFindIt/result:i";
     m_positive_outcome_port_name    = "/r1Obr-orchestrator/positive_outcome:o";
@@ -46,11 +47,17 @@ bool OrchestratorThread::threadInit()
 {
     // --------- ports config --------- //
     if (m_rf.check("sensor_network_rpc_port"))  {m_sensor_network_rpc_port_name = m_rf.find("sensor_network_rpc_port").asString();}
+    if (m_rf.check("next_loc_planner_rpc_port")){m_nextLoc_rpc_port_name        = m_rf.find("next_loc_planner_rpc_port").asString();}
     if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name    = m_rf.find("goandfindit_rpc_port").asString();}
     if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name = m_rf.find("goandfindit_result_port").asString();}
     
     if(!m_sensor_network_rpc_port.open(m_sensor_network_rpc_port_name)){
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Out port with name" << m_sensor_network_rpc_port_name;
+        return false;
+    }
+
+    if(!m_nextLoc_rpc_port.open(m_nextLoc_rpc_port_name)){
+        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open nextLocPlanner RPC port with name" << m_nextLoc_rpc_port_name;
         return false;
     }
 
@@ -102,6 +109,9 @@ void OrchestratorThread::threadRelease()
 {
     if (m_sensor_network_rpc_port.asPort().isOpen())
         m_sensor_network_rpc_port.close(); 
+        
+    if (m_nextLoc_rpc_port.asPort().isOpen())
+        m_nextLoc_rpc_port.close(); 
         
     if (m_goandfindit_rpc_port.asPort().isOpen())
         m_goandfindit_rpc_port.close(); 
@@ -281,26 +291,42 @@ Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 /****************************************************************/
 void OrchestratorThread::search(const Bottle& btl)
 {
-    resizeSearchBottle(btl);
-    m_status = R1_ASKING_NETWORK;  
+    if(resizeSearchBottle(btl))
+        m_status = R1_ASKING_NETWORK;  
+    else
+        stopOrReset("stop"); 
 }
 
 /****************************************************************/
-void OrchestratorThread::resizeSearchBottle(const Bottle& btl)
+bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
 {
     int sz = btl.size();
-    m_request.clear();
-    for (int i=0; i < min(sz,3); i++)
-    {
-        m_request.addString(btl.get(i).asString());
-    }
 
     if (sz > 2)
         m_where_specified = true;
     else 
         m_where_specified = false;
+
+    m_request.clear();
+    for (int i=0; i < min(sz,3); i++)
+    {
+        m_request.addString(btl.get(i).asString());
+
+        if(i==2)
+        {
+            Bottle req,rep;
+            req.fromString("find " + btl.get(i).asString());
+            m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
+            if (rep.get(0).asString() != "ok")
+            {
+                yCError(R1OBR_ORCHESTRATOR_THREAD,"Location specified is not valid.");
+                m_request.clear();
+                return false;
+            }   
+        }
+    }
     
-    yCDebug(R1OBR_ORCHESTRATOR_THREAD, "m_where_specified: %d", (int)m_where_specified);
+    return true;
 }
 
 /****************************************************************/
