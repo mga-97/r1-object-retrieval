@@ -31,58 +31,64 @@
 #include <map>
 #include <algorithm>
 
+using namespace yarp::os;
+using namespace yarp::dev;
+using namespace yarp::dev::Nav2D;
+using namespace std;
 
 
-class NextLocPlanner : public yarp::os::RFModule
+class NextLocPlanner : public RFModule
 {
 
 private:  
-    double                           m_period;
-    std::string                      m_area;
+    double            m_period;
+    string            m_area;
 
     //Devices
-    yarp::dev::PolyDriver            m_nav2DPoly;
-    yarp::dev::Nav2D::INavigation2D* m_iNav2D{nullptr};
+    PolyDriver        m_nav2DPoly;
+    INavigation2D*    m_iNav2D{nullptr};
 
     //Ports
-    yarp::os::RpcServer              m_rpc_server_port;
+    RpcServer         m_rpc_server_port;
 
     //Locations
-    std::vector<std::string>    m_all_locations;
-    std::vector<std::string>    m_locations_unchecked;
-    std::vector<std::string>    m_locations_checking;
-    std::vector<std::string>    m_locations_checked;
+    vector<string>    m_all_locations;
+    vector<string>    m_locations_unchecked;
+    vector<string>    m_locations_checking;
+    vector<string>    m_locations_checked;
     
-    std::mutex      m_mutex;
+    mutex             m_mutex;
 
 public:
     NextLocPlanner();
     ~NextLocPlanner() = default;
-    virtual bool configure(yarp::os::ResourceFinder &rf);
+    virtual bool configure(ResourceFinder &rf);
     virtual bool close();
     virtual double getPeriod();
     virtual bool updateModule();
-    bool respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply);
-    bool setLocationStatus(const std::string location_name, const std::string& location_status);
-    bool getCurrentCheckingLocation(std::string& location_name);
-    bool getUncheckedLocations(std::vector<std::string>& location_list);
-    bool getCheckedLocations(std::vector<std::string>& location_list);
+    bool respond(const Bottle &cmd, Bottle &reply);
+    bool setLocationStatus(const string location_name, const string& location_status);
+    bool getCurrentCheckingLocation(string& location_name);
+    bool getUncheckedLocations(vector<string>& location_list);
+    bool getCheckedLocations(vector<string>& location_list);
     void sortUncheckedLocations();
+    bool addLocation(string& loc);
+    bool removeLocation(string& loc);
 
 private:
-    double distRobotLocation(const std::string& location_name);
+    double distRobotLocation(const string& location_name);
 
     template <typename A, typename B>
-    void zip(const std::vector<A> &a, const std::vector<B> &b,  std::vector<std::pair<A,B>> &zipped)
+    void zip(const vector<A> &a, const vector<B> &b,  vector<pair<A,B>> &zipped)
     {
         for(size_t i=0; i<a.size(); ++i)
         {
-            zipped.push_back(std::make_pair(a[i], b[i]));
+            zipped.push_back(make_pair(a[i], b[i]));
         }
     }
 
     template <typename A, typename B>
-    void unzip(const std::vector<std::pair<A, B>> &zipped, std::vector<A> &a, std::vector<B> &b)
+    void unzip(const vector<pair<A, B>> &zipped, vector<A> &a, vector<B> &b)
     {
         for(size_t i=0; i<a.size(); i++)
         {

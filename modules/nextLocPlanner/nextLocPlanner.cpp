@@ -28,13 +28,13 @@ NextLocPlanner::NextLocPlanner() :
 }
 
 /****************************************************************/
-bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf) 
+bool NextLocPlanner::configure(ResourceFinder &rf) 
 {   
     m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
     m_area   = rf.check("area")    ? rf.find("area").asString()    : "cris_new";
 
     //Open RPC Server Port
-    std::string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
+    string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
     if (!m_rpc_server_port.open(rpcPortName))
     {
         yCError(NEXT_LOC_PLANNER, "open() error could not open rpc port %s, check network", rpcPortName.c_str());
@@ -47,7 +47,7 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
     }
 
     //Navigation2DClient config 
-    yarp::os::Property nav2DProp;
+    Property nav2DProp;
         //Defaults
     nav2DProp.put("device", "navigation2D_nwc_yarp");
     nav2DProp.put("local", "/nextLocPlanner/navClient");
@@ -60,7 +60,7 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
     }
     else
     {
-        yarp::os::Searchable& nav_config = rf.findGroup("NAVIGATION_CLIENT");
+        Searchable& nav_config = rf.findGroup("NAVIGATION_CLIENT");
         if(nav_config.check("device")) {nav2DProp.put("device", nav_config.find("device").asString());}
         if(nav_config.check("local")) {nav2DProp.put("local", nav_config.find("local").asString());}
         if(nav_config.check("navigation_server")) {nav2DProp.put("navigation_server", nav_config.find("navigation_server").asString());}
@@ -89,7 +89,7 @@ bool NextLocPlanner::configure(yarp::os::ResourceFinder &rf)
     if(!m_all_locations.empty()) 
     {
         //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
-        auto new_end = std::remove_if(m_all_locations.begin(), m_all_locations.end(), [this](std::string& str){return (str.find(m_area) == std::string::npos);} );
+        auto new_end = remove_if(m_all_locations.begin(), m_all_locations.end(), [this](string& str){return (str.find(m_area) == string::npos);} );
         m_all_locations.erase(new_end, m_all_locations.end());
 
         if(m_all_locations.empty()) 
@@ -130,7 +130,7 @@ double NextLocPlanner::getPeriod()
 
 
 /****************************************************************/
-bool NextLocPlanner::setLocationStatus(const std::string location_name, const std::string& location_status)
+bool NextLocPlanner::setLocationStatus(const string location_name, const string& location_status)
 {
     bool uncheckedOk = (location_status == "unchecked" || location_status == "Unchecked" || location_status == "UNCHECKED" );
     bool checkingOk  = (location_status == "checking" || location_status == "Checking"  || location_status == "CHECKING"   );
@@ -141,9 +141,9 @@ bool NextLocPlanner::setLocationStatus(const std::string location_name, const st
         return false;
     }
 
-    std::vector<std::string>::iterator findUnchecked {std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
-    std::vector<std::string>::iterator findChecking {std::find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
-    std::vector<std::string>::iterator findChecked {std::find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
+    vector<string>::iterator findUnchecked {find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
+    vector<string>::iterator findChecking {find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
+    vector<string>::iterator findChecked {find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
     bool locFound { findUnchecked != m_locations_unchecked.end() || findChecking != m_locations_checking.end() || findChecked != m_locations_checked.end()};
 
     if (locFound) 
@@ -199,18 +199,18 @@ bool NextLocPlanner::setLocationStatus(const std::string location_name, const st
 
 
 /****************************************************************/
-bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &reply)
+bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
 {
-    std::lock_guard<std::mutex>  lock(m_mutex);
+    lock_guard<mutex>  lock(m_mutex);
     reply.clear();
-    std::string cmd_0=cmd.get(0).asString();
+    string cmd_0=cmd.get(0).asString();
     if (cmd.size()==1)
     {
         if (cmd_0=="next")
         {      
             if (m_locations_checking.size()>0)
             {
-                std::vector<std::string>::iterator it;
+                vector<string>::iterator it;
                 for(it = m_locations_checking.begin(); it != m_locations_checking.end(); it++)
                 {
                     //setting all the "checking" locations as "unchecked"
@@ -237,6 +237,8 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             reply.addString("set <locationName> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all locations");
             reply.addString("find <locationName> : checks if a location is in the list of the available ones");
+            reply.addString("add <locationName> : adds the defined location in the unchecked list");
+            reply.addString("remove <locationName> : removes the defined location by any list");
             reply.addString("list : lists all the locations and their status");
             reply.addString("list2 : lists all the locations divided by their status");
             reply.addString("stop : stops the nextLocationPlanner module");
@@ -252,31 +254,33 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
 
             if (m_all_locations.size()!=0)
             {
-                yarp::os::Bottle& tempList1 = reply.addList();
-                std::vector<std::string>::iterator it;
+                Bottle& tempList1 = reply.addList();
+                vector<string>::iterator it;
                 for(it = m_all_locations.begin(); it != m_all_locations.end(); it++)
                 {
-                    yarp::os::Bottle& tempList = tempList1.addList();
+                    Bottle& tempList = tempList1.addList();
                     tempList.addString(*it);
 
-                    if (std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), *it) != m_locations_unchecked.end()) 
+                    if (find(m_locations_unchecked.begin(), m_locations_unchecked.end(), *it) != m_locations_unchecked.end()) 
                         tempList.addString("Unchecked");
-                    if (std::find(m_locations_checking.begin(), m_locations_checking.end(), *it) != m_locations_checking.end()) 
+                    else if (find(m_locations_checking.begin(), m_locations_checking.end(), *it) != m_locations_checking.end()) 
                         tempList.addString("Checking");
-                    if (std::find(m_locations_checked.begin(), m_locations_checked.end(), *it) != m_locations_checked.end()) 
+                    else if (find(m_locations_checked.begin(), m_locations_checked.end(), *it) != m_locations_checked.end()) 
                         tempList.addString("Checked");
+                    else 
+                        tempList.addString("NotValid or Removed");
                 }
             }
         }
         else if (cmd_0=="list2")
         {
             reply.addVocab32("many");
-            yarp::os::Bottle& tempList = reply.addList();
+            Bottle& tempList = reply.addList();
             
             tempList.addString("Unchecked: ");
             if (m_locations_unchecked.size()!=0)
             {
-                std::vector<std::string>::iterator it;
+                vector<string>::iterator it;
                 for(it = m_locations_unchecked.begin(); it != m_locations_unchecked.end(); it++)
                 {
                     tempList.addString(*it);
@@ -286,7 +290,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             tempList.addString("Checking: ");
             if (m_locations_checking.size()!=0)
             {
-                std::vector<std::string>::iterator it;
+                vector<string>::iterator it;
                 for(it = m_locations_checking.begin(); it != m_locations_checking.end(); it++)
                 {
                     tempList.addString(*it);
@@ -296,7 +300,7 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
             tempList.addString("Checked: ");
             if (m_locations_checked.size()!=0)
             {
-                std::vector<std::string>::iterator it;
+                vector<string>::iterator it;
                 for(it = m_locations_checked.begin(); it != m_locations_checked.end(); it++)
                 {
                     tempList.addString(*it);
@@ -305,29 +309,49 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
         }
         else
         {
-            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
         }
     }
-    else if (cmd.size()==2)    //expected 'find <location>'  
+    else if (cmd.size()==2)    //expected 'find <location>', 'add <location>' or 'remove <location>'
     {
+        string loc=cmd.get(1).asString();
+        
         if (cmd_0=="find")
         {
-            std::string loc=cmd.get(1).asString();
-
-            if (std::find(m_locations_unchecked.begin(), m_locations_unchecked.end(), loc) != m_locations_unchecked.end())
+            if (find(m_locations_unchecked.begin(), m_locations_unchecked.end(), loc) != m_locations_unchecked.end())
                 reply.fromString("ok unchecked");
-            else if(std::find(m_locations_checking.begin(), m_locations_checking.end(), loc) != m_locations_checking.end())
+            else if(find(m_locations_checking.begin(), m_locations_checking.end(), loc) != m_locations_checking.end())
                 reply.fromString("ok checking");
-            else if(std::find(m_locations_checked.begin(), m_locations_checked.end(), loc) != m_locations_checked.end())
+            else if(find(m_locations_checked.begin(), m_locations_checked.end(), loc) != m_locations_checked.end())
                 reply.fromString("ok checked");
             else 
                 reply.addString("notValid");
 
         }
+        else if (cmd_0=="add")
+        {
+            if(addLocation(loc))
+                reply.addString(loc + " added as unchecked location ");
+            else
+            {
+                reply.addString(loc + " NOT added");
+                yCWarning(NEXT_LOC_PLANNER,"Cannot add %s. It is not listed as a valid location for this map", loc.c_str());
+            }
+        }
+        else if (cmd_0=="remove")
+        {
+            if(removeLocation(loc))
+                reply.addString(loc + " removed");
+            else
+            {
+                reply.addString(loc + " NOT removed");
+                yCWarning(NEXT_LOC_PLANNER,"Cannot remove %s", loc.c_str());
+            }
+        }
         else
         {
-            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
         }
     }
@@ -335,35 +359,35 @@ bool NextLocPlanner::respond(const yarp::os::Bottle &cmd, yarp::os::Bottle &repl
     {
         if (cmd_0=="set")
         {
-            std::string cmd_1=cmd.get(1).asString();
-            std::string cmd_2=cmd.get(2).asString();
+            string cmd_1=cmd.get(1).asString();
+            string cmd_2=cmd.get(2).asString();
 
             if(!setLocationStatus(cmd_1, cmd_2))
             {
-                reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+                reply.addVocab32(Vocab32::encode("nack"));
             }
         }
         else
         {
-            reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+            reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
         }
     }
     else
     {
-        reply.addVocab32(yarp::os::Vocab32::encode("nack"));
+        reply.addVocab32(Vocab32::encode("nack"));
         yCWarning(NEXT_LOC_PLANNER,"Error: input RPC command bottle has a wrong number of elements.");
     }
     
     if (reply.size()==0)
-        reply.addVocab32(yarp::os::Vocab32::encode("ack")); 
+        reply.addVocab32(Vocab32::encode("ack")); 
 
     return true;
 }
 
 
 /****************************************************************/
-bool NextLocPlanner::getCurrentCheckingLocation(std::string& location_name)
+bool NextLocPlanner::getCurrentCheckingLocation(string& location_name)
 {
     if (m_locations_checking.size()==0)
     {
@@ -383,7 +407,7 @@ bool NextLocPlanner::getCurrentCheckingLocation(std::string& location_name)
 
 
 /****************************************************************/
-bool NextLocPlanner::getUncheckedLocations(std::vector<std::string>& location_list)
+bool NextLocPlanner::getUncheckedLocations(vector<string>& location_list)
 {
     if (m_locations_unchecked.size()==0)
     {
@@ -398,7 +422,7 @@ bool NextLocPlanner::getUncheckedLocations(std::vector<std::string>& location_li
 
 
 /****************************************************************/
-bool NextLocPlanner::getCheckedLocations(std::vector<std::string>& location_list)
+bool NextLocPlanner::getCheckedLocations(vector<string>& location_list)
 {
     if (m_locations_checked.size()==0)
     {
@@ -413,10 +437,10 @@ bool NextLocPlanner::getCheckedLocations(std::vector<std::string>& location_list
 
 
 /****************************************************************/
-double NextLocPlanner::distRobotLocation(const std::string& location_name)
+double NextLocPlanner::distRobotLocation(const string& location_name)
 {
-    yarp::dev::Nav2D::Map2DLocation robotLoc;
-    yarp::dev::Nav2D::Map2DLocation loc;
+    Map2DLocation robotLoc;
+    Map2DLocation loc;
     m_iNav2D->getCurrentPosition(robotLoc);
     m_iNav2D->getLocation(location_name, loc);
 
@@ -428,7 +452,7 @@ double NextLocPlanner::distRobotLocation(const std::string& location_name)
 bool NextLocPlanner::updateModule()
 {   
     
-    std::lock_guard<std::mutex> lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     sortUncheckedLocations();
     
@@ -439,18 +463,18 @@ bool NextLocPlanner::updateModule()
 /****************************************************************/
 void NextLocPlanner::sortUncheckedLocations()
 {
-    std::vector<double> m_unchecked_dist;
+    vector<double> m_unchecked_dist;
     for(size_t i=0; i<m_locations_unchecked.size(); ++i)
     {
         m_unchecked_dist.push_back(distRobotLocation(m_locations_unchecked[i]));
     }
 
     // Zip the vectors together
-    std::vector<std::pair<std::string,double>> zipped;
+    vector<pair<string,double>> zipped;
     zip(m_locations_unchecked, m_unchecked_dist, zipped);
 
     // Sort the vector of pairs
-    std::sort(std::begin(zipped), std::end(zipped), 
+    sort(begin(zipped), end(zipped), 
         [&](const auto& a, const auto& b)
         {
             return a.second < b.second;
@@ -458,4 +482,35 @@ void NextLocPlanner::sortUncheckedLocations()
 
     // Write the sorted pairs back to the original vectors
     unzip(zipped, m_locations_unchecked, m_unchecked_dist);
+}
+
+
+/****************************************************************/
+bool NextLocPlanner::addLocation(string& location_name)
+{
+    vector<string>::iterator findLoc {find(m_all_locations.begin(), m_all_locations.end(), location_name)};
+    
+    if (findLoc != m_all_locations.end())   
+        m_locations_unchecked.push_back(location_name);
+    else 
+        return false;
+    
+    return true;
+}
+
+
+/****************************************************************/
+bool NextLocPlanner::removeLocation(string& location_name)
+{
+    vector<string>::iterator findUnchecked {find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
+    vector<string>::iterator findChecking {find(m_locations_checking.begin(), m_locations_checking.end(), location_name)};
+    vector<string>::iterator findChecked {find(m_locations_checked.begin(), m_locations_checked.end(), location_name)};
+    
+    if (findUnchecked != m_locations_unchecked.end())   { m_locations_unchecked.erase(findUnchecked);}
+    else if(findChecking != m_locations_checking.end()) { m_locations_checking.erase(findChecking);  }
+    else if(findChecked != m_locations_checked.end())   { m_locations_checked.erase(findChecked);    }
+    else 
+        return false;
+    
+    return true;
 }
