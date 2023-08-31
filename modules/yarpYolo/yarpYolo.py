@@ -172,7 +172,9 @@ class YarpYolo(yarp.RFModule):
             if label in self.label_dict:
                 self.label_num = self.label_dict[label]
             else:
+                reply.addString('not found')
                 reply.addString('cannot label (not in the available list): ' + str(label))
+                self.lock.release()
                 return True
             self.plot_inference(self._in_buf_array, self.label_num)
             if self.x_bbox == 0.0:
