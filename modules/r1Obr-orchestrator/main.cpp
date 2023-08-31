@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultConfigFile("r1Obr-orchestrator_R1_SIM.ini");             //overridden by --from parameter
+    rf.setDefaultConfigFile("r1Obr-orchestrator_R1.ini");             //overridden by --from parameter
     rf.setDefaultContext("r1Obr-orchestrator");                           //overridden by --context parameter
     rf.configure(argc,argv);
     Orchestrator point;

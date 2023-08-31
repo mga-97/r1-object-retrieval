@@ -1,11 +1,21 @@
 <application>
-   <name>R1_Orchestrator_MDETR_SIM</name>
+   <name>R1_Orchestrator_YOLO</name>
 
    <dependencies>
    </dependencies>
    
    <application>
-      <name>R1_goAndFindIt_MDETR_SIM</name>
+      <name>R1_goAndFindIt_YOLO</name>
+      <prefix></prefix>
+   </application>
+   
+   <application>
+      <name>R1_approachObject_YOLO</name>
+      <prefix></prefix>
+   </application>
+   
+   <application>
+      <name>R1_disappointmentPose</name>
       <prefix></prefix>
    </application>
 
