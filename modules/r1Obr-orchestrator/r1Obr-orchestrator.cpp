@@ -148,6 +148,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else if (cmd=="what" || cmd=="where" || cmd=="navpos")
         {
             reply = m_inner_thread->forwardRequest(request);
+            yCInfo(R1OBR_ORCHESTRATOR) << cmd.c_str() << ":" << reply.toString().c_str();
         }
         else if (m_inner_thread->getStatus() == "waiting_for_answer")
         {
@@ -166,7 +167,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         }
         else if (cmd=="resume")
         {
-            reply = m_inner_thread->resume();
+            reply.addString(m_inner_thread->resume());
         }
         else
         {

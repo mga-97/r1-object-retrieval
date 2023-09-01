@@ -311,6 +311,7 @@ void GoAndFindItThread::nextWhere()
 bool GoAndFindItThread::setNavigationPosition()
 {
     m_getReadyToNav->navPosition();
+    Time::delay(m_setNavPos_time);
     m_in_nav_position = true;
 
     return true;
@@ -342,7 +343,6 @@ bool GoAndFindItThread::goThere()
     if(!m_in_nav_position)
     {
         setNavigationPosition();
-        Time::delay(m_setNavPos_time);
     }
 
     //navigating to "m_where"

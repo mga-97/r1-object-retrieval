@@ -24,12 +24,12 @@ bool Nav2Home::configure(yarp::os::ResourceFinder &rf)
 {
     
     // --------- Navigation2DClient config --------- //
-    yarp::os::Property nav2DProp;
+   Property nav2DProp;
     if(!rf.check("NAVIGATION_CLIENT"))
     {
         yCWarning(NAV_2_HOME,"NAVIGATION_CLIENT section missing in ini file. Using the default values");
     }
-    yarp::os::Searchable& nav_config = rf.findGroup("NAVIGATION_CLIENT");
+    Searchable& nav_config = rf.findGroup("NAVIGATION_CLIENT");
     nav2DProp.put("device", nav_config.check("device", Value("navigation2D_nwc_yarp")));
     nav2DProp.put("local", nav_config.check("local", Value("/r1Obr-orchestrator/nav2home/")));
     nav2DProp.put("navigation_server", nav_config.check("navigation_server", Value("/navigation2D_nws_yarp")));
@@ -46,6 +46,17 @@ bool Nav2Home::configure(yarp::os::ResourceFinder &rf)
         yCError(NAV_2_HOME,"Error opening INavigation2D interface. Device not available");
         return false;
     }
+
+    // --------- Home coordinates config --------- //
+    if(!rf.check("NAV2HOME"))
+    {
+        yCWarning(NAV_2_HOME,"NAV2HOME section missing in ini file. Using the default values");
+    }
+    Searchable& home_config = rf.findGroup("NAV2HOME");
+    if(home_config.check("home_x")) {m_home_position[0] = home_config.find("home_x").asFloat32();}
+    if(home_config.check("home_y")) {m_home_position[1] = home_config.find("home_y").asFloat32();}
+    if(home_config.check("home_th")) {m_home_position[2] = home_config.find("home_th").asFloat32();}
+
 
     return true;
 }
@@ -67,7 +78,7 @@ bool Nav2Home::go()
         return false;
     }
 
-    Map2DLocation loc(map.getMapName(), 0.0, 0.0, 0.0);
+    Map2DLocation loc(map.getMapName(), m_home_position[0], m_home_position[1], m_home_position[2]);
     if(!m_iNav2D->gotoTargetByAbsoluteLocation(loc))
     {
         yCError(NAV_2_HOME, "Error with navigation to home location");
@@ -97,7 +108,7 @@ bool Nav2Home::areYouArrived()
     NavigationStatusEnum currentStatus;
     m_iNav2D->getNavigationStatus(currentStatus);
 
-    if (currentStatus == yarp::dev::Nav2D::navigation_status_goal_reached)
+    if (currentStatus == navigation_status_goal_reached)
         return true;
     else
         return false;

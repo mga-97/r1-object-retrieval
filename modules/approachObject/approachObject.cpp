@@ -111,6 +111,12 @@ void ApproachObject::onRead(Bottle& b)
     {
         if (b.get(0).asString() == "stop")
             m_thread->externalStop();
+        else if (b.get(0).asString() == "resume")
+            m_thread->externalResume();
+        else
+        {
+            yCError(APPROACH_OBJECT,"Wrong RPC command");
+        }
     }
     else
     {

@@ -41,6 +41,7 @@ private:
     ResourceFinder&         m_rf;
     bool                    m_ext_start;
     bool                    m_ext_stop;
+    bool                    m_ext_resume;
 
     string                  m_object;
     Bottle*                 m_coords;
@@ -80,7 +81,8 @@ public:
 
     void exec(Bottle& b);
     bool lookAgain(string object);
-    bool externalStop();    
+    bool externalStop();  
+    bool externalResume();    
 };
 
 #endif 

@@ -30,18 +30,20 @@
 using namespace yarp::os;
 using namespace yarp::dev;
 using namespace yarp::dev::Nav2D;
+using namespace yarp::sig;
 using namespace std;
 
 class Nav2Home
 {
 private:
-    
+    Vector                  m_home_position;
+
     // Devices
     PolyDriver              m_nav2DPoly;
     Nav2D::INavigation2D*   m_iNav2D{nullptr};
 
 public:
-    Nav2Home(){}
+    Nav2Home() : m_home_position(3, 0.0){}
     ~Nav2Home(){}
 
     bool configure(yarp::os::ResourceFinder &rf);

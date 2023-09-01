@@ -27,7 +27,8 @@ ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFin
     PeriodicThread(_period),
     m_rf(rf),
     m_ext_start(false),
-    m_ext_stop(false)
+    m_ext_stop(false),
+    m_ext_resume(false)
 {
     m_gaze_target_port_name         = "/approachObject/gaze_target:o";
     m_object_finder_rpc_port_name   = "/approachObject/object_finder/rpc";
@@ -321,14 +322,15 @@ void ApproachObjectThread::run()
         }
 
         //look again for object
-        yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
         if (!m_ext_stop)
         {
+            yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
             if(lookAgain(m_object))
             {
                 Bottle* new_coords = m_object_finder_result_port.read(false); 
                 if(new_coords  != nullptr)
                 {
+                    yCInfo(APPROACH_OBJECT_THREAD,"Object approached");
                     Bottle&  toSend = m_output_coordinates_port.prepare();
                     toSend.clear();
                     toSend = *new_coords;
@@ -341,12 +343,42 @@ void ApproachObjectThread::run()
             }
         }   
     } 
+    else if (m_ext_resume && !m_ext_stop)
+    {
+        if (!m_ext_stop)
+        {
+            yCInfo(APPROACH_OBJECT_THREAD,"Looking for object again");
+            if(lookAgain(m_object))
+            {
+                Bottle* new_coords = m_object_finder_result_port.read(false); 
+                yCDebug(APPROACH_OBJECT_THREAD,"new coords: %s", new_coords->toString().c_str());
+                if(new_coords  != nullptr)
+                {
+                    m_coords = new_coords;
+                    m_ext_start = true;
+                }
+                else
+                {
+                    yCError(APPROACH_OBJECT_THREAD,"Error getting new object coordinates");
+                    m_ext_resume = false;
+                }
+            }
+            else
+            {
+                yCError(APPROACH_OBJECT_THREAD,"I cannot find the object again");
+            }
+        }
+    }
 
-    if (m_ext_start)
+
+    if (m_ext_start && !m_ext_resume)
         m_ext_start = false;
 
     if (m_ext_stop)
         m_ext_stop = false;
+
+    if (m_ext_resume)
+        m_ext_resume = false;
 }
 
 
@@ -375,7 +407,6 @@ bool ApproachObjectThread::lookAgain(string object )
         targetList.addFloat32(head_positions[i].first);
         targetList.addFloat32(head_positions[i].second);
         m_gaze_target_port.write(); //sending output command to gaze-controller 
-        yCDebug(APPROACH_OBJECT_THREAD) << "to gaze controller:" << toSend1.toString().c_str();
         
         yarp::os::Time::delay(2.0);  //waiting for the robot to tilt its head
 
@@ -385,7 +416,7 @@ bool ApproachObjectThread::lookAgain(string object )
         request.addString(object); 
         if (m_object_finder_rpc_port.write(request,reply))
         {
-            yCDebug(APPROACH_OBJECT_THREAD) << "reply da yolo:" << reply.toString().c_str();
+            yCDebug(APPROACH_OBJECT_THREAD, "reply da yolo: %s", reply.toString().c_str());
             if (reply.get(0).asString()!="not found")
             {
                 return true;
@@ -405,7 +436,7 @@ bool ApproachObjectThread::lookAgain(string object )
 /****************************************************************/
 bool ApproachObjectThread::externalStop()
 {
-    yCInfo(APPROACH_OBJECT_THREAD,"Stopping approaching executions");
+    yCInfo(APPROACH_OBJECT_THREAD,"Stopping approaching actions");
     m_ext_stop = true;
 
     NavigationStatusEnum currentStatus;
@@ -416,3 +447,15 @@ bool ApproachObjectThread::externalStop()
     return true;
 
 } 
+
+
+/****************************************************************/
+bool ApproachObjectThread::externalResume()
+{
+    yCInfo(APPROACH_OBJECT_THREAD,"Resuming approaching actions");
+    m_ext_stop = false;
+    m_ext_resume = true;
+    m_coords->clear();
+
+    return true;
+}

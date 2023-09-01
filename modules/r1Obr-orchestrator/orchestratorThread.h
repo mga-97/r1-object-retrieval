@@ -65,6 +65,8 @@ protected:
     Bottle                  m_result;
     int                     m_question_count;
     bool                    m_where_specified;
+    bool                    m_object_found;
+    bool                    m_object_not_found;
 
     Nav2Home*               m_nav2home;
 
@@ -90,7 +92,7 @@ public:
     bool resizeSearchBottle(const Bottle& btl);
     bool askNetwork();
     Bottle stopOrReset(const string& cmd);
-    Bottle resume();
+    string resume();
     bool answer(const string& ans);
     string getStatus();
 
