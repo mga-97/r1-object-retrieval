@@ -246,68 +246,84 @@ void ApproachObjectThread::run()
 {
     if (m_ext_start && !m_ext_stop)
     {
-        yCInfo(APPROACH_OBJECT_THREAD,"Calculating approaching position");
-        double u = m_coords->get(0).asFloat32();
-        double v = m_coords->get(1).asFloat32();
-
-        //get depth image from camera
-        ImageOf<float>  depth_image;  
-        bool depth_ok = m_iRgbd->getDepthImage(depth_image);
-        if (!depth_ok)
-        {
-            yCError(APPROACH_OBJECT_THREAD, "getDepthImage failed");
-            m_ext_start = false;
-            return;
-        }
-        if (depth_image.getRawImage()==nullptr)
-        {
-            yCError(APPROACH_OBJECT_THREAD, "invalid image received");
-            m_ext_start = false;
-            return;
-        }
-
-        //transforming pixel coordinates in space coordinates wrt camera frame
-        Vector tempPoint(4,1.0);
-        tempPoint[0] = (u - m_intrinsics.principalPointX) / m_intrinsics.focalLengthX * depth_image.pixel(u, v);
-        tempPoint[1] = (v - m_intrinsics.principalPointY) / m_intrinsics.focalLengthY * depth_image.pixel(u, v);
-        tempPoint[2] = depth_image.pixel(u, v);
-
-        //computing the transformation matrix from the camera to the base reference frame
-        Matrix transform_mtrx;
-        bool base_frame_exists = m_iTc->getTransform(m_camera_frame_id, m_base_frame_id, transform_mtrx);
-        if (!base_frame_exists)
-        {
-            yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (base)");
-            m_ext_start = false;
-            return;
-        }
-
-        //point in space coordinates in base ref frame
-        Vector v1 = transform_mtrx*tempPoint;
-
-        //define target at safe distance from point (on a line connecting robot and point) in base ref frame
-        Vector v_target_base = v1;
-        v_target_base[0] = v1[0] - m_safe_distance*cos(atan2(v1[1], v1[0]));
-        v_target_base[1] = v1[1] - m_safe_distance*sin(atan2(v1[1], v1[0]));
-
-        //define navigation target in world ref frame
-        bool world_frame_exists = m_iTc->getTransform(m_base_frame_id, m_world_frame_id, transform_mtrx);
-        if (!world_frame_exists)
-        {
-            yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (world)");
-            m_ext_start = false;
-            return;
-        }
-        Vector v_target_world = transform_mtrx*v_target_base;
         Map2DLocation loc;
         m_iNav2D->getCurrentPosition(loc);
         yCDebug(APPROACH_OBJECT_THREAD,) << "current location"<< loc.toString();
-
-        Vector v1_world = transform_mtrx*v1;
-        loc.theta = atan2((v1_world[1]-loc.y), (v1_world[0]-loc.x)) / M_PI * 180;
-        loc.x = v_target_world[0];
-        loc.y = v_target_world[1];
         
+        yCInfo(APPROACH_OBJECT_THREAD,"Calculating approaching position");
+        if (m_coords->size() == 2) //pixel coordinates in camera ref frame
+        {
+            double u = m_coords->get(0).asFloat32();
+            double v = m_coords->get(1).asFloat32();
+
+            //get depth image from camera
+            ImageOf<float>  depth_image;  
+            bool depth_ok = m_iRgbd->getDepthImage(depth_image);
+            if (!depth_ok)
+            {
+                yCError(APPROACH_OBJECT_THREAD, "getDepthImage failed");
+                m_ext_start = false;
+                return;
+            }
+            if (depth_image.getRawImage()==nullptr)
+            {
+                yCError(APPROACH_OBJECT_THREAD, "invalid image received");
+                m_ext_start = false;
+                return;
+            }
+
+            //transforming pixel coordinates in space coordinates wrt camera frame
+            Vector tempPoint(4,1.0);
+            tempPoint[0] = (u - m_intrinsics.principalPointX) / m_intrinsics.focalLengthX * depth_image.pixel(u, v);
+            tempPoint[1] = (v - m_intrinsics.principalPointY) / m_intrinsics.focalLengthY * depth_image.pixel(u, v);
+            tempPoint[2] = depth_image.pixel(u, v);
+
+            //computing the transformation matrix from the camera to the base reference frame
+            Matrix transform_mtrx;
+            bool base_frame_exists = m_iTc->getTransform(m_camera_frame_id, m_base_frame_id, transform_mtrx);
+            if (!base_frame_exists)
+            {
+                yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (base)");
+                m_ext_start = false;
+                return;
+            }
+
+            //point in space coordinates in base ref frame
+            Vector v_object_base = transform_mtrx*tempPoint;
+
+            //define target at safe distance from point (on a line connecting robot and point) in base ref frame
+            Vector v_target_base = v_object_base;
+            v_target_base[0] = v_object_base[0] - m_safe_distance*cos(atan2(v_object_base[1], v_object_base[0]));
+            v_target_base[1] = v_object_base[1] - m_safe_distance*sin(atan2(v_object_base[1], v_object_base[0]));
+
+            //define navigation target in world ref frame
+            bool world_frame_exists = m_iTc->getTransform(m_base_frame_id, m_world_frame_id, transform_mtrx);
+            if (!world_frame_exists)
+            {
+                yCError(APPROACH_OBJECT_THREAD, "unable to found transformation matrix (world)");
+                m_ext_start = false;
+                return;
+            }
+ 
+            Vector v_target_world = transform_mtrx*v_target_base; //robot target position in world ref frame
+            Vector v_object_world = transform_mtrx*v_object_base; //position of the object in world ref frame
+
+            loc.theta = atan2((v_object_world[1]-loc.y), (v_object_world[0]-loc.x)) / M_PI * 180;
+            loc.x = v_target_world[0];
+            loc.y = v_target_world[1];
+        }
+        else if (m_coords->size() == 3) //absolute position of object
+        {
+            Vector v_object_world(2,1.0);
+            v_object_world[0] = m_coords->get(0).asFloat32();
+            v_object_world[1] = m_coords->get(1).asFloat32();
+            
+            double theta_rad = atan2((v_object_world[1]-loc.y), (v_object_world[0]-loc.x));
+            loc.theta = theta_rad / M_PI * 180;
+            loc.x = v_object_world[0] - m_safe_distance*cos(theta_rad);
+            loc.y = v_object_world[1] - m_safe_distance*sin(theta_rad);
+        }
+
         //navigation to target
         yCInfo(APPROACH_OBJECT_THREAD,"Approaching object");
         yCDebug(APPROACH_OBJECT_THREAD,) << "loc approach:"<< loc.toString();
