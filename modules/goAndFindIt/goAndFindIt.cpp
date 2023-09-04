@@ -218,7 +218,7 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command. Type 'help'");
         }
     }
     else if (cmd.size()==2)
@@ -232,7 +232,7 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command. Type 'help'");
         }
     }
     else if (cmd.size()==3)
@@ -247,7 +247,7 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command.");
+            yCWarning(GO_AND_FIND_IT,"Error: wrong RPC command. Type 'help'");
         }
     }
     else

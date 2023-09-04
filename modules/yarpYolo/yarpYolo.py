@@ -195,8 +195,8 @@ class YarpYolo(yarp.RFModule):
             reply.addString('where <something> : identify "something" in input image and return its pixel coords')
             reply.addString('help : get this list')           
         else:
-            print('Command {:s} not recognized'.format(command.get(0).asString()))
-            reply.addString('Command {:s} not recognized'.format(command.get(0).asString()))
+            print('Command {:s} not recognized'.format(command.get(0).asString()) + '. Type "help"')
+            reply.addString('Command {:s} not recognized'.format(command.get(0).asString()) + '. Type "help"')
         
         if reply.size()==0:
             reply.addVocab32('ack')

@@ -94,12 +94,8 @@ class YarpMdetr(yarp.RFModule):
                 bout.clear()
                 bout.addFloat32(self.x_bbox)
                 bout.addFloat32(self.y_bbox)
-                self.output_coords_port.write()
-            
+                self.output_coords_port.write()       
             self.lock.release()
-
-            
-
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
             reply.addVocab32('many')
@@ -107,8 +103,8 @@ class YarpMdetr(yarp.RFModule):
             reply.addString('where <something> : identify "something" in input image and return its pixel coords')
             reply.addString('help : get this list')           
         else:
-            print('Command {:s} not recognized'.format(command.get(0).asString()))
-            reply.addString('Command {:s} not recognized'.format(command.get(0).asString()))
+            print('Command {:s} not recognized'.format(command.get(0).asString()) + '. Type "help"')
+            reply.addString('Command {:s} not recognized'.format(command.get(0).asString()) + '. Type "help"')
         
         if reply.size()==0:
             reply.addVocab32('ack')

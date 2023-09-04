@@ -172,13 +172,13 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command.");
+            yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
         }
     }
     else
     {
         reply.addVocab32(Vocab32::encode("nack"));
-        yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command.");
+        yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
     }
 
     if (reply.size()==0)

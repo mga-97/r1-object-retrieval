@@ -207,6 +207,8 @@ void OrchestratorThread::run()
             sendKo.clear();
             sendKo = m_result;
             m_negative_outcome_port.write();
+
+            m_status = R1_IDLE;
             
         } 
 

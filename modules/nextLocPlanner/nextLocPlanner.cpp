@@ -310,7 +310,7 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
+            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command. Type 'help'");
         }
     }
     else if (cmd.size()==2)    //expected 'find <location>', 'add <location>' or 'remove <location>'
@@ -352,7 +352,7 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
+            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command. Type 'help'");
         }
     }
     else if (cmd.size()==3)    //expected 'set <location> <status>'  or 'set all <status>'
@@ -370,7 +370,7 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command.");
+            yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command. Type 'help'");
         }
     }
     else
