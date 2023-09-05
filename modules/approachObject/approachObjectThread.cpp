@@ -243,12 +243,12 @@ void ApproachObjectThread::exec(Bottle& b)
 
 /****************************************************************/
 void ApproachObjectThread::run() 
-{
+{  
     if (m_ext_start && !m_ext_stop)
     {
         Map2DLocation loc;
         m_iNav2D->getCurrentPosition(loc);
-        yCDebug(APPROACH_OBJECT_THREAD,) << "current location"<< loc.toString();
+        yCDebug(APPROACH_OBJECT_THREAD,) << "Current location:"<< loc.toString();
         
         yCInfo(APPROACH_OBJECT_THREAD,"Calculating approaching position");
         if (m_coords->size() == 2) //pixel coordinates in camera ref frame
@@ -326,7 +326,7 @@ void ApproachObjectThread::run()
 
         //navigation to target
         yCInfo(APPROACH_OBJECT_THREAD,"Approaching object");
-        yCDebug(APPROACH_OBJECT_THREAD,) << "loc approach:"<< loc.toString();
+        yCDebug(APPROACH_OBJECT_THREAD,) << "Approach location:"<< loc.toString();
         m_iNav2D->gotoTargetByAbsoluteLocation(loc);
 
         NavigationStatusEnum currentStatus;
@@ -344,7 +344,7 @@ void ApproachObjectThread::run()
             if(lookAgain(m_object))
             {
                 Bottle* new_coords = m_object_finder_result_port.read(false); 
-                if(new_coords  != nullptr)
+                if(new_coords  != nullptr && !m_ext_stop)
                 {
                     yCInfo(APPROACH_OBJECT_THREAD,"Object approached");
                     Bottle&  toSend = m_output_coordinates_port.prepare();
@@ -367,7 +367,6 @@ void ApproachObjectThread::run()
             if(lookAgain(m_object))
             {
                 Bottle* new_coords = m_object_finder_result_port.read(false); 
-                yCDebug(APPROACH_OBJECT_THREAD,"new coords: %s", new_coords->toString().c_str());
                 if(new_coords  != nullptr)
                 {
                     m_coords = new_coords;
@@ -424,7 +423,7 @@ bool ApproachObjectThread::lookAgain(string object )
         targetList.addFloat32(head_positions[i].second);
         m_gaze_target_port.write(); //sending output command to gaze-controller 
         
-        yarp::os::Time::delay(2.0);  //waiting for the robot to tilt its head
+        yarp::os::Time::delay(1.0);  //waiting for the robot to tilt its head
 
         //search for object
         Bottle request, reply;
@@ -432,9 +431,9 @@ bool ApproachObjectThread::lookAgain(string object )
         request.addString(object); 
         if (m_object_finder_rpc_port.write(request,reply))
         {
-            yCDebug(APPROACH_OBJECT_THREAD, "reply da yolo: %s", reply.toString().c_str());
             if (reply.get(0).asString()!="not found")
             {
+                yarp::os::Time::delay(0.5);
                 return true;
             }
         }
@@ -443,6 +442,7 @@ bool ApproachObjectThread::lookAgain(string object )
             yCError(APPROACH_OBJECT_THREAD,"Unable to communicate with object finder");
             return false;
         }
+        
     }
 
     return false;

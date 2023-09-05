@@ -128,6 +128,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
             reply.addString("status : returns the current status of the search");
             reply.addString("what   : returns the object of the current search");
             reply.addString("where  : returns the location of the current search");
+            reply.addString("info   : returns the status, object and location of the current search");
             reply.addString("stop   : stops search");
             reply.addString("reset  : resets search");
             reply.addString("navpos : sets the robot in navigation position");
@@ -148,6 +149,11 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else if (cmd=="what" || cmd=="where" || cmd=="navpos")
         {
             reply = m_inner_thread->forwardRequest(request);
+            yCInfo(R1OBR_ORCHESTRATOR) << cmd.c_str() << ":" << reply.toString().c_str();
+        }
+        else if (cmd=="info")
+        {
+            m_inner_thread->info(reply);
             yCInfo(R1OBR_ORCHESTRATOR) << cmd.c_str() << ":" << reply.toString().c_str();
         }
         else if (m_inner_thread->getStatus() == "waiting_for_answer")

@@ -94,7 +94,10 @@ public:
     Bottle stopOrReset(const string& cmd);
     string resume();
     bool answer(const string& ans);
+    string getWhat();
+    string getWhere();
     string getStatus();
+    void info(Bottle& reply);
 
 };
 

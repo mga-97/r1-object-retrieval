@@ -136,7 +136,6 @@ void OrchestratorThread::run()
 {
     while (true)
     {
-
         if (m_status == R1_ASKING_NETWORK)
         {
             if (!askNetwork())
@@ -193,8 +192,6 @@ void OrchestratorThread::run()
             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object not found");
             m_object_not_found = true;
 
-            Bottle req{"reset"};  forwardRequest(req);
-
             m_nav2home->go();
             bool arrived{false};
             while (!arrived && m_status == R1_OBJECT_NOT_FOUND )
@@ -203,13 +200,15 @@ void OrchestratorThread::run()
                 Time::delay(0.5);
             }
 
-            Bottle&  sendKo = m_negative_outcome_port.prepare();
-            sendKo.clear();
-            sendKo = m_result;
-            m_negative_outcome_port.write();
+            if (m_status == R1_OBJECT_NOT_FOUND) //in case of external stop
+            {
+                Bottle&  sendKo = m_negative_outcome_port.prepare();
+                sendKo.clear();
+                sendKo = m_result;
+                m_negative_outcome_port.write();
 
-            m_status = R1_IDLE;
-            
+                m_status = R1_IDLE;
+            }
         } 
 
         else if (m_status == R1_IDLE || m_status == R1_WAITING_FOR_ANSWER )
@@ -264,8 +263,6 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
                 if (m_status == R1_OBJECT_FOUND || m_status == R1_OBJECT_NOT_FOUND )
                     stopOrReset("stop");
                 
-                m_object_found = false;
-                m_object_not_found = false;
                 search(b);            
             }
             else
@@ -296,10 +293,23 @@ Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 /****************************************************************/
 void OrchestratorThread::search(const Bottle& btl)
 {
+    if (m_status == R1_OBJECT_NOT_FOUND || m_status == R1_OBJECT_FOUND)
+    {
+        stopOrReset("stop");
+    } 
+
+    m_object_found = false;
+    m_object_not_found = false;
+    
     if(resizeSearchBottle(btl))
-        m_status = R1_ASKING_NETWORK;  
+    {
+        m_status = R1_ASKING_NETWORK;
+    }
     else
+    {
         stopOrReset("stop"); 
+    }  
+        
 }
 
 /****************************************************************/
@@ -447,6 +457,23 @@ bool OrchestratorThread::answer(const string& ans)
     return true;
 }
 
+
+/****************************************************************/
+string OrchestratorThread::getWhat()
+{
+    Bottle request{"what"};
+    return forwardRequest(request).toString();
+}
+
+
+/****************************************************************/
+string OrchestratorThread::getWhere()
+{
+    Bottle request{"where"};
+    return forwardRequest(request).toString();
+}
+
+
 /****************************************************************/
 string OrchestratorThread::getStatus()
 {
@@ -484,4 +511,24 @@ string OrchestratorThread::getStatus()
     };
 
     return str;
+}
+
+
+/****************************************************************/
+void OrchestratorThread::info(Bottle& reply)
+{
+    reply.clear();
+    reply.addVocab32("many");
+
+    Bottle& whatList=reply.addList();
+    whatList.addString("what"); whatList.addString(":");
+    whatList.addString(getWhat());
+
+    Bottle& whereList=reply.addList();
+    whereList.addString("where"); whereList.addString(":");
+    whereList.addString(getWhere());
+
+    Bottle& statusList=reply.addList();
+    statusList.addString("status"); statusList.addString(":");
+    statusList.addString(getStatus());
 }
