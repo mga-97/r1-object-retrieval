@@ -46,6 +46,7 @@ private:
     string                  m_object;
     Bottle*                 m_coords;
     double                  m_safe_distance;
+    double                  m_wait_for_search;
 
     //Ports
     BufferedPort<Bottle>    m_gaze_target_port;

@@ -38,6 +38,7 @@ ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFin
     m_base_frame_id     = "base_link";
     m_world_frame_id    = "map";
     m_safe_distance     = 1.0;
+    m_wait_for_search   = 4.0;
 }
 
 
@@ -45,10 +46,11 @@ ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFin
 bool ApproachObjectThread::threadInit()
 {
     // ------------ Generic config ------------ //
-    if(m_rf.check("camera_frame_id")) {m_camera_frame_id = m_rf.find("camera_frame_id").asString();}
-    if(m_rf.check("base_frame_id")) {m_base_frame_id = m_rf.find("base_frame_id").asString();}
-    if(m_rf.check("world_frame_id")) {m_world_frame_id = m_rf.find("world_frame_id").asString();}
-    if(m_rf.check("safe_distance")) {m_safe_distance = m_rf.find("safe_distance").asFloat32();}
+    if(m_rf.check("camera_frame_id"))   {m_camera_frame_id = m_rf.find("camera_frame_id").asString();}
+    if(m_rf.check("base_frame_id"))     {m_base_frame_id = m_rf.find("base_frame_id").asString();}
+    if(m_rf.check("world_frame_id"))    {m_world_frame_id = m_rf.find("world_frame_id").asString();}
+    if(m_rf.check("safe_distance"))     {m_safe_distance = m_rf.find("safe_distance").asFloat32();}
+    if(m_rf.check("wait_for_search"))   {m_wait_for_search = m_rf.find("wait_for_search").asFloat32();}
 
 
     // ------------ Open ports ------------ //
@@ -423,7 +425,7 @@ bool ApproachObjectThread::lookAgain(string object )
         targetList.addFloat32(head_positions[i].second);
         m_gaze_target_port.write(); //sending output command to gaze-controller 
         
-        yarp::os::Time::delay(1.0);  //waiting for the robot to tilt its head
+        yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot to tilt its head
 
         //search for object
         Bottle request, reply;
@@ -471,7 +473,6 @@ bool ApproachObjectThread::externalResume()
     yCInfo(APPROACH_OBJECT_THREAD,"Resuming approaching actions");
     m_ext_stop = false;
     m_ext_resume = true;
-    m_coords->clear();
 
     return true;
 }
