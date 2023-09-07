@@ -48,6 +48,10 @@ class YarpMdetr(yarp.RFModule):
         self.output_coords_port.open(coordsOutPortName)
         print('{:s} opened'.format(coordsOutPortName))
 
+        self.stream_coords = True
+        if rf.check('where_coords_stream'):
+            self.stream_coords = False if rf.find('where_coords_stream').asString()=='false' else True 
+
         # Preparing images
         print('Preparing input image...')
         self._in_buf_array = np.ones((self.image_h, self.image_w, 3), dtype=np.uint8)
@@ -90,11 +94,12 @@ class YarpMdetr(yarp.RFModule):
                 reply.addString('not found')
             else:
                 reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
-                bout = self.output_coords_port.prepare()
-                bout.clear()
-                bout.addFloat32(self.x_bbox)
-                bout.addFloat32(self.y_bbox)
-                self.output_coords_port.write()       
+                if not self.stream_coords:
+                    bout = self.output_coords_port.prepare()
+                    bout.clear()
+                    bout.addFloat32(self.x_bbox)
+                    bout.addFloat32(self.y_bbox)
+                    self.output_coords_port.write()       
             self.lock.release()
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
@@ -182,6 +187,12 @@ class YarpMdetr(yarp.RFModule):
         self.plot_results_yarp(im, probas[keep], bboxes_scaled, labels, masks=None)
 
         self.get_max_prob_coord(out_bbox, probas[keep])
+        if self.stream_coords:
+            bout = self.output_coords_port.prepare()
+            bout.clear()
+            bout.addFloat32(self.x_bbox)
+            bout.addFloat32(self.y_bbox)
+            self.output_coords_port.write()
 
     def updateModule(self):
         self.lock.acquire()

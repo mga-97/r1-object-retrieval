@@ -17,7 +17,7 @@
 
     <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
+		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1_noStream.ini</parameters>
 		<node>console</node>
 	</module>
 
