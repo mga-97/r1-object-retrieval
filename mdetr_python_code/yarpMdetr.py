@@ -74,6 +74,8 @@ class YarpMdetr(yarp.RFModule):
         self.model.eval()
         
         self.caption = ''   
+        self.x_bbox = 0.0
+        self.y_bbox = 0.0  
         self.lock = Lock() 
 
         return True
