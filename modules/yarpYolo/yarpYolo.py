@@ -63,8 +63,8 @@ class YarpYolo(yarp.RFModule):
         print('... ok \n')
 
         # Defining model
-        # self.model = YOLO("yolov8l.pt")
-        self.model = YOLO("yolov8s.pt")
+        self.model = YOLO("yolov8l.pt")
+        # self.model = YOLO("yolov8s.pt")
         
         self.label_num = -1 
         self.x_bbox = 0.0
