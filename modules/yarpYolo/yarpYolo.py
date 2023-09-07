@@ -39,9 +39,13 @@ class YarpYolo(yarp.RFModule):
         print('{:s} opened'.format(imageOutPortName))
 
         self.output_coords_port = yarp.BufferedPortBottle()
-        coordsOutPortName = rf.find('bbox_coord_port').asString() if rf.check('bbox_coord_port') else '/yarpYolo/where_coords:o' 
+        coordsOutPortName = rf.find('where_coord_port').asString() if rf.check('where_coord_port') else '/yarpYolo/where_coords:o' 
         self.output_coords_port.open(coordsOutPortName)
         print('{:s} opened'.format(coordsOutPortName))
+
+        self.stream_coords = True
+        if rf.check('where_coords_stream'):
+            self.stream_coords = False if rf.find('where_coords_stream').asString()=='false' else True 
 
         # Preparing images
         print('Preparing input image...')
@@ -182,6 +186,12 @@ class YarpYolo(yarp.RFModule):
                 reply.addString('not found')
             else:
                 reply.addString(label + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
+                if not self.stream_coords:
+                    bout = self.output_coords_port.prepare()
+                    bout.clear()
+                    bout.addFloat32(self.x_bbox)
+                    bout.addFloat32(self.y_bbox)
+                    self.output_coords_port.write()
             self.lock.release()
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
@@ -276,11 +286,12 @@ class YarpYolo(yarp.RFModule):
         #boxes.data = ( top left coords, bottom rights coords, score, label_num)
         self.plot_bboxes(frame, results[0].boxes.data, conf=self.min_conf)
         self.get_max_prob_coord(results[0].boxes.data, conf=self.min_conf)
-        bout = self.output_coords_port.prepare()
-        bout.clear()
-        bout.addFloat32(self.x_bbox)
-        bout.addFloat32(self.y_bbox)
-        self.output_coords_port.write()
+        if self.stream_coords:
+            bout = self.output_coords_port.prepare()
+            bout.clear()
+            bout.addFloat32(self.x_bbox)
+            bout.addFloat32(self.y_bbox)
+            self.output_coords_port.write()
  
 
     def updateModule(self):
