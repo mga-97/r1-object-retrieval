@@ -284,6 +284,7 @@ RUN echo "mkdir build && cd build && cmake .. && make -j11" >> update_repo.sh
 RUN ln -s ${user1_home}/tour-guide-robot/app/navigation2/scripts/start_sim.sh start_sim.sh
 RUN sudo chmod 777 update_repo.sh
 
+ENV ROS_DOMAIN_ID=39
 # ------------------------------------------------------------------------------ #
 
 RUN sudo updatedb

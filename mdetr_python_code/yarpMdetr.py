@@ -44,7 +44,7 @@ class YarpMdetr(yarp.RFModule):
         print('{:s} opened'.format(imageOutPortName))
 
         self.output_coords_port = yarp.BufferedPortBottle()
-        coordsOutPortName = rf.find('where_coord_port').asString() if rf.check('where_coord_port') else '/yarpMdetr/bbox_coords:o' 
+        coordsOutPortName = rf.find('where_coord_port').asString() if rf.check('where_coord_port') else '/yarpMdetr/where_coords:o' 
         self.output_coords_port.open(coordsOutPortName)
         print('{:s} opened'.format(coordsOutPortName))
 

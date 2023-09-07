@@ -18,7 +18,8 @@
 
    <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/modules/yarpYolo/yarpYolo.py --from yarpYolo_R1.ini</parameters>
+		<parameters>yarpYolo.py --from yarpYolo_R1.ini</parameters>
+      <workdir>/home/user1/r1-object-retrieval/modules/yarpYolo/</workdir>
 		<node>console</node>
 	</module>
 

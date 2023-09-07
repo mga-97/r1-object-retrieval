@@ -23,7 +23,7 @@
    </connection>
 
    <connection>
-      <from>/yarpMdetr/bbox_coords:o</from>
+      <from>/yarpMdetr/where_coords:o</from>
       <to>/approachObject/object_finder_result:i</to>
       <protocol>tcp</protocol>
    </connection>
