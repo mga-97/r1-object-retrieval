@@ -9,7 +9,6 @@ import torchvision.transforms as T
 from collections import defaultdict
 from mdetr_python_code.models.model import mdetr_resnet101
 
-
 import yarp
 
 # Initialise YARP
@@ -24,7 +23,7 @@ class YarpMdetr(yarp.RFModule):
         
         self.image_w = rf.find('image_width').asInt32() if rf.check('image_width') else 640
         self.image_h = rf.find('image_height').asInt32() if rf.check('image_height') else 480
-        self.min_prob = rf.find('min_confidence').asFloat32() if rf.check('min_confidence') else 0.95
+        self.min_conf = rf.find('min_confidence').asFloat32() if rf.check('min_confidence') else 0.95
 
         # Opening ports
         self.cmd_port = yarp.Port()
@@ -48,9 +47,11 @@ class YarpMdetr(yarp.RFModule):
         self.output_coords_port.open(coordsOutPortName)
         print('{:s} opened'.format(coordsOutPortName))
 
-        self.stream_coords = True
-        if rf.check('where_coords_stream'):
-            self.stream_coords = False if rf.find('where_coords_stream').asString()=='false' else True 
+        self.read_coords_port = yarp.BufferedPortBottle()
+        coordsReadPortName = rf.find('read_coord_port').asString() if rf.check('read_coord_port') else '/yarpYolo/read_coords' 
+        self.read_coords_port.open(coordsReadPortName)
+        print('{:s} opened'.format(coordsReadPortName))
+        yarp.Network.connect(coordsOutPortName,coordsReadPortName)
 
         # Preparing images
         print('Preparing input image...')
@@ -73,9 +74,7 @@ class YarpMdetr(yarp.RFModule):
         self.model.cuda()
         self.model.eval()
         
-        self.caption = ''   
-        self.x_bbox = 0.0
-        self.y_bbox = 0.0  
+        self.caption = ''  
         self.lock = Lock() 
 
         return True
@@ -88,20 +87,13 @@ class YarpMdetr(yarp.RFModule):
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
             self.lock.acquire()
-            self.x_bbox = 0.0
-            self.y_bbox = 0.0
             self.caption = command.get(1).asString()
             self.plot_inference(self._in_buf_array, self.caption)
-            if self.x_bbox == 0.0:
-                reply.addString('not found')
+            bt=self.read_coords_port.read()
+            if bt.check(self.caption):
+                reply.addString(self.caption + ' found')
             else:
-                reply.addString(self.caption + ' is here: ' + str(self.x_bbox) + ' ' + str(self.y_bbox))
-                if not self.stream_coords:
-                    bout = self.output_coords_port.prepare()
-                    bout.clear()
-                    bout.addFloat32(self.x_bbox)
-                    bout.addFloat32(self.y_bbox)
-                    self.output_coords_port.write()       
+                reply.addString('not found')
             self.lock.release()
         elif command.get(0).asString() == 'help':
             print('Command \'help\' received')
@@ -116,15 +108,6 @@ class YarpMdetr(yarp.RFModule):
         if reply.size()==0:
             reply.addVocab32('ack')
         return True
-
-    def get_max_prob_coord(self, out_bbox, probs):
-        if probs.size(dim=-1)>0:
-            mask = probs == probs.max()
-            bbox = out_bbox[mask]
-            x, y, _, _ = bbox.unbind(-1)
-            self.x_bbox=x.item() * self.image_w
-            self.y_bbox=y.item() * self.image_h
-
     
     def interruptModule(self):
         print('Interrupt function')
@@ -167,7 +150,7 @@ class YarpMdetr(yarp.RFModule):
             cv2.rectangle(self.np_image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
             cv2.putText(self.np_image, l + ' [' + str(s.item()) + ']', (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         return np.array(pil_img)
-
+         
 
     def plot_inference(self, im, caption):
         im = Image.fromarray(im)
@@ -175,7 +158,7 @@ class YarpMdetr(yarp.RFModule):
         memory_cache = self.model(img, [caption], encode_and_save=True)
         outputs = self.model(img, [caption], encode_and_save=False, memory_cache=memory_cache)
         probas = 1 - outputs['pred_logits'].softmax(-1)[0, :, -1].cpu()
-        keep = probas > self.min_prob
+        keep = probas > self.min_conf
         out_bbox = outputs['pred_boxes'].cpu()[0, keep]
         bboxes_scaled = self.rescale_bboxes(out_bbox, im.size)
         positive_tokens = (outputs["pred_logits"].cpu()[0, keep].softmax(-1) > 0.1).nonzero().tolist()
@@ -187,14 +170,25 @@ class YarpMdetr(yarp.RFModule):
                 predicted_spans[item] += " " + caption[span.start:span.end]
         labels = [predicted_spans[k] for k in sorted(list(predicted_spans.keys()))]
         self.plot_results_yarp(im, probas[keep], bboxes_scaled, labels, masks=None)
-
-        self.get_max_prob_coord(out_bbox, probas[keep])
-        if self.stream_coords:
-            bout = self.output_coords_port.prepare()
-            bout.clear()
-            bout.addFloat32(self.x_bbox)
-            bout.addFloat32(self.y_bbox)
-            self.output_coords_port.write()
+        
+        probs_bbox = probas[keep]
+        bout = self.output_coords_port.prepare()
+        bout.clear()
+        if probs_bbox.size(dim=-1)>0:
+            idx=0
+            for box in out_bbox:
+                x, y, _, _ = box.unbind(-1)
+                x_out=x.item() * self.image_w
+                y_out=y.item() * self.image_h
+                b = bout.addList()
+                b.addString(self.caption)
+                b.addFloat32(float(probs_bbox[idx]))
+                b.addFloat32(x_out)
+                b.addFloat32(y_out)
+                idx=idx+1
+        else:
+            bout.addString('nothing')
+        self.output_coords_port.write()
 
     def updateModule(self):
         self.lock.acquire()

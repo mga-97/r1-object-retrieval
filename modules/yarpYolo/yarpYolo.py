@@ -176,13 +176,18 @@ class YarpYolo(yarp.RFModule):
         self.plot_bboxes(frame, results[0].boxes.data, conf=self.min_conf)
         bout = self.output_coords_port.prepare()
         bout.clear()
+        smtg = 0
+        print(results[0].boxes.data.size(dim=0))
         for box in results[0].boxes.data:
             if box[-2] > self.min_conf:  #filter every box under conf threshold if conf threshold setted
-                b = bout.addList() #yarp.Bottle()
+                b = bout.addList()
                 b.addString(str(self.labels[int(box[-1])+1]))
                 b.addFloat32(float(box[-2]))
                 b.addFloat32((float(box[0]) + float(box[2]))/2)
                 b.addFloat32((float(box[1]) + float(box[3]))/2)
+                smtg = 1
+        if smtg == 0:
+            bout.addString('nothing')
         self.output_coords_port.write()
  
 
