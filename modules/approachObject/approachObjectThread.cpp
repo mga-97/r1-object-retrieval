@@ -368,11 +368,17 @@ void ApproachObjectThread::run()
             yCInfo(APPROACH_OBJECT_THREAD,"Looking for object again");
             if(lookAgain(m_object))
             {
-                Bottle* new_coords = m_object_finder_result_port.read(false); 
-                if(new_coords  != nullptr)
+                Bottle* finderResult = m_object_finder_result_port.read(false); 
+                if(finderResult  != nullptr)
                 {
-                    m_coords = new_coords;
-                    m_ext_start = true;
+                    if (!getObjCoordinates(finderResult, m_coords))
+                    {
+                        yCWarning(APPROACH_OBJECT_THREAD, "The Object Finder is not seeing any %s", m_object.c_str());
+                    }
+                    else
+                    {
+                        m_ext_start = true;
+                    }
                 }
                 else
                 {
@@ -450,6 +456,36 @@ bool ApproachObjectThread::lookAgain(string object )
     return false;
 }
 
+
+/****************************************************************/
+bool ApproachObjectThread::getObjCoordinates(Bottle* btl, Bottle* out)
+{
+    if (out->size()>0)
+        out->clear();
+
+    double max_conf = 0.0;
+    double x = -1.0, y;
+    for (int i=0; i<btl->size(); i++)
+    {
+        Bottle* b = btl->get(i).asList();
+        if (b->get(0).asString() != m_object) //skip objects with another label
+            continue;
+        
+        if(b->get(1).asFloat32() > max_conf) //get the object with the max confidence
+        {
+            max_conf = b->get(1).asFloat32();
+            x = b->get(2).asFloat32();
+            y = b->get(3).asFloat32();
+        }
+    }
+
+    if (x<0)
+        return false;
+    
+    out->addFloat32(x);
+    out->addFloat32(y);
+    return true;
+}
 
 /****************************************************************/
 bool ApproachObjectThread::externalStop()

@@ -82,6 +82,7 @@ public:
 
     void exec(Bottle& b);
     bool lookAgain(string object);
+    bool getObjCoordinates(Bottle* btl, Bottle* out);
     bool externalStop();  
     bool externalResume();    
 };
