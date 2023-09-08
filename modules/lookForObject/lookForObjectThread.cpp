@@ -332,6 +332,33 @@ bool LookForObjectThread::turn()
 }    
 
 /****************************************************************/
+bool LookForObjectThread::getObjCoordinates(Bottle* btl, Bottle& out)
+{
+    double max_conf = 0.0;
+    double x = -1.0, y;
+    for (int i=0; i<btl->size(); i++)
+    {
+        Bottle* b = btl->get(i).asList();
+        if (b->get(0).asString() != m_object) //skip objects with another label
+            continue;
+        
+        if(b->get(1).asFloat32() > max_conf) //get the object with the max confidence
+        {
+            max_conf = b->get(1).asFloat32();
+            x = b->get(2).asFloat32();
+            y = b->get(3).asFloat32();
+        }
+    }
+
+    if (x<0)
+        return false;
+    
+    out.addFloat32(x);
+    out.addFloat32(y);
+    return true;
+}
+
+/****************************************************************/
 bool LookForObjectThread::writeResult(bool objFound)
 {
     yarp::os::Bottle&  toSendOut = m_outPort.prepare();
@@ -341,10 +368,15 @@ bool LookForObjectThread::writeResult(bool objFound)
         toSendOut.addString(m_object);
         Bottle& coordList = toSendOut.addList();
 
-        Bottle* objCoords= m_objectCoordsPort.read(false); 
-        if(objCoords  != nullptr)
+        Bottle* finderResult= m_objectCoordsPort.read(false); 
+        if(finderResult != nullptr)
         {
-            coordList = *objCoords;
+            if (!getObjCoordinates(finderResult, coordList))
+            {
+                toSendOut.clear();
+                toSendOut.addString("object not found");
+                yCWarning(LOOK_FOR_OBJECT_THREAD, "The Object Finder is not seeing any %s", m_object.c_str());
+            }
         }
     }
     else

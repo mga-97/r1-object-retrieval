@@ -177,7 +177,6 @@ class YarpYolo(yarp.RFModule):
         bout = self.output_coords_port.prepare()
         bout.clear()
         smtg = 0
-        print(results[0].boxes.data.size(dim=0))
         for box in results[0].boxes.data:
             if box[-2] > self.min_conf:  #filter every box under conf threshold if conf threshold setted
                 b = bout.addList()

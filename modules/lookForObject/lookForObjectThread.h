@@ -82,6 +82,7 @@ public:
 
     bool lookAround(std::string& ob);
     bool turn();
+    bool getObjCoordinates(Bottle* btl, Bottle& out);
     bool writeResult(bool objFound);
     void externalStop();
 
