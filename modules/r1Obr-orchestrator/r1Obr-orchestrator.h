@@ -42,9 +42,12 @@ protected:
     RpcServer                   m_rpc_server_port;
     string                      m_rpc_server_port_name;
 
+    //Status port
+    BufferedPort<Bottle>        m_status_port;
+    string                      m_status_port_name;
+
     //Others
     double                      m_period;
-
 
 public:
     Orchestrator();

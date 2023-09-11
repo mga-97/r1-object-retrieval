@@ -25,6 +25,7 @@ Orchestrator::Orchestrator() :
     m_period(1.0)
 {  
     m_rpc_server_port_name  = "/r1Obr-orchestrator/rpc";
+    m_status_port_name = "/r1Obr-orchestrator/status:o";
 }
 
 bool Orchestrator::configure(ResourceFinder &rf) 
@@ -74,6 +75,14 @@ bool Orchestrator::configure(ResourceFinder &rf)
     }
     m_input_port.useCallback(*m_inner_thread);
 
+    // --------- Status output ----------- //
+    if(rf.check("status_port")){m_status_port_name = rf.find("status_port").asString();} 
+    if (!m_status_port.open(m_status_port_name))
+    {
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open output status port");
+        return false;
+    }
+
     return true;
 }
 
@@ -104,6 +113,11 @@ double Orchestrator::getPeriod()
 
 bool Orchestrator::updateModule()
 {
+    Bottle&  status = m_status_port.prepare();
+    status.clear();
+    m_inner_thread->info(status);
+    m_status_port.write();
+    
     if (isStopping())
     {
         if (m_inner_thread) m_inner_thread->stop();
