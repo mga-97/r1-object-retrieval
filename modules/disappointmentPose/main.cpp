@@ -241,6 +241,9 @@ bool DisappointmentPose::close()
         m_drivers[2].close();
     }
 
+    if (!m_input_port.isClosed())
+        m_input_port.close();
+
     return true;
 }
 

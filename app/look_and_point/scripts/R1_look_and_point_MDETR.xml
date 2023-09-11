@@ -1,23 +1,23 @@
 <application>
-   <name>R1_look_and_point_MDETR_SIM</name>
+   <name>R1_look_and_point_MDETR</name>
 
    <dependencies>
    </dependencies>
    
    <!--  MODULES  -->
    <application>
-        <name>Navigation_ROS2_R1_SIM</name>
+        <name>Navigation_ROS2_R1SN003</name>
         <prefix></prefix>
     </application>
 
     <application>
-        <name>R1_handPointing_SIM</name>
+        <name>R1_handPointing</name>
         <prefix></prefix>
     </application>
 
     <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1_noStream.ini</parameters>
+		<parameters>/home/user1/r1-object-retrieval/python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
 		<node>console</node>
 	</module>
 
@@ -29,22 +29,29 @@
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from look_and_point_R1_SIM.ini</parameters>
+      <parameters>--context lookForObject --from look_and_point_R1.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>look_and_point</name>
+      <parameters>--context look_and_point</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>yarpmotorgui</name>
+      <parameters></parameters>
+      <workdir>/home/user1/robotology/robots-configuration/R1SN003/</workdir>
       <node>console</node>
    </module>
 
    <!--  CONNECTIONS  -->
    <connection>
-      <from>/SIM_CER_ROBOT/depthCamera/rgbImage:o</from>
+      <from>/cer/realsense_repeater/rgbImage:o</from>
       <to>/yarpMdetr/image:i</to>
       <protocol>tcp</protocol>
    </connection>
-   
-   <connection>
-      <from>/yarpMdetr/where_coords:o</from>
-      <to>/handPointing/clicked_point:i</to>
-      <protocol>tcp</protocol>
-   </connection> 
 
    <connection>
       <from>/yarpMdetr/image:o</from>
@@ -63,5 +70,17 @@
       <to>/yarpMdetr/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
+
+   <connection>
+      <from>/lookForObject/out:o</from>
+      <to>/look_and_point/in:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
+   
+   <connection>
+      <from>/look_and_point/out:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
       
 </application>

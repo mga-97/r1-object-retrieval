@@ -18,7 +18,7 @@
 
     <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1_noStream.ini</parameters>
+		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
 		<node>console</node>
 	</module>
 
@@ -31,6 +31,12 @@
    <module>
       <name>lookForObject</name>
       <parameters>--context lookForObject --from lookForObject_R1.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>look_and_point</name>
+      <parameters>--context look_and_point</parameters>
       <node>console</node>
    </module>
 
@@ -141,10 +147,16 @@
    </connection>
    
    <connection>
-      <from>/yarpMdetr/where_coords:o</from>
-      <to>/handPointing/clicked_point:i</to>
+      <from>/goAndFindIt/output:o</from>
+      <to>/look_and_point/in:i</to>
       <protocol>tcp</protocol>
    </connection> 
+   
+   <connection>
+      <from>/look_and_point/out:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>tcp</protocol>
+   </connection>
    
    <connection>
       <from>/cer_reaching-controller/right/solver:rpc</from>
