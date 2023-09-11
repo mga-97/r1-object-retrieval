@@ -70,6 +70,12 @@
       <to>/yarpMdetr/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
+   
+   <connection>
+      <from>/yarpMdetr/where_coords:o</from>
+      <to>/lookForObject/objectCoordinates:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
 
    <connection>
       <from>/lookForObject/out:o</from>

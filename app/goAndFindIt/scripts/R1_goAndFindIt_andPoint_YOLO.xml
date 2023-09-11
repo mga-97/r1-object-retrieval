@@ -116,6 +116,12 @@
       <to>/view/yoloView:i</to>
       <protocol>tcp</protocol>
    </connection>
+   
+   <connection>
+      <from>/yarpYolo/where_coords:o</from>
+      <to>/lookForObject/objectCoordinates:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
 
    <connection>
       <from>/lookForObject/gazeControllerTarget:o</from>

@@ -147,6 +147,12 @@
    </connection>
    
    <connection>
+      <from>/yarpMdetr/where_coords:o</from>
+      <to>/lookForObject/objectCoordinates:i</to>
+      <protocol>tcp</protocol>
+   </connection> 
+   
+   <connection>
       <from>/goAndFindIt/output:o</from>
       <to>/look_and_point/in:i</to>
       <protocol>tcp</protocol>
