@@ -345,14 +345,24 @@ void ApproachObjectThread::run()
             yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
             if(lookAgain(m_object))
             {
-                Bottle* new_coords = m_object_finder_result_port.read(false); 
-                if(new_coords  != nullptr && !m_ext_stop)
+                Bottle* finderResult = m_object_finder_result_port.read(false); 
+                if(finderResult  != nullptr && !m_ext_stop)
                 {
-                    yCInfo(APPROACH_OBJECT_THREAD,"Object approached");
-                    Bottle&  toSend = m_output_coordinates_port.prepare();
-                    toSend.clear();
-                    toSend = *new_coords;
-                    m_output_coordinates_port.write();
+                    yCDebug(APPROACH_OBJECT_THREAD, "DEBUG: read: %s", finderResult->toString().c_str());
+                    Bottle* new_coords = new Bottle;
+                    if (!getObjCoordinates(finderResult, new_coords))
+                    {
+                        yCWarning(APPROACH_OBJECT_THREAD, "The Object Finder is not seeing any %s", m_object.c_str());
+                    }
+                    else
+                    {
+                        yCInfo(APPROACH_OBJECT_THREAD,"Object approached");
+                        Bottle&  toSend = m_output_coordinates_port.prepare();
+                        toSend.clear();
+                        toSend = *new_coords;
+                        m_output_coordinates_port.write();
+                    }
+                             
                 }
             }
             else
@@ -371,6 +381,7 @@ void ApproachObjectThread::run()
                 Bottle* finderResult = m_object_finder_result_port.read(false); 
                 if(finderResult  != nullptr)
                 {
+                    yCDebug(APPROACH_OBJECT_THREAD, "DEBUG: read: %s", finderResult->toString().c_str());
                     if (!getObjCoordinates(finderResult, m_coords))
                     {
                         yCWarning(APPROACH_OBJECT_THREAD, "The Object Finder is not seeing any %s", m_object.c_str());
@@ -437,6 +448,7 @@ bool ApproachObjectThread::lookAgain(string object )
         Bottle request, reply;
         request.addString("where");
         request.addString(object); 
+        yCDebug(APPROACH_OBJECT_THREAD,"DEBUG: request to obj finder: %s", request.toString().c_str());
         if (m_object_finder_rpc_port.write(request,reply))
         {
             if (reply.get(0).asString()!="not found")
@@ -460,9 +472,7 @@ bool ApproachObjectThread::lookAgain(string object )
 /****************************************************************/
 bool ApproachObjectThread::getObjCoordinates(Bottle* btl, Bottle* out)
 {
-    if (out->size()>0)
-        out->clear();
-
+    yCDebug(APPROACH_OBJECT_THREAD, "DEBUG: entrato nel pezzo nuovo");
     double max_conf = 0.0;
     double x = -1.0, y;
     for (int i=0; i<btl->size(); i++)
@@ -478,12 +488,13 @@ bool ApproachObjectThread::getObjCoordinates(Bottle* btl, Bottle* out)
             y = b->get(3).asFloat32();
         }
     }
-
+    yCDebug(APPROACH_OBJECT_THREAD, "DEBUG: uscito, quasi, dal pezzo nuovo");
     if (x<0)
         return false;
     
     out->addFloat32(x);
     out->addFloat32(y);
+    yCDebug(APPROACH_OBJECT_THREAD, "DEBUG: e' qui che non ci arrivi?");
     return true;
 }
 
