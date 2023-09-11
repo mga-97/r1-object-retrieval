@@ -127,6 +127,7 @@ class YarpYolo(yarp.RFModule):
         self._input_image_port.close()
         self._output_image_port.close()
         self.output_coords_port.close()
+        self.read_coords_port.close()
         return True
 
     
