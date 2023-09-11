@@ -110,7 +110,7 @@ class YarpYolo(yarp.RFModule):
             reply.addVocab32('many')
             reply.addString('detect : starts detecting everything in the input image')
             reply.addString('label <something> : identify "something" in input image')
-            reply.addString('where <something> : identify "something" in input image and return its pixel coords')
+            reply.addString('where <something> : returns whether "something" is found in the input image')
             reply.addString('help : get this list')           
         else:
             print('Command {:s} not recognized'.format(command.get(0).asString()) + '. Type \'help\'')
