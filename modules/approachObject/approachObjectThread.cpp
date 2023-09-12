@@ -337,12 +337,22 @@ void ApproachObjectThread::run()
         {
             Time::delay(0.2);
             m_iNav2D->getNavigationStatus(currentStatus);
+
+            if (currentStatus == navigation_status_aborted)
+            {
+                yCWarning(APPROACH_OBJECT_THREAD, "Navigation aborted.");
+                break;
+            }
         }
 
         //look again for object
         if (!m_ext_stop)
         {
-            yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
+            if (currentStatus == navigation_status_aborted) 
+                yCWarning(APPROACH_OBJECT_THREAD, "Looking for object again from actual position");
+            else if (currentStatus == navigation_status_goal_reached)
+                yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
+                
             if(lookAgain(m_object))
             {
                 Bottle* finderResult = m_object_finder_result_port.read(false); 
