@@ -275,7 +275,11 @@ void GoAndFindItThread::setWhatWhere(string& what, string& where)
 
         m_status = GaFI_NAVIGATING;
         m_where = where;
-        m_what = what;    
+        m_what = what;   
+
+        Bottle request,_rep_;
+        request.fromString("set " + m_where + " checking");
+        m_nextLoc_rpc_port.write(request,_rep_); 
     }
 }
 
