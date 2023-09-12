@@ -37,4 +37,7 @@ In order for this module to work correctly, you'll need:
 - cer-gaze-controller module
 - an object-recognition module
 
+The input port reads the name of the object to search and the result of the search is returned to the output port.
+If you want to stop the robot during the search for an object, you can just send a "stop" command to the input port.
+
 
