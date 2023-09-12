@@ -341,6 +341,7 @@ void ApproachObjectThread::run()
             if (currentStatus == navigation_status_aborted)
             {
                 yCWarning(APPROACH_OBJECT_THREAD, "Navigation aborted.");
+                m_iNav2D->stopNavigation();
                 break;
             }
         }
