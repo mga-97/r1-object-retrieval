@@ -87,13 +87,21 @@ double LookAndPoint::getPeriod()
 void LookAndPoint::onRead(Bottle& b) 
 {
     yCInfo(LOOK_AND_POINT,"Received: %s", b.toString().c_str());
-    Bottle* out_ptr = b.get(1).asList();
-
-    Bottle&  out = m_output_port.prepare();
-    out.clear();
-    out = *out_ptr;
-    m_output_port.write();
-    yCInfo(LOOK_AND_POINT,"Sending: %s", out.toString().c_str());
+    
+    if (b.size()==2)
+    {
+        Bottle* out_ptr = b.get(1).asList();
+        if(out_ptr)
+        {
+            Bottle&  out = m_output_port.prepare();
+            out.clear();
+            out = *out_ptr;
+            m_output_port.write();
+            yCInfo(LOOK_AND_POINT,"Sending: %s", out.toString().c_str());
+        }
+    }
+    
+    yCInfo(LOOK_AND_POINT,"Sending nothing");
 }
 
 
