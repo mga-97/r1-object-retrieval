@@ -241,10 +241,10 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
             reply.addString("remove <locationName> : removes the defined location by any list");
             reply.addString("list : lists all the locations and their status");
             reply.addString("list2 : lists all the locations divided by their status");
-            reply.addString("stop : stops the nextLocationPlanner module");
+            reply.addString("close : closes the nextLocationPlanner module");
             reply.addString("help : gets this list");
         }
-        else if (cmd_0=="stop")
+        else if (cmd_0=="close")
         {
             close();
         }

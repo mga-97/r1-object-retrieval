@@ -15,7 +15,7 @@ Possible RPC commands:
 - `remove <locationName>` : removes the defined location by any list
 - `list` : lists all the locations and their status
 - `list2` : lists all the locations divided by their status
-- `stop` : stops the nextLocationPlanner module
+- `close` : closes the nextLocationPlanner module
 - `help` : gets this list
 
 Each location can have one of the following statuses: `unchecked`,`checking`, `checked` .
