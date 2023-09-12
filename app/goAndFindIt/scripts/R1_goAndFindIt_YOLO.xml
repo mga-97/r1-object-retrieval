@@ -31,7 +31,7 @@
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from lookForObject_R1.ini</parameters>
+      <parameters>--context lookForObject --from lookForObject_R1_demo.ini</parameters>
       <node>console</node>
    </module>
 

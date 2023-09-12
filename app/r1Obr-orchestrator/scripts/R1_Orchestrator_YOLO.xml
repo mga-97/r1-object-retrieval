@@ -26,8 +26,14 @@
    </module>
 
    <module>
+      <name>yarprobotinterface </name>
+      <parameters>--context headSynchronizer --from faceDisplay.ini</parameters>
+      <node>r1-face</node>
+   </module>
+
+   <module>
       <name>r1Obr-orchestrator</name>
-      <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1.ini</parameters>
+      <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1_demo.ini</parameters>
       <node>console</node>
    </module>
 

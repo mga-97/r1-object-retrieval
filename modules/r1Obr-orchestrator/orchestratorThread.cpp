@@ -146,6 +146,8 @@ void OrchestratorThread::run()
 {
     while (true)
     {
+        setEmotion();
+        
         if (m_status == R1_ASKING_NETWORK)
         {
             if (!askNetwork())
@@ -232,8 +234,6 @@ void OrchestratorThread::run()
         }
 
         Time::delay(0.2);
-
-        setEmotion();
     }
 }
 
@@ -549,11 +549,11 @@ void OrchestratorThread::info(Bottle& reply)
 void OrchestratorThread::setEmotion()
 {
     Bottle request, reply;
-    if (m_object_found)
+    if (m_status == R1_OBJECT_FOUND || m_object_found)
         request.fromString("emotion 1"); //happy
-    else if (m_object_not_found)
+    else if (m_status == R1_OBJECT_FOUND || m_object_not_found)
         request.fromString("emotion 0"); //sad
-    else if (m_status == R1_SEARCHING || m_status == R1_ASKING_NETWORK)
+    else if (getStatus() == "searching - searching" || m_status == R1_ASKING_NETWORK)
         request.fromString("emotion 2"); //thinking
     else 
         request.fromString("emotion 1"); //happy
