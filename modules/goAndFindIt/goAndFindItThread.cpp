@@ -314,11 +314,19 @@ void GoAndFindItThread::nextWhere()
 /****************************************************************/
 bool GoAndFindItThread::setNavigationPosition()
 {
-    m_getReadyToNav->navPosition();
-    Time::delay(m_setNavPos_time);
-    m_in_nav_position = true;
-
-    return true;
+    if(m_getReadyToNav->areJointsOk())
+    {
+        m_getReadyToNav->navPosition();
+        Time::delay(m_setNavPos_time);
+        m_in_nav_position = true;
+        return true;
+    }
+    else
+    {
+        yCError(GO_AND_FIND_IT_THREAD,"Cannot set robot navigation position");
+        m_status = GaFI_IDLE;
+        return false;
+    }
 }
 
 /****************************************************************/
@@ -346,7 +354,8 @@ bool GoAndFindItThread::goThere()
     //setting navigation position, if needed
     if(!m_in_nav_position)
     {
-        setNavigationPosition();
+        if(!setNavigationPosition())
+            return false;
     }
 
     //navigating to "m_where"

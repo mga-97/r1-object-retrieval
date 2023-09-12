@@ -164,6 +164,32 @@ void GetReadyToNav::navPosition()
 }
 
 
+bool GetReadyToNav::areJointsOk()
+{
+    int mode=0;
+    for (int i = 0 ; i<4 ; i++) 
+    {
+        int NUMBER_OF_JOINTS;
+        m_iposctrl[i]->getAxes(&NUMBER_OF_JOINTS);
+        for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++)
+        { 
+            m_ictrlmode[i]->getControlMode(i_joint, &mode);
+            if (mode == VOCAB_CM_HW_FAULT)
+            {
+                yError() << "Error: hardware fault detected";
+                return false;
+            }
+            else if (mode == VOCAB_CM_IDLE)
+            {
+                yError() << "Error: idle joint detected";
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 void GetReadyToNav::close()
 {
     if(m_drivers[0].isValid())
@@ -186,3 +212,4 @@ void GetReadyToNav::close()
         m_drivers[3].close();
     }
 }
+

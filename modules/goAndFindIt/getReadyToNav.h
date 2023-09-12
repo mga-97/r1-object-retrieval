@@ -26,6 +26,7 @@
 #include <yarp/os/Port.h>
 #include <yarp/os/RFModule.h>
 #include <yarp/dev/ControlBoardInterfaces.h>
+#include <vector>
 
 class GetReadyToNav
 {
@@ -50,6 +51,8 @@ public:
     bool configure(yarp::os::ResourceFinder &rf);
     void navPosition();
     void setPosCtrlMode(const int part);
+    bool areJointsOk();
+
     void close();
 };
 
