@@ -20,6 +20,12 @@
    </application>
 
    <module>
+      <name>faceExpressionImage5GTour</name>
+      <parameters></parameters>
+      <node>console1</node>
+   </module>
+
+   <module>
       <name>r1Obr-orchestrator</name>
       <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1.ini</parameters>
       <node>console</node>
@@ -41,6 +47,18 @@
       <from>/goAndFindIt/output:o</from>
       <to>/r1Obr-orchestrator/goAndFindIt/result:i</to>
       <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/faceExpressionImage/image:o</from>
+      <to>/robot/faceDisplay/image:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/r1Obr-orchestrator/faceExpression:rpc</from>
+      <to>/faceExpressionImage/rpc</to>
+      <protocol>fast_tcp</protocol>
    </connection>
       
 </application>

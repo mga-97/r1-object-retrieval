@@ -39,6 +39,7 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     m_goandfindit_result_port_name  = "/r1Obr-orchestrator/goAndFindIt/result:i";
     m_positive_outcome_port_name    = "/r1Obr-orchestrator/positive_outcome:o";
     m_negative_outcome_port_name    = "/r1Obr-orchestrator/negative_outcome:o";
+    m_faceexpression_rpc_port_name  = "/r1Obr-orchestrator/faceExpression:rpc";
 }
 
 /****************************************************************/
@@ -49,6 +50,7 @@ bool OrchestratorThread::threadInit()
     if (m_rf.check("next_loc_planner_rpc_port")){m_nextLoc_rpc_port_name        = m_rf.find("next_loc_planner_rpc_port").asString();}
     if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name    = m_rf.find("goandfindit_rpc_port").asString();}
     if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name = m_rf.find("goandfindit_result_port").asString();}
+    if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name = m_rf.find("faceexpression_rpc_port").asString();}
     
     if(!m_sensor_network_rpc_port.open(m_sensor_network_rpc_port_name)){
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Out port with name" << m_sensor_network_rpc_port_name;
@@ -67,6 +69,11 @@ bool OrchestratorThread::threadInit()
 
     if(!m_goandfindit_result_port.open(m_goandfindit_result_port_name)){
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open nextOrient RPC port with name" << m_goandfindit_result_port_name;
+        return false;
+    }
+
+    if(!m_faceexpression_rpc_port.open(m_faceexpression_rpc_port_name)){
+        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open faceExpression RPC port with name" << m_faceexpression_rpc_port_name;
         return false;
     }
 
@@ -123,6 +130,9 @@ void OrchestratorThread::threadRelease()
 
     if(!m_negative_outcome_port.isClosed())
         m_negative_outcome_port.close();
+        
+    if (m_faceexpression_rpc_port.asPort().isOpen())
+        m_faceexpression_rpc_port.close(); 
     
     m_nav2home->close();
 
@@ -223,6 +233,7 @@ void OrchestratorThread::run()
 
         Time::delay(0.2);
 
+        setEmotion();
     }
 }
 
@@ -531,4 +542,21 @@ void OrchestratorThread::info(Bottle& reply)
     Bottle& statusList=reply.addList();
     statusList.addString("status"); statusList.addString(":");
     statusList.addString(getStatus());
+}
+
+
+/****************************************************************/
+void OrchestratorThread::setEmotion()
+{
+    Bottle request, reply;
+    if (m_object_found)
+        request.fromString("emotion 1"); //happy
+    else if (m_object_not_found)
+        request.fromString("emotion 0"); //sad
+    else if (m_status == R1_SEARCHING || m_status == R1_ASKING_NETWORK)
+        request.fromString("emotion 2"); //thinking
+    else 
+        request.fromString("emotion 1"); //happy
+    
+    m_faceexpression_rpc_port.write(request,reply);
 }

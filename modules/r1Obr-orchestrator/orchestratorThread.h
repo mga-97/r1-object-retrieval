@@ -59,6 +59,9 @@ protected:
     string                  m_negative_outcome_port_name;
     BufferedPort<Bottle>    m_negative_outcome_port;
 
+    string                  m_faceexpression_rpc_port_name;
+    RpcClient               m_faceexpression_rpc_port;
+
     // Others
     R1_status               m_status;
     Bottle                  m_request;
@@ -98,6 +101,7 @@ public:
     string getWhere();
     string getStatus();
     void info(Bottle& reply);
+    void setEmotion();
 
 };
 
