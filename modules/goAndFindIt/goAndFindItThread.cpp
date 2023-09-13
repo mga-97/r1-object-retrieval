@@ -358,6 +358,9 @@ bool GoAndFindItThread::goThere()
             return false;
     }
 
+    if (m_status != GaFI_NAVIGATING)
+        return false; //possible external stop during setNavigationPosition
+
     //navigating to "m_where"
     m_iNav2D->gotoTargetByLocationName(m_where);
     yCInfo(GO_AND_FIND_IT_THREAD, "Going to location %s", m_where.c_str());
