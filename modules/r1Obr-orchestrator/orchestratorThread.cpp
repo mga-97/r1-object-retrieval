@@ -387,6 +387,8 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
     {
         m_object_found = false;
         m_object_not_found = false;
+        Bottle req("navpos"); 
+        forwardRequest(req);
     }
 
     if (rep.size() == 0)
@@ -551,7 +553,7 @@ void OrchestratorThread::setEmotion()
     Bottle request, reply;
     if (m_status == R1_OBJECT_FOUND || m_object_found)
         request.fromString("emotion 1"); //happy
-    else if (m_status == R1_OBJECT_FOUND || m_object_not_found)
+    else if (m_status == R1_OBJECT_NOT_FOUND || m_object_not_found)
         request.fromString("emotion 0"); //sad
     else if (getStatus() == "searching - searching" || m_status == R1_ASKING_NETWORK)
         request.fromString("emotion 2"); //thinking
