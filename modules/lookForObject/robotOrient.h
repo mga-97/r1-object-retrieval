@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef NEXT_HEAD_ORIENT_H
-#define NEXT_HEAD_ORIENT_H
+#ifndef ROBOT_ORIENT_H
+#define ROBOT_ORIENT_H
 
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
@@ -34,9 +34,9 @@
 
 //Defaults RGBD sensor
 #define RGBDClient            "RGBDSensorClient"
-#define RGBDLocalImagePort    "/lookForObject/nextHeadOrient/clientRgbPort:i"
-#define RGBDLocalDepthPort    "/lookForObject/nextHeadOrient/clientDepthPort:i"
-#define RGBDLocalRpcPort      "/lookForObject/nextHeadOrient/clientRpcPort"
+#define RGBDLocalImagePort    "/lookForObject/robotOrient/clientRgbPort:i"
+#define RGBDLocalDepthPort    "/lookForObject/robotOrient/clientDepthPort:i"
+#define RGBDLocalRpcPort      "/lookForObject/robotOrient/clientRpcPort"
 #define RGBDRemoteImagePort   "/cer/depthCamera/rgbImage:o"
 #define RGBDRemoteDepthPort   "/cer/depthCamera/depthImage:o"
 #define RGBDRemoteRpcPort     "/cer/depthCamera/rpc:i"
@@ -47,15 +47,8 @@ using namespace std;
 using namespace yarp::os;
 using namespace yarp::dev;
 
-class NextHeadOrient
+class RobotOrient
 {
-
-enum HeadOrientStatus {
-    HO_UNCHECKED = 0,
-    HO_CHECKING = 1,
-    HO_CHECKED = 2   
-};
-
 private:
     //Polydriver
     PolyDriver            m_Poly;
@@ -69,13 +62,13 @@ private:
 
     //head orientations
     map<string, pair<double,double>>         m_orientations;
-    map<string, HeadOrientStatus>            m_orientation_status;
 
     //turn around
     bool                  m_turning;
     double                m_turn_deg;
     int                   m_max_turns;
-    int                   m_current_turn{1};
+    int                   m_current_turn;
+    int                   m_current_orient;
 
     //others
     double                m_period;
@@ -85,8 +78,8 @@ private:
 
 public:
     //Constructor/Distructor
-    NextHeadOrient(ResourceFinder &rf);
-    ~NextHeadOrient(){}
+    RobotOrient(ResourceFinder &rf);
+    ~RobotOrient(){}
 
     //Internal methods
     bool configure();
@@ -94,7 +87,7 @@ public:
 
     bool next(Bottle& reply);
     bool turn(Bottle& reply);
-    bool set(const string& pos, const string& status);
+    void resetOrients();
     void resetTurns();
     void home();
     void help();

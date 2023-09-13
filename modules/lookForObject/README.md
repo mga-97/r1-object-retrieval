@@ -22,8 +22,8 @@ The module opens a RGBDCamera client, a navigation client and a Remote Control B
 
 One input port receives the string with the name of the object to find (`/lookForObject/object:i`), and an output port returns if the object is found or not (`/lookForObject/out:o`)`
 
-### nextHeadOrient
-The management of the head orientations is delegated to the nextHeadOrient component as in the following.
+### robotOrient
+The management of the head orientations is delegated to the robotOrient component as in the following.
 
 Each head orientation can have one of the following statuses: `unchecked`,`checking`, `checked` .
 When the module is created, each orientation status is 'unchecked'.

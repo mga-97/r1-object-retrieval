@@ -24,7 +24,7 @@
 #include <yarp/dev/INavigation2D.h>
 #include <yarp/os/all.h>
 #include <math.h>
-#include "nextHeadOrient.h"
+#include "robotOrient.h"
 
 
 class LookForObjectThread : public yarp::os::Thread, 
@@ -62,7 +62,7 @@ protected:
     bool                        m_ext_stop;
     yarp::os::ResourceFinder&   m_rf;
     
-    NextHeadOrient*             m_nextHeadOrient;
+    RobotOrient*             m_robotOrient;
 
 
 public:

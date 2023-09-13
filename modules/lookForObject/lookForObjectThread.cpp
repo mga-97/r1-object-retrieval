@@ -18,6 +18,7 @@
 
 #include "lookForObjectThread.h"
 
+#include <chrono> //debug
 
 YARP_LOG_COMPONENT(LOOK_FOR_OBJECT_THREAD, "r1_obr.lookForObject.LookForObjectThread")
 
@@ -48,8 +49,8 @@ bool LookForObjectThread::threadInit()
     if (m_rf.check("object_coords_port")) {m_objectCoordsPortName = m_rf.find("object_coords_port").asString();}    
 
     // --------- Next Head Orient initialization --------- //
-    m_nextHeadOrient = new NextHeadOrient(m_rf);
-    bool headOrientOk = m_nextHeadOrient->configure();
+    m_robotOrient = new RobotOrient(m_rf);
+    bool headOrientOk = m_robotOrient->configure();
     if (!headOrientOk){
         return false;
     }
@@ -131,7 +132,7 @@ void LookForObjectThread::threadRelease()
         m_objectCoordsPort.close();
     }
 
-    m_nextHeadOrient->close();
+    m_robotOrient->close();
     
     yCInfo(LOOK_FOR_OBJECT_THREAD, "Thread released");
 
@@ -209,7 +210,7 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
                 yarp::os::Time::delay(m_wait_for_search + 0.25); 
             }
             m_ext_stop = false;
-            m_nextHeadOrient->resetTurns();
+            m_robotOrient->resetTurns();
             m_object = obj;
             m_status = LfO_SEARCHING;
         }
@@ -228,10 +229,7 @@ void LookForObjectThread::onStop()
 /****************************************************************/
 bool LookForObjectThread::lookAround(std::string& ob)
 {
-    if(!m_nextHeadOrient->set("all","unchecked"))
-    {
-        yCError(LOOK_FOR_OBJECT_THREAD) << "Error resetting head positions status to 'unchecked'";
-    }
+    m_robotOrient->resetOrients();
 
     bool objectFound {false};
     int idx {1};
@@ -239,7 +237,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
     {
         //retrieve next head orientation
         Bottle replyOrient;
-        if (m_nextHeadOrient->next(replyOrient))
+        if (m_robotOrient->next(replyOrient))
         {                        
             yCInfo(LOOK_FOR_OBJECT_THREAD) << "Checking head orientation: pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
             //gaze target output
@@ -255,8 +253,13 @@ bool LookForObjectThread::lookAround(std::string& ob)
             targetList1.addFloat32(tmpBottle->get(0).asFloat32());
             targetList1.addFloat32(tmpBottle->get(1).asFloat32());
             m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
-            
+
+            yCDebug(LOOK_FOR_OBJECT_THREAD, "waiting some seconds: %f", m_wait_for_search);
+            auto start = std::chrono::system_clock::now(); //debug
             yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot tilting its head
+            auto end = std::chrono::system_clock::now(); //debug
+            std::chrono::duration<double> elapsed_seconds = end-start;
+            yCDebug(LOOK_FOR_OBJECT_THREAD) << "elapsed time: " << elapsed_seconds.count() << "s";
 
             //search for object
             Bottle request, reply;
@@ -276,15 +279,13 @@ bool LookForObjectThread::lookAround(std::string& ob)
                 yCError(LOOK_FOR_OBJECT_THREAD,"Unable to communicate with findObject");
             }
 
-            string headPosName = "pos" + (std::string)(idx<10?"0":"") + std::to_string(idx);
-            m_nextHeadOrient->set(headPosName,"checked");
             idx++;
 
             yarp::os::Time::delay(0.2);
         }
         else
         {
-            m_nextHeadOrient->home();
+            m_robotOrient->home();
             break;
         }  
     }
@@ -304,7 +305,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
 bool LookForObjectThread::turn()
 {  
     yarp::os::Bottle reply;
-    m_nextHeadOrient->turn(reply);
+    m_robotOrient->turn(reply);
     if (reply.get(0).asString()=="noTurn")
         m_status = LfO_OBJECT_NOT_FOUND;
     else
