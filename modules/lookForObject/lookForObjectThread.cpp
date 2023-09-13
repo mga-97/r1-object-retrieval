@@ -18,8 +18,6 @@
 
 #include "lookForObjectThread.h"
 
-#include <chrono> //debug
-
 YARP_LOG_COMPONENT(LOOK_FOR_OBJECT_THREAD, "r1_obr.lookForObject.LookForObjectThread")
 
 
@@ -254,12 +252,7 @@ bool LookForObjectThread::lookAround(std::string& ob)
             targetList1.addFloat32(tmpBottle->get(1).asFloat32());
             m_gazeTargetOutPort.write(); //sending output command to gaze-controller 
 
-            yCDebug(LOOK_FOR_OBJECT_THREAD, "waiting some seconds: %f", m_wait_for_search);
-            auto start = std::chrono::system_clock::now(); //debug
             yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot tilting its head
-            auto end = std::chrono::system_clock::now(); //debug
-            std::chrono::duration<double> elapsed_seconds = end-start;
-            yCDebug(LOOK_FOR_OBJECT_THREAD) << "elapsed time: " << elapsed_seconds.count() << "s";
 
             //search for object
             Bottle request, reply;
