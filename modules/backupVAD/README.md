@@ -22,4 +22,6 @@ cd soxr-code && ./go && cd Release && sudo make install
     sudo apt-get install alsa-tools alsa-utils
     sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0
 ```
-:warning: this module can be run on a Docker Container, while the audio Recorder and Player devices (yarprobotinterface) should be run on a physical pc.
+- re-build yarp, activating ccmake options portaudio, portaudioRecorder and portaudioPlayer
+
+:warning: The backupVAD module can be run on a Docker container, while the audio-Recorder and Player devices (yarprobotinterface) should be run on a physical pc.
