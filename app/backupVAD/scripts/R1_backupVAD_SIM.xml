@@ -1,5 +1,5 @@
 <application>
-  <name>R1_backupVAD</name>
+  <name>R1_backupVAD_SIM</name>
 
   <dependencies>
   </dependencies>
@@ -7,13 +7,13 @@
   <module>
     <name>yarprobotinterface</name>
     <parameters>--context backupVAD --from audioRecorderAutoStart.ini</parameters>
-    <node>console</node>
+    <node>pc</node>
   </module>
 
   <module>
     <name>yarprobotinterface</name>
     <parameters>--context backupVAD --from audioPlayer.ini</parameters>
-    <node>console</node>
+    <node>pc</node>
   </module>
 
   <module>
