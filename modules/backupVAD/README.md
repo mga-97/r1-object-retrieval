@@ -1,4 +1,4 @@
-# r1Obr-orchestrator
+# backupVAD
 
 ## General description
 In case the main VAD could not be used for this project, this module can be a valid alternative way of detecting the voice of the user.
