@@ -34,11 +34,14 @@ ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFin
     m_object_finder_rpc_port_name   = "/approachObject/object_finder/rpc";
     m_output_coordinates_port_name  = "/approachObject/output_coords:o";
     m_object_finder_result_port_name= "/approachObject/object_finder_result:i";
-    m_camera_frame_id   = "depth_center";
-    m_base_frame_id     = "base_link";
-    m_world_frame_id    = "map";
-    m_safe_distance     = 1.0;
-    m_wait_for_search   = 4.0;
+    m_camera_frame_id       = "depth_center";
+    m_base_frame_id         = "base_link";
+    m_world_frame_id        = "map";
+    m_safe_distance         = 1.0;
+    m_wait_for_search       = 4.0;
+    m_deg_increase          = 30.0;
+    m_deg_increase_count    = 0;
+    m_deg_increase_sign     = -1;
 }
 
 
@@ -51,6 +54,7 @@ bool ApproachObjectThread::threadInit()
     if(m_rf.check("world_frame_id"))    {m_world_frame_id = m_rf.find("world_frame_id").asString();}
     if(m_rf.check("safe_distance"))     {m_safe_distance = m_rf.find("safe_distance").asFloat32();}
     if(m_rf.check("wait_for_search"))   {m_wait_for_search = m_rf.find("wait_for_search").asFloat32();}
+    if(m_rf.check("increase_degrees"))  {m_deg_increase = m_rf.find("increase_degrees").asFloat32();}
 
 
     // ------------ Open ports ------------ //
@@ -248,9 +252,9 @@ void ApproachObjectThread::run()
 {  
     if (m_ext_start && !m_ext_stop)
     {
-        Map2DLocation loc;
-        m_iNav2D->getCurrentPosition(loc);
-        yCDebug(APPROACH_OBJECT_THREAD,) << "Current location:"<< loc.toString();
+        Map2DLocation locRobot, locObject, locTarget;
+        m_iNav2D->getCurrentPosition(locRobot);
+        yCInfo(APPROACH_OBJECT_THREAD,) << "Current location:"<< locRobot.toString();
         
         yCInfo(APPROACH_OBJECT_THREAD,"Calculating approaching position");
         if (m_coords->size() == 2) //pixel coordinates in camera ref frame
@@ -293,12 +297,7 @@ void ApproachObjectThread::run()
             //point in space coordinates in base ref frame
             Vector v_object_base = transform_mtrx*tempPoint;
 
-            //define target at safe distance from point (on a line connecting robot and point) in base ref frame
-            Vector v_target_base = v_object_base;
-            v_target_base[0] = v_object_base[0] - m_safe_distance*cos(atan2(v_object_base[1], v_object_base[0]));
-            v_target_base[1] = v_object_base[1] - m_safe_distance*sin(atan2(v_object_base[1], v_object_base[0]));
-
-            //define navigation target in world ref frame
+            //point in space coordinates in world ref frame
             bool world_frame_exists = m_iTc->getTransform(m_base_frame_id, m_world_frame_id, transform_mtrx);
             if (!world_frame_exists)
             {
@@ -306,30 +305,24 @@ void ApproachObjectThread::run()
                 m_ext_start = false;
                 return;
             }
- 
-            Vector v_target_world = transform_mtrx*v_target_base; //robot target position in world ref frame
             Vector v_object_world = transform_mtrx*v_object_base; //position of the object in world ref frame
 
-            loc.theta = atan2((v_object_world[1]-loc.y), (v_object_world[0]-loc.x)) / M_PI * 180;
-            loc.x = v_target_world[0];
-            loc.y = v_target_world[1];
+            locObject.x=v_object_world[0];
+            locObject.y=v_object_world[1];
         }
         else if (m_coords->size() == 3) //absolute position of object
         {
-            Vector v_object_world(2,1.0);
-            v_object_world[0] = m_coords->get(0).asFloat32();
-            v_object_world[1] = m_coords->get(1).asFloat32();
-            
-            double theta_rad = atan2((v_object_world[1]-loc.y), (v_object_world[0]-loc.x));
-            loc.theta = theta_rad / M_PI * 180;
-            loc.x = v_object_world[0] - m_safe_distance*cos(theta_rad);
-            loc.y = v_object_world[1] - m_safe_distance*sin(theta_rad);
+            locObject.x = m_coords->get(0).asFloat32();
+            locObject.y = m_coords->get(1).asFloat32();
         }
+
+        calculateTargetLoc(locRobot, locObject, locTarget);
 
         //navigation to target
         yCInfo(APPROACH_OBJECT_THREAD,"Approaching object");
-        yCDebug(APPROACH_OBJECT_THREAD,) << "Approach location:"<< loc.toString();
-        m_iNav2D->gotoTargetByAbsoluteLocation(loc);
+
+        yCInfo(APPROACH_OBJECT_THREAD,) << "Approach location:"<< locTarget.toString();
+        m_iNav2D->gotoTargetByAbsoluteLocation(locTarget);
 
         NavigationStatusEnum currentStatus;
         m_iNav2D->getNavigationStatus(currentStatus);
@@ -342,7 +335,19 @@ void ApproachObjectThread::run()
             {
                 yCWarning(APPROACH_OBJECT_THREAD, "Navigation aborted.");
                 m_iNav2D->stopNavigation();
-                break;
+
+                yCInfo(APPROACH_OBJECT_THREAD,"Calculating new approach location");
+                if (calculateTargetLoc(locRobot, locObject, locTarget))
+                {
+                    yCInfo(APPROACH_OBJECT_THREAD,) << "New approach location:"<< locTarget.toString();
+                    m_iNav2D->gotoTargetByAbsoluteLocation(locTarget);
+                    m_iNav2D->getNavigationStatus(currentStatus);   
+                } 
+                else 
+                {
+                    yCWarning(APPROACH_OBJECT_THREAD, "Cannot find a reachable approach location");
+                    break;
+                }
             }
         }
 
@@ -350,7 +355,7 @@ void ApproachObjectThread::run()
         if (!m_ext_stop)
         {
             if (currentStatus == navigation_status_aborted) 
-                yCWarning(APPROACH_OBJECT_THREAD, "Looking for object again from actual position");
+                yCWarning(APPROACH_OBJECT_THREAD, "Looking for object again from current position");
             else if (currentStatus == navigation_status_goal_reached)
                 yCInfo(APPROACH_OBJECT_THREAD,"Approaching location reached. Looking for object again");
                 
@@ -503,6 +508,31 @@ bool ApproachObjectThread::getObjCoordinates(Bottle* btl, Bottle* out)
     out->addFloat32(y);
     return true;
 }
+
+
+/****************************************************************/
+bool ApproachObjectThread::calculateTargetLoc(Map2DLocation& locRobot, Map2DLocation& locObject, Map2DLocation& locTarget)
+{
+    //define target at safe distance from point 
+    // the target location will lie on a circumference around the object (r=m_safe_distance)
+    // if the nearest point of the circumference to the robot is not reachable a new one is calculated
+
+    if (m_deg_increase_count > ceil(360/m_deg_increase))
+        return false;
+
+    double alfa_rad = atan2((locObject.y-locRobot.y), (locObject.x-locRobot.x)); //angle of the line connecting robot to object
+    double alfa_deg = alfa_rad / M_PI * 180;
+
+    locTarget.theta = alfa_deg + m_deg_increase_sign*m_deg_increase_count*m_deg_increase; //orientation from a point of the circumefernce towards the center 
+    locTarget.x = locObject.x - m_safe_distance*cos(locTarget.theta / 180 * M_PI);
+    locTarget.y = locObject.y - m_safe_distance*sin(locTarget.theta / 180 * M_PI);
+
+    m_deg_increase_sign=m_deg_increase_sign*-1;
+    m_deg_increase_count++;
+    
+    return true;
+}
+
 
 /****************************************************************/
 bool ApproachObjectThread::externalStop()

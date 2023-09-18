@@ -71,7 +71,11 @@ private:
     string                  m_base_frame_id;
     string                  m_camera_frame_id; 
     Property                m_propIntrinsics;
-    IntrinsicParams         m_intrinsics;       
+    IntrinsicParams         m_intrinsics;   
+    
+    double                  m_deg_increase;
+    int                     m_deg_increase_count;
+    int                     m_deg_increase_sign;    
     
 public:
     ApproachObjectThread(double _period, ResourceFinder &rf);
@@ -83,6 +87,7 @@ public:
     void exec(Bottle& b);
     bool lookAgain(string object);
     bool getObjCoordinates(Bottle* btl, Bottle* out);
+    bool calculateTargetLoc(Map2DLocation& locRobot, Map2DLocation& locObject, Map2DLocation& locTarget);
     bool externalStop();  
     bool externalResume();    
 };
