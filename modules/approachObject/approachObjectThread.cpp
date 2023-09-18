@@ -428,6 +428,9 @@ void ApproachObjectThread::run()
 
     if (m_ext_resume)
         m_ext_resume = false;
+
+    m_deg_increase_count    = 0;
+    m_deg_increase_sign     = -1;
 }
 
 
@@ -517,7 +520,7 @@ bool ApproachObjectThread::calculateTargetLoc(Map2DLocation& locRobot, Map2DLoca
     // the target location will lie on a circumference around the object (r=m_safe_distance)
     // if the nearest point of the circumference to the robot is not reachable a new one is calculated
 
-    if (m_deg_increase_count > ceil(360/m_deg_increase))
+    if (m_deg_increase_count > ceil(180/m_deg_increase))
         return false;
 
     double alfa_rad = atan2((locObject.y-locRobot.y), (locObject.x-locRobot.x)); //angle of the line connecting robot to object
