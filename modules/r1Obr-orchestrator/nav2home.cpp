@@ -56,6 +56,7 @@ bool Nav2Home::configure(yarp::os::ResourceFinder &rf)
     if(home_config.check("home_x")) {m_home_position[0] = home_config.find("home_x").asFloat32();}
     if(home_config.check("home_y")) {m_home_position[1] = home_config.find("home_y").asFloat32();}
     if(home_config.check("home_th")) {m_home_position[2] = home_config.find("home_th").asFloat32();}
+    if(home_config.check("near_distance")) {m_near_distance = home_config.find("near_distance").asFloat32();}
 
 
     return true;
@@ -112,5 +113,15 @@ bool Nav2Home::areYouArrived()
         return true;
     else
         return false;
+}
 
+
+bool Nav2Home::areYouNearToGoal()
+{
+    Map2DLocation robot, target;
+    m_iNav2D->getAbsoluteLocationOfCurrentTarget(target);
+    m_iNav2D->getCurrentPosition(robot);
+
+    yCDebug(NAV_2_HOME) << "dist: " << sqrt(pow((robot.x-target.x), 2) + pow((robot.y-target.y), 2));
+    return sqrt(pow((robot.x-target.x), 2) + pow((robot.y-target.y), 2)) < m_near_distance;
 }

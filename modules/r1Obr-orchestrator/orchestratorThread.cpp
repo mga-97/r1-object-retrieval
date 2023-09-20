@@ -175,9 +175,11 @@ void OrchestratorThread::run()
             if(forwardRequest(req).get(0).asString() == "idle") 
                 m_status = R1_IDLE;
 
-            else if(forwardRequest(req).get(0).asString() == "navigating")
+            if(forwardRequest(req).get(0).asString() == "navigating")
             {
-                if(!m_where_specified && m_continuousSearch->seeObject(m_object))
+                bool doContSearch = !m_where_specified || m_nav2home->areYouNearToGoal();
+                yCDebug(R1OBR_ORCHESTRATOR_THREAD) << "doContSearch:" << doContSearch ;
+                if(doContSearch && m_continuousSearch->seeObject(m_object))
                 {
                     stopOrReset("stop");
                     m_status = R1_CONTINUOUS_SEARCH;
@@ -185,7 +187,6 @@ void OrchestratorThread::run()
                     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "I thought I saw a %s", m_object.c_str());
                 }
             }
-
             else 
             {
                 Bottle* result = m_goandfindit_result_port.read(false); 

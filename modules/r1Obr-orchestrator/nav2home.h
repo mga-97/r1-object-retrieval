@@ -26,6 +26,7 @@
 #include <yarp/os/Time.h>
 #include <yarp/os/Port.h>
 #include <yarp/os/RFModule.h>
+#include <cmath>
 
 using namespace yarp::os;
 using namespace yarp::dev;
@@ -37,13 +38,14 @@ class Nav2Home
 {
 private:
     Vector                  m_home_position;
+    double                  m_near_distance;
 
     // Devices
     PolyDriver              m_nav2DPoly;
     Nav2D::INavigation2D*   m_iNav2D{nullptr};
 
 public:
-    Nav2Home() : m_home_position(3, 0.0){}
+    Nav2Home() : m_home_position(3, 0.0), m_near_distance(3.0) {}
     ~Nav2Home(){}
 
     bool configure(yarp::os::ResourceFinder &rf);
@@ -51,6 +53,7 @@ public:
     bool go();
     bool stop();
     bool areYouArrived();
+    bool areYouNearToGoal();
 };
 
 #endif //NAV_2_HOME_H
