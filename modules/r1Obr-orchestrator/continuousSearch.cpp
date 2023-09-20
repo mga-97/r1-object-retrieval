@@ -70,7 +70,6 @@ bool ContinuousSearch::seeObject(string& obj)
     Bottle* finderResult = m_object_finder_result_port.read(false); 
     if(finderResult != nullptr)
     {
-        yCDebug(CONTINUOUS_SEARCH, "finder bottle: %s", finderResult->toString().c_str());
         if(finderResult->check(obj))   
             return true;
     }
