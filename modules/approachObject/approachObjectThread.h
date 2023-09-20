@@ -85,6 +85,11 @@ public:
     bool getObjCoordinates(Bottle* btl, Bottle* out);
     bool externalStop();  
     bool externalResume();    
+
+    string getObject();
+    Bottle* getCoords();
+    void setObject(string& ob);
+    void setCoords(Bottle* coo);
 };
 
 #endif 

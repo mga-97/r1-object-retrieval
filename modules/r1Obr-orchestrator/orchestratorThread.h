@@ -21,6 +21,7 @@
 
 #include <yarp/os/all.h>
 #include "nav2home.h"
+#include "continuousSearch.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -32,6 +33,7 @@ enum R1_status
     R1_IDLE,
     R1_ASKING_NETWORK,
     R1_SEARCHING,
+    R1_CONTINUOUS_SEARCH,
     R1_WAITING_FOR_ANSWER,
     R1_OBJECT_FOUND,
     R1_OBJECT_NOT_FOUND,
@@ -64,6 +66,7 @@ protected:
 
     // Others
     R1_status               m_status;
+    string                  m_object;
     Bottle                  m_request;
     Bottle                  m_result;
     int                     m_question_count;
@@ -72,6 +75,7 @@ protected:
     bool                    m_object_not_found;
 
     Nav2Home*               m_nav2home;
+    ContinuousSearch*       m_continuousSearch;
 
     ResourceFinder&         m_rf;
 
@@ -97,6 +101,7 @@ public:
     Bottle stopOrReset(const string& cmd);
     string resume();
     bool answer(const string& ans);
+    void   setObject(string obj);
     string getWhat();
     string getWhere();
     string getStatus();

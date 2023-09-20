@@ -56,5 +56,11 @@
       <to>/faceExpressionImage/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>
+
+   <connection>
+      <from>/yarpMdetr/where_coords:o</from>
+      <to>/r1Obr-orchestrator/continousSearch/object_finder_result:i</to>
+      <protocol>tcp</protocol>
+   </connection>
       
 </application>

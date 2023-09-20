@@ -23,7 +23,7 @@ YARP_LOG_COMPONENT(APPROACH_OBJECT_THREAD, "r1_obr.approachObject.approachObject
 
 
 /****************************************************************/
-ApproachObjectThread::ApproachObjectThread(double _period, yarp::os::ResourceFinder &rf):
+ApproachObjectThread::ApproachObjectThread(double _period, ResourceFinder &rf):
     PeriodicThread(_period),
     m_rf(rf),
     m_ext_start(false),
@@ -224,12 +224,18 @@ void ApproachObjectThread::threadRelease()
     
     if(m_rgbdPoly.isValid())
         m_rgbdPoly.close();
-    
+
     if (m_object_finder_rpc_port.asPort().isOpen())
         m_object_finder_rpc_port.close();   
 
+    if (!m_object_finder_result_port.isClosed())
+        m_object_finder_result_port.close();  
+
     if (!m_output_coordinates_port.isClosed())
-        m_output_coordinates_port.close(); 
+        m_output_coordinates_port.close();  
+
+    if (!m_gaze_target_port.isClosed())
+        m_gaze_target_port.close(); 
 }
 
 
@@ -440,19 +446,19 @@ bool ApproachObjectThread::lookAgain(string object )
     {                        
         if(m_ext_stop) break;
 
-        yarp::os::Bottle&  toSend1 = m_gaze_target_port.prepare();
+        Bottle&  toSend1 = m_gaze_target_port.prepare();
         toSend1.clear();
-        yarp::os::Bottle& targetTypeList = toSend1.addList();
+        Bottle& targetTypeList = toSend1.addList();
         targetTypeList.addString("target-type");
         targetTypeList.addString("angular");
-        yarp::os::Bottle& targetLocationList = toSend1.addList();
+        Bottle& targetLocationList = toSend1.addList();
         targetLocationList.addString("target-location");
-        yarp::os::Bottle& targetList = targetLocationList.addList();
+        Bottle& targetList = targetLocationList.addList();
         targetList.addFloat32(head_positions[i].first);
         targetList.addFloat32(head_positions[i].second);
         m_gaze_target_port.write(); //sending output command to gaze-controller 
         
-        yarp::os::Time::delay(m_wait_for_search);  //waiting for the robot to tilt its head
+        Time::delay(m_wait_for_search);  //waiting for the robot to tilt its head
 
         //search for object
         Bottle request, reply;
@@ -462,7 +468,7 @@ bool ApproachObjectThread::lookAgain(string object )
         {
             if (reply.get(0).asString()!="not found")
             {
-                yarp::os::Time::delay(0.5);
+                Time::delay(0.5);
                 return true;
             }
         }
@@ -528,4 +534,24 @@ bool ApproachObjectThread::externalResume()
     m_ext_resume = true;
 
     return true;
-}
+} 
+
+
+/****************************************************************/
+string ApproachObjectThread::getObject()
+{return m_object;} 
+
+
+/****************************************************************/
+Bottle* ApproachObjectThread::getCoords()
+{return m_coords;} 
+
+
+/****************************************************************/
+void ApproachObjectThread::setObject(string& ob)
+{m_object = ob;}
+
+
+/****************************************************************/
+void ApproachObjectThread::setCoords(Bottle* coo)
+{if(coo) m_coords = coo;}

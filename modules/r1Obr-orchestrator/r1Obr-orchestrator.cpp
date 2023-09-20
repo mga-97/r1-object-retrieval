@@ -183,6 +183,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else if (cmd=="search")
         {
             m_inner_thread->search(request);
+            m_inner_thread->setObject(request.get(1).asString());
             reply.addString("searching for '" + request.get(1).asString() + "'");
         }
         else if (cmd=="resume")
