@@ -248,9 +248,6 @@ RUN sudo apt-get update && sudo apt-get install -y cyclonedds-dev cyclonedds-too
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 # ------------------------------------------------------------------------------ #
-#Add space to tmp (needed for CI)
-ENV TMPDIR='/var/tmp'
-
 # Build multimodal
 USER user1
 WORKDIR ${user1_home}
