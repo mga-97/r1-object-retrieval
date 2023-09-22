@@ -122,6 +122,5 @@ bool Nav2Home::areYouNearToGoal()
     m_iNav2D->getAbsoluteLocationOfCurrentTarget(target);
     m_iNav2D->getCurrentPosition(robot);
 
-    yCDebug(NAV_2_HOME) << "dist: " << sqrt(pow((robot.x-target.x), 2) + pow((robot.y-target.y), 2));
     return sqrt(pow((robot.x-target.x), 2) + pow((robot.y-target.y), 2)) < m_near_distance;
 }

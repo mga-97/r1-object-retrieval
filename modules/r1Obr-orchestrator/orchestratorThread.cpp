@@ -178,7 +178,6 @@ void OrchestratorThread::run()
             if(forwardRequest(req).get(0).asString() == "navigating")
             {
                 bool doContSearch = !m_where_specified || m_nav2home->areYouNearToGoal();
-                yCDebug(R1OBR_ORCHESTRATOR_THREAD) << "doContSearch:" << doContSearch ;
                 if(doContSearch && m_continuousSearch->seeObject(m_object))
                 {
                     stopOrReset("stop");
