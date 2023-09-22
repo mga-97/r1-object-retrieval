@@ -38,9 +38,11 @@ jobs:
       run: |
        if [ ${{ github.event_name }} == 'schedule' ]; then
           echo "Building r1ObjectRetrievalSim image"
+          sudo rm -rf /opt/hostedtoolcache
           sudo docker build --build-arg ros_distro=${{matrix.config.ros2_distro}} -t colombraf/r1images:r1ObjectRetrievalSim .
        elif [ ${{ github.event_name }} == 'workflow_dispatch' ]; then
           echo "Building r1ObjectRetrievalSim image"
+          sudo rm -rf /opt/hostedtoolcache
           sudo docker build --build-arg ros_distro=${{matrix.config.ros2_distro}} -t colombraf/r1images:r1ObjectRetrievalSim .
        else
           echo "Failure!"
