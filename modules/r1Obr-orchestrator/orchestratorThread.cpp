@@ -224,7 +224,7 @@ void OrchestratorThread::run()
             sendOk.clear();
             sendOk.addString(m_object);
             Bottle& obj_coords = sendOk.addList();
-            if (m_continuousSearch->whereObject(m_object, obj_coords))  
+            if (m_continuousSearch->whereObject(m_object, obj_coords) && m_status == R1_CONTINUOUS_SEARCH) //second condition added in case of external stop 
             {
                 m_status = R1_OBJECT_FOUND;
                 m_positive_outcome_port.write();
