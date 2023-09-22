@@ -46,14 +46,14 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
 bool OrchestratorThread::threadInit()
 {
     // --------- ports config --------- //
-    if (m_rf.check("sensor_network_rpc_port"))  {m_sensor_network_rpc_port_name = m_rf.find("sensor_network_rpc_port").asString();}
-    if (m_rf.check("next_loc_planner_rpc_port")){m_nextLoc_rpc_port_name        = m_rf.find("next_loc_planner_rpc_port").asString();}
-    if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name    = m_rf.find("goandfindit_rpc_port").asString();}
-    if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name = m_rf.find("goandfindit_result_port").asString();}
-    if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name = m_rf.find("faceexpression_rpc_port").asString();}
+    if (m_rf.check("sensor_network_rpc_port"))  {m_sensor_network_rpc_port_name   = m_rf.find("sensor_network_rpc_port").asString();}
+    if (m_rf.check("next_loc_planner_rpc_port")){m_nextLoc_rpc_port_name          = m_rf.find("next_loc_planner_rpc_port").asString();}
+    if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name      = m_rf.find("goandfindit_rpc_port").asString();}
+    if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name   = m_rf.find("goandfindit_result_port").asString();}
+    if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name   = m_rf.find("faceexpression_rpc_port").asString();}
     
     if(!m_sensor_network_rpc_port.open(m_sensor_network_rpc_port_name)){
-        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Out port with name" << m_sensor_network_rpc_port_name;
+        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Sensor Network RPC port with name" << m_sensor_network_rpc_port_name;
         return false;
     }
 
@@ -63,12 +63,12 @@ bool OrchestratorThread::threadInit()
     }
 
     if(!m_goandfindit_rpc_port.open(m_goandfindit_rpc_port_name)){
-        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open findObject RPC port with name" << m_goandfindit_rpc_port_name;
+        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open goAndFindIt RPC port with name" << m_goandfindit_rpc_port_name;
         return false;
     }
 
     if(!m_goandfindit_result_port.open(m_goandfindit_result_port_name)){
-        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open nextOrient RPC port with name" << m_goandfindit_result_port_name;
+        yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open goAndFindIt result port with name" << m_goandfindit_result_port_name;
         return false;
     }
 
@@ -76,6 +76,7 @@ bool OrchestratorThread::threadInit()
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open faceExpression RPC port with name" << m_faceexpression_rpc_port_name;
         return false;
     }
+
 
     // --------- output ports config --------- //
     if(!m_rf.check("OUTPUT_PORT_GROUP"))
@@ -107,6 +108,14 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
+    // --------- ContinousSearch config --------- //
+    m_continuousSearch = new ContinuousSearch();
+    if(!m_continuousSearch->configure(m_rf))
+    {
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"ContinuousSearch configuration failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -135,6 +144,7 @@ void OrchestratorThread::threadRelease()
         m_faceexpression_rpc_port.close(); 
     
     m_nav2home->close();
+    m_continuousSearch->close();
 
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Orchestrator thread released");
 
@@ -161,41 +171,75 @@ void OrchestratorThread::run()
         else if (m_status == R1_SEARCHING)
         {
             Bottle req{"status"};
+
             if(forwardRequest(req).get(0).asString() == "idle") 
                 m_status = R1_IDLE;
 
-            Bottle* result = m_goandfindit_result_port.read(false); 
-            if(result != nullptr)
+            if(forwardRequest(req).get(0).asString() == "navigating")
             {
-                m_result = *result;
-                if (result->get(0).asString() == "not found")  
+                bool doContSearch = !m_where_specified || m_nav2home->areYouNearToGoal();
+                if(doContSearch && m_continuousSearch->seeObject(m_object))
                 {
-                    if(m_where_specified)
+                    stopOrReset("stop");
+                    m_status = R1_CONTINUOUS_SEARCH;
+                    Time::delay(2.0);  //stopping the navigation the robot starts oscillating, better wait a couple of seconds before continuing
+                    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "I thought I saw a %s", m_object.c_str());
+                }
+            }
+            else 
+            {
+                Bottle* result = m_goandfindit_result_port.read(false); 
+                if(result != nullptr)
+                {
+                    m_result = *result;
+                    if (result->get(0).asString() == "not found")  
                     {
-                        string mess = "do you want to continue your search in other locations?";
-                        printf("%s", mess.c_str());
-                        yCInfo(R1OBR_ORCHESTRATOR_THREAD, "%s", mess.c_str());
-                        m_status = R1_WAITING_FOR_ANSWER;
+                        if(m_where_specified)
+                        {
+                            string mess = "do you want to continue your search in other locations?";
+                            printf("%s", mess.c_str());
+                            yCInfo(R1OBR_ORCHESTRATOR_THREAD, "%s", mess.c_str());
+                            m_status = R1_WAITING_FOR_ANSWER;
+                        }
+                        else
+                            m_status = R1_OBJECT_NOT_FOUND;
                     }
-                    else
-                        m_status = R1_OBJECT_NOT_FOUND;
+                    else     
+                    {
+                        m_status = R1_OBJECT_FOUND;
+                        Bottle&  sendOk = m_positive_outcome_port.prepare();
+                        sendOk.clear();
+                        sendOk = m_result;
+                        m_positive_outcome_port.write();
+                        yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
+                    }
                 }
-                else     
-                {
-                    m_status = R1_OBJECT_FOUND;
-                    Bottle&  sendOk = m_positive_outcome_port.prepare();
-                    sendOk.clear();
-                    sendOk = m_result;
-                    m_positive_outcome_port.write();
-                    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
-                    m_object_found = true;
-                }
+            }
+        }
+
+        else if (m_status == R1_CONTINUOUS_SEARCH)
+        {
+            Bottle&  sendOk = m_positive_outcome_port.prepare();
+            sendOk.clear();
+            sendOk.addString(m_object);
+            Bottle& obj_coords = sendOk.addList();
+            if (m_continuousSearch->whereObject(m_object, obj_coords) && m_status == R1_CONTINUOUS_SEARCH) //second condition added in case of external stop 
+            {
+                m_status = R1_OBJECT_FOUND;
+                m_positive_outcome_port.write();
+                yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found while navigating");
+            }
+            else     
+            {
+                m_status = R1_SEARCHING;
+                yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object actually not found. Resuming navigation");
+                resume();
             }
         }
 
         else if (m_status == R1_OBJECT_FOUND)
         {
-            
+            m_object_found = true;
         }
 
         else if (m_status == R1_OBJECT_NOT_FOUND)
@@ -470,6 +514,12 @@ bool OrchestratorThread::answer(const string& ans)
     return true;
 }
 
+/****************************************************************/
+void OrchestratorThread::setObject(string obj)
+{
+    m_object = obj;
+}
+
 
 /****************************************************************/
 string OrchestratorThread::getWhat()
@@ -505,6 +555,9 @@ string OrchestratorThread::getStatus()
         break;
     case R1_SEARCHING:
         str = "searching - " + goAndFindItStatus;
+        break;
+    case R1_CONTINUOUS_SEARCH:
+        str = "object_found_while_navigating";
         break;
     case R1_WAITING_FOR_ANSWER:
         str = "waiting_for_answer";

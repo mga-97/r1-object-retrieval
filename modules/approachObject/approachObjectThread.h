@@ -90,6 +90,11 @@ public:
     bool calculateTargetLoc(Map2DLocation& locRobot, Map2DLocation& locObject, Map2DLocation& locTarget);
     bool externalStop();  
     bool externalResume();    
+
+    string getObject();
+    Bottle* getCoords();
+    void setObject(string& ob);
+    void setCoords(Bottle* coo);
 };
 
 #endif 

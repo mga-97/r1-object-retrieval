@@ -42,6 +42,11 @@ While if the object is found, an output message is sent to the positive outcome 
 Output format:  `<objectName> (<coordsX> <coordsY>)`
 Example:        `ball (156 203)`
 
+### Continous Search 
+The continous search is an optional feature of this orchestrator. 
+If it set as active, the orchestrator will check constantly, during the navigation of the robot, if the object of the search can already be found without waiting for the robot to reach a certain location.
+If `<where>` has been specified in the `search` command, the continuous search will activate only in proximity of the specified location.
+
 ### Integration of the Sensor Network
 Before starting looking around for the object, this module asks to the Sensor Network if it can find it, so that the robot can directly navigate to it.
 [NOT IMPLEMENTED YET]

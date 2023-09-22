@@ -15,45 +15,34 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#ifndef CONTINUOUS_SEARCH_H
+#define CONTINUOUS_SEARCH_H
 
-#ifndef NAV_2_HOME_H
-#define NAV_2_HOME_H
-
-#include <yarp/os/Log.h>
-#include <yarp/os/LogStream.h>
-#include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/INavigation2D.h>
-#include <yarp/os/Time.h>
-#include <yarp/os/Port.h>
-#include <yarp/os/RFModule.h>
-#include <cmath>
+#include <yarp/os/all.h>
+#include <vector>
 
 using namespace yarp::os;
-using namespace yarp::dev;
-using namespace yarp::dev::Nav2D;
-using namespace yarp::sig;
 using namespace std;
 
-class Nav2Home
+class ContinuousSearch 
 {
-private:
-    Vector                  m_home_position;
-    double                  m_near_distance;
+protected:
+    bool                    m_active;
 
-    // Devices
-    PolyDriver              m_nav2DPoly;
-    Nav2D::INavigation2D*   m_iNav2D{nullptr};
-
+    string                  m_object_finder_result_port_name;
+    BufferedPort<Bottle>    m_object_finder_result_port;
+    
+    
 public:
-    Nav2Home() : m_home_position(3, 0.0), m_near_distance(3.0) {}
-    ~Nav2Home(){}
+    
+    ContinuousSearch();
+    ~ContinuousSearch() = default;
 
-    bool configure(yarp::os::ResourceFinder &rf);
+    bool configure(ResourceFinder& rf);
     void close();
-    bool go();
-    bool stop();
-    bool areYouArrived();
-    bool areYouNearToGoal();
+    bool seeObject(string& obj);
+    bool getObjCoordinates(Bottle* inputBtl, string& object, Bottle& out);
+    bool whereObject(string& obj, Bottle& coords) ;
 };
 
-#endif //NAV_2_HOME_H
+#endif
