@@ -526,6 +526,7 @@ bool ApproachObjectThread::calculateTargetLoc(Map2DLocation& locRobot, Map2DLoca
     double alfa_rad = atan2((locObject.y-locRobot.y), (locObject.x-locRobot.x)); //angle of the line connecting robot to object
     double alfa_deg = alfa_rad / M_PI * 180;
 
+    locTarget.map_id = locRobot.map_id;
     locTarget.theta = alfa_deg + m_deg_increase_sign*m_deg_increase_count*m_deg_increase; //orientation from a point of the circumefernce towards the center 
     locTarget.x = locObject.x - m_safe_distance*cos(locTarget.theta / 180 * M_PI);
     locTarget.y = locObject.y - m_safe_distance*sin(locTarget.theta / 180 * M_PI);
