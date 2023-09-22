@@ -248,7 +248,6 @@ RUN sudo apt-get update && sudo apt-get install -y cyclonedds-dev cyclonedds-too
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 # ------------------------------------------------------------------------------ #
-
 # Build multimodal
 USER user1
 WORKDIR ${user1_home}
