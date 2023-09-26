@@ -32,6 +32,7 @@ Sending an RPC command to the port `/r1Obr-orchestrator/rpc`:
 - `reset`: stops the robot without the possibility to resume it
 - `help`: gets this list
 - `status`: returns the current status. The robot could be: idle, asking network, searching (navigating or effectively searching around), waiting for an answer, performing some kind of motion when the object is found or not found.
+ - `info`: get the information about what, where and status
 
 ### Outputs
 A search can have a negative or a positive outcome.
