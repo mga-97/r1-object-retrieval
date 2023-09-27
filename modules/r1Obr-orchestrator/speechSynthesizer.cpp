@@ -44,7 +44,7 @@ bool SpeechSynthesizer::configure(ResourceFinder &rf)
     if(m_active)
     {
         speechProp.put("device", speech_config.check("device", Value(device_nwc)));
-        speechProp.put("local",  speech_config.check("local", Value()));
+        speechProp.put("local",  speech_config.check("local", Value(local_nwc)));
         speechProp.put("remote", speech_config.check("remote", Value(remote_nwc)));
         m_PolySpeech.open(speechProp);
         if(!m_PolySpeech.isValid())
@@ -98,28 +98,28 @@ bool SpeechSynthesizer::say(string sentence)
 // ------------------------------------------------------ //
 bool SpeechSynthesizer::setLanguage(string language)
 {
-    m_iSpeech->setLanguage(language);
+    return m_iSpeech->setLanguage(language);
 }
 
 
 // ------------------------------------------------------ //
 bool SpeechSynthesizer::setVoice(string voice)
 {
-    m_iSpeech->setVoice(voice);
+    return m_iSpeech->setVoice(voice);
 }
 
 
 // ------------------------------------------------------ //
 bool SpeechSynthesizer::setPitch(double pitch)
 {
-    m_iSpeech->setPitch(pitch);
+    return m_iSpeech->setPitch(pitch);
 }
 
 
 // ------------------------------------------------------ //
 bool SpeechSynthesizer::setSpeed(double speed)
 {
-    m_iSpeech->setSpeed(speed);
+    return m_iSpeech->setSpeed(speed);
 }
 
 
