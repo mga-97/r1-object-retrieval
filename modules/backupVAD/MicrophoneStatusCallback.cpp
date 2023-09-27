@@ -30,7 +30,7 @@ bool MicrophoneStatusCallback::init()
     //     yCWarning(VADAUDIOMICROPHONESTATUSCALLBACK) << "Error! Cannot open YARP port";
     //     return false;
     // }
-    // return true;
+    return true;
 }
 
 bool MicrophoneStatusCallback::close()
