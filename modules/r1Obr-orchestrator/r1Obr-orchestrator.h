@@ -29,7 +29,7 @@ using namespace std;
 
 class Orchestrator : public RFModule
 {
-protected:
+private:
     
     //Input Collector
     InputCollector*             m_input_collector;

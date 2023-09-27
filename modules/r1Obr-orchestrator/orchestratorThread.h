@@ -40,7 +40,7 @@ enum R1_status
     R1_STOP      
 };
 
-protected:
+private:
     
     // Ports
     string                  m_sensor_network_rpc_port_name;

@@ -26,7 +26,7 @@ using namespace std;
 
 class ContinuousSearch 
 {
-protected:
+private:
     bool                    m_active;
 
     string                  m_object_finder_result_port_name;

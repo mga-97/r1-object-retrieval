@@ -25,7 +25,7 @@ using namespace std;
 
 class InputCollector : public PeriodicThread
 {
-protected:
+private:
     
     BufferedPort<Bottle> m_voiceCommandPort;
     BufferedPort<Bottle> m_inputCommandPort;

@@ -40,7 +40,7 @@ enum LfO_status
     LfO_STOP      
 };
 
-protected:
+private:
     //Devices
     yarp::dev::PolyDriver            m_nav2DPoly;
     yarp::dev::Nav2D::INavigation2D* m_iNav2D{nullptr};
