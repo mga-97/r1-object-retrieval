@@ -22,6 +22,7 @@
 #include <yarp/os/all.h>
 #include "nav2home.h"
 #include "continuousSearch.h"
+#include "speechSynthesizer.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -76,6 +77,7 @@ private:
 
     Nav2Home*               m_nav2home;
     ContinuousSearch*       m_continuousSearch;
+    SpeechSynthesizer*      m_speaker;
 
     ResourceFinder&         m_rf;
 

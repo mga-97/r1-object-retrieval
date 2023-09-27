@@ -15,34 +15,39 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
-#ifndef LOOK_FOR_OBJECT_H
-#define LOOK_FOR_OBJECT_H
+#ifndef SPEECH_SYNTHESIZER_H
+#define SPEECH_SYNTHESIZER_H
 
 #include <yarp/os/all.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/ISpeechSynthesizer.h>
 
-#include "lookForObjectThread.h"
+using namespace yarp::os;
+using namespace yarp::dev;
+using namespace std;
 
-
-class LookForObject : public yarp::os::RFModule
+class SpeechSynthesizer
 {
 private:
-    
-    //Ports
-    yarp::os::BufferedPort<yarp::os::Bottle> m_inputPort;
 
-    //Callback thread
-    LookForObjectThread*           m_innerThread;
-       
-    double                         m_period;
+    bool                    m_active;
 
+    PolyDriver              m_PolySpeech;
+    ISpeechSynthesizer*     m_iSpeech = nullptr;
 
 public:
-    LookForObject();
-    virtual bool configure(yarp::os::ResourceFinder &rf);
-    virtual bool close();
-    virtual double getPeriod();
-    virtual bool updateModule();
+    SpeechSynthesizer(){};
+    ~SpeechSynthesizer() = default;
+
+    bool configure(ResourceFinder &rf);
+    void close();
+    bool say(string sentence);
+
+    bool setLanguage(string language);
+    bool setVoice(string voice);
+    bool setPitch(double pitch);
+    bool setSpeed(double speed);
+
 };
 
 #endif

@@ -116,6 +116,14 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
+    // --------- SpeechSynthesizer config --------- //
+    m_speaker = new SpeechSynthesizer();
+    if(!m_speaker->configure(m_rf))
+    {
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"SpeechSynthesizer configuration failed");
+        return false;
+    }
+
     return true;
 }
 
