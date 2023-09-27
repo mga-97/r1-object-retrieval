@@ -15,33 +15,45 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef INPUT_COLLECTOR_H
-#define INPUT_COLLECTOR_H
+#ifndef INPUT_MANAGER_H
+#define INPUT_MANAGER_H
 
 #include <yarp/os/all.h>
+#include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/IChatBot.h>
 
 using namespace yarp::os;
+using namespace yarp::dev;
 using namespace std;
 
-class InputCollector : public PeriodicThread
+class InputManager : public PeriodicThread, public TypedReaderCallback<Bottle>
 {
 private:
     
     BufferedPort<Bottle> m_voiceCommandPort;
     BufferedPort<Bottle> m_inputCommandPort;
-           
-    BufferedPort<Bottle> m_outputPort;
+    RpcClient            m_inputManagerRPCPort;
 
-    ResourceFinder    &m_rf;
+    bool                 m_chatBot_active;
+    PolyDriver           m_PolyCB;
+    IChatBot*            m_iChatBot = nullptr;
+
+    ResourceFinder       &m_rf;
 
 public:
     
-    InputCollector(double _period, yarp::os::ResourceFinder &rf);
-    ~InputCollector() = default;
+    InputManager(double _period, yarp::os::ResourceFinder &rf);
+    ~InputManager() = default;
 
     virtual bool threadInit() override;
     virtual void threadRelease() override;
     virtual void run() override;
+
+    //Port inherited from TypedReaderCallback
+    using TypedReaderCallback<Bottle>::onRead;
+    virtual void onRead(Bottle& b) override;
+
+    void writeToRPC(Bottle& req);
 
 };
 

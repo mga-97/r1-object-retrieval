@@ -22,7 +22,7 @@
 #include <yarp/os/all.h>
 
 #include "orchestratorThread.h"
-#include "input_collector.h"
+#include "inputManager.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -31,16 +31,19 @@ class Orchestrator : public RFModule
 {
 private:
     
-    //Input Collector
-    InputCollector*             m_input_collector;
-    BufferedPort<Bottle>        m_input_port;
+    //Input Manager
+    InputManager*               m_input_manager;
 
     //Callback thread
     OrchestratorThread*         m_inner_thread;
-    
+
     //RPC Server
     RpcServer                   m_rpc_server_port;
     string                      m_rpc_server_port_name;
+    
+    //Other Input port
+    BufferedPort<Bottle>        m_input_port;
+    string                      m_input_port_name;
 
     //Status port
     BufferedPort<Bottle>        m_status_port;

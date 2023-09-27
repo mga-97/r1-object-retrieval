@@ -25,6 +25,7 @@ Orchestrator::Orchestrator() :
     m_period(1.0)
 {  
     m_rpc_server_port_name  = "/r1Obr-orchestrator/rpc";
+    m_input_port_name = "/r1Obr-orchestrator/input:i";
     m_status_port_name = "/r1Obr-orchestrator/status:o";
 }
 
@@ -33,11 +34,11 @@ bool Orchestrator::configure(ResourceFinder &rf)
 
     if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
 
-    string input_port_name = "/r1Obr-orchestrator/inputs:i";
-    string input_collector_port_name = "/r1Obr-orchestrator/inputs:o";
-    if (!m_input_port.open(input_port_name))
+    if(rf.check("input_port"))
+        m_input_port_name = rf.find("input_port").asString();
+    if (!m_input_port.open(m_input_port_name))
     {
-        yCError(R1OBR_ORCHESTRATOR, "Unable to open input collector port");
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open input manager port");
         return false;
     }
 
@@ -55,15 +56,16 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
-    // --------- Input Collector initialization --------- //
-    m_input_collector = new InputCollector(0.1, rf);
-    if (!m_input_collector->start()){
+    // --------- Input Manager initialization --------- //
+    m_input_manager = new InputManager(0.1, rf);
+    if (!m_input_manager->start()){
         return false;
     }
-    bool ok = Network::connect(input_collector_port_name.c_str(), input_port_name.c_str());
+    string input_manager_port_name = "/r1Obr-orchestrator/inputManager:rpc";
+    bool ok = Network::connect(input_manager_port_name.c_str(), m_rpc_server_port_name.c_str());
     if (!ok)
     {
-        yCError(R1OBR_ORCHESTRATOR,"Could not connect to %s\n", input_collector_port_name.c_str());
+        yCError(R1OBR_ORCHESTRATOR,"Could not connect to %s\n", input_manager_port_name.c_str());
         return false;
     }
    
@@ -98,8 +100,8 @@ bool Orchestrator::close()
     m_inner_thread->stop();
     delete m_inner_thread;
 
-    m_input_collector->stop();
-    delete m_input_collector;
+    m_input_manager->stop();
+    delete m_input_manager;
     
     return true;
 }
@@ -163,12 +165,11 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else if (cmd=="what" || cmd=="where" || cmd=="navpos")
         {
             reply = m_inner_thread->forwardRequest(request);
-            yCInfo(R1OBR_ORCHESTRATOR) << cmd.c_str() << ":" << reply.toString().c_str();
         }
         else if (cmd=="info")
         {
             m_inner_thread->info(reply);
-            yCInfo(R1OBR_ORCHESTRATOR) << cmd.c_str() << ":" << reply.toString().c_str();
+            
         }
         else if (m_inner_thread->getStatus() == "waiting_for_answer")
         {
