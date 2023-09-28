@@ -118,7 +118,7 @@ bool OrchestratorThread::threadInit()
 
     // --------- SpeechSynthesizer config --------- //
     m_speaker = new SpeechSynthesizer();
-    if(!m_speaker->configure(m_rf))
+    if(!m_speaker->configure(m_rf, "/thread"))
     {
         yCError(R1OBR_ORCHESTRATOR_THREAD,"SpeechSynthesizer configuration failed");
         return false;
@@ -152,7 +152,13 @@ void OrchestratorThread::threadRelease()
         m_faceexpression_rpc_port.close(); 
     
     m_nav2home->close();
+    delete m_nav2home;
+
     m_continuousSearch->close();
+    delete m_continuousSearch;
+
+    m_speaker->close();
+    delete m_speaker;
 
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Orchestrator thread released");
 
@@ -181,7 +187,10 @@ void OrchestratorThread::run()
             Bottle req{"status"};
 
             if(forwardRequest(req).get(0).asString() == "idle") 
+            {
                 m_status = R1_IDLE;
+                m_speaker->say("Attenzione qualcosa è storto, mi devo fermare");
+            }
 
             if(forwardRequest(req).get(0).asString() == "navigating")
             {
@@ -192,6 +201,7 @@ void OrchestratorThread::run()
                     m_status = R1_CONTINUOUS_SEARCH;
                     Time::delay(2.0);  //stopping the navigation the robot starts oscillating, better wait a couple of seconds before continuing
                     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "I thought I saw a %s", m_object.c_str());
+                    m_speaker->say("Forse posso già vedere l'oggetto della ricerca");
                 }
             }
             else 
@@ -204,7 +214,8 @@ void OrchestratorThread::run()
                     {
                         if(m_where_specified)
                         {
-                            string mess = "do you want to continue your search in other locations?";
+                            string mess = "Vuoi continuare la ricerca in altre aree?";
+                            m_speaker->say(mess);
                             printf("%s", mess.c_str());
                             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "%s", mess.c_str());
                             m_status = R1_WAITING_FOR_ANSWER;
@@ -215,6 +226,7 @@ void OrchestratorThread::run()
                     else     
                     {
                         m_status = R1_OBJECT_FOUND;
+                        m_speaker->say("Oggetto trovato!");
                         Bottle&  sendOk = m_positive_outcome_port.prepare();
                         sendOk.clear();
                         sendOk = m_result;
@@ -234,6 +246,7 @@ void OrchestratorThread::run()
             if (m_continuousSearch->whereObject(m_object, obj_coords) && m_status == R1_CONTINUOUS_SEARCH) //second condition added in case of external stop 
             {
                 m_status = R1_OBJECT_FOUND;
+                m_speaker->say("Oggetto trovato!");
                 m_positive_outcome_port.write();
                 yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found while navigating");
             }
@@ -266,6 +279,7 @@ void OrchestratorThread::run()
 
             if (m_status == R1_OBJECT_NOT_FOUND) //in case of external stop
             {
+                m_speaker->say("Mi dispiace, la ricerca non ha avuto successo");
                 Bottle&  sendKo = m_negative_outcome_port.prepare();
                 sendKo.clear();
                 sendKo = m_result;
@@ -304,21 +318,25 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
 
         if (m_status == R1_WAITING_FOR_ANSWER)
         {
-            answer(cmd);
+            if(!answer(cmd))
+                m_speaker->say("Scusa, non ho capito. Vuoi continuare la ricerca in altre aree?");
         }
         else
         {
             if (cmd=="stop" || cmd=="reset") 
             { 
+                m_speaker->say("Ok, mi fermo!");
                 stopOrReset(cmd);
             }
             else if (cmd=="navpos") 
             {
                 Bottle request{cmd};
                 forwardRequest(request); 
+                m_speaker->say("Sono in posizione per iniziare a navigare!");
             }
             else if (cmd=="resume") 
             {
+                m_speaker->say("Riparto da dove ero rimasto");
                 resume();
             }
             else if (cmd=="search")
@@ -326,6 +344,7 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
                 if (m_status == R1_OBJECT_FOUND || m_status == R1_OBJECT_NOT_FOUND )
                     stopOrReset("stop");
                 
+                m_speaker->say("Ok, inizio a cercare");
                 search(b);            
             }
             else

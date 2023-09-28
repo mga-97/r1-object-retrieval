@@ -22,16 +22,16 @@ YARP_LOG_COMPONENT(SPEECH_SYNTHESIZER, "r1_obr.orchestrator.speechSynthesizer")
 
 
 // ------------------------------------------------------ //
-bool SpeechSynthesizer::configure(ResourceFinder &rf)
+bool SpeechSynthesizer::configure(ResourceFinder &rf, string suffix)
 {
     //Defaults
     string device_nwc = "speechSynthesizer_nwc_yarp";
-    string local_nwc = "/r1Obr-orchestrator/speech_sythesizer/";
-    string remote_nwc = "/speechSynthesizer_nws_yarp";
+    string local_nwc = "/r1Obr-orchestrator/speech_sythesizer" + suffix;
+    string remote_nwc = "/speechSynthesizer_nws";
     string language = "auto";
     string voice = "auto";
-    double pitch = 100;
-    double speed = 100;
+    double pitch = 0.0;
+    double speed = 1.0;
 
     Property speechProp;
     if(!rf.check("SPEECH_SYNTHESIZER"))
@@ -44,7 +44,7 @@ bool SpeechSynthesizer::configure(ResourceFinder &rf)
     if(m_active)
     {
         speechProp.put("device", speech_config.check("device", Value(device_nwc)));
-        speechProp.put("local",  speech_config.check("local", Value(local_nwc)));
+        speechProp.put("local",  speech_config.check("local") ?  Value(speech_config.find("local").asString() + suffix) : Value(local_nwc)) ;
         speechProp.put("remote", speech_config.check("remote", Value(remote_nwc)));
         m_PolySpeech.open(speechProp);
         if(!m_PolySpeech.isValid())

@@ -11,7 +11,7 @@ SPDX-License-Identifier: BSD-3-Clause
                 /test/speechSynthesizer
             </param>
 			<param extern-name="test_remote" name="remote">
-                /speechSynthesizer_nws_yarp
+                /speechSynthesizer_nws
             </param>
 		</device>
 	</devices>

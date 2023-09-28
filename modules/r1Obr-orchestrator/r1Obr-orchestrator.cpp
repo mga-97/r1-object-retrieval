@@ -85,6 +85,14 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
+    // --------- SpeechSynthesizer config --------- //
+    m_speaker = new SpeechSynthesizer();
+    if(!m_speaker->configure(rf, ""))
+    {
+        yCError(R1OBR_ORCHESTRATOR,"SpeechSynthesizer configuration failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -102,6 +110,9 @@ bool Orchestrator::close()
 
     m_input_manager->stop();
     delete m_input_manager;
+
+    m_speaker->close();
+    delete m_speaker;
     
     return true;
 }
@@ -161,8 +172,14 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         else if (cmd=="stop" || cmd=="reset")
         {
             reply = m_inner_thread->stopOrReset(cmd);
+            m_speaker->say("Ok, mi fermo!");
         }
-        else if (cmd=="what" || cmd=="where" || cmd=="navpos")
+        else if (cmd=="navpos")
+        {
+            reply = m_inner_thread->forwardRequest(request);
+            m_speaker->say("Sono in posizione per iniziare a navigare!");
+        }
+        else if (cmd=="what" || cmd=="where")
         {
             reply = m_inner_thread->forwardRequest(request);
         }
@@ -178,17 +195,20 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
             else
             {
                 reply.addVocab32(Vocab32::encode("nack"));
+                m_speaker->say("Scusa, non ho capito. Vuoi continuare la ricerca in altre aree?");
                 reply.addString("Answer not recognized. Say 'yes' or 'no'");
             }
         }
         else if (cmd=="search")
         {
+            m_speaker->say("Ok, inizio a cercare");
             m_inner_thread->search(request);
             m_inner_thread->setObject(request.get(1).asString());
             reply.addString("searching for '" + request.get(1).asString() + "'");
         }
         else if (cmd=="resume")
         {
+            m_speaker->say("Riparto da dove ero rimasto");
             reply.addString(m_inner_thread->resume());
         }
         else

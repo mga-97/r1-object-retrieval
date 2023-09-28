@@ -39,7 +39,7 @@ public:
     SpeechSynthesizer(){};
     ~SpeechSynthesizer() = default;
 
-    bool configure(ResourceFinder &rf);
+    bool configure(ResourceFinder &rf, string suffix);
     void close();
     bool say(string sentence);
 

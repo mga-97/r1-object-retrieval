@@ -23,6 +23,7 @@
 
 #include "orchestratorThread.h"
 #include "inputManager.h"
+#include "speechSynthesizer.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -48,6 +49,9 @@ private:
     //Status port
     BufferedPort<Bottle>        m_status_port;
     string                      m_status_port_name;
+
+    //Speech Synthesizer
+    SpeechSynthesizer*          m_speaker;
 
     //Others
     double                      m_period;
