@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef DISAPPOINTMENT_POSE_CPP
+#define DISAPPOINTMENT_POSE_CPP
+
 #include <yarp/os/Network.h>
 #include <yarp/os/Log.h>
 #include <yarp/os/LogStream.h>
@@ -265,3 +268,6 @@ int main(int argc, char *argv[])
     
     return mod.runModule(rf);
 }
+
+
+#endif
