@@ -56,8 +56,7 @@ public:
 
     using TypedReaderCallback<Bottle>::onRead;
     void onRead(Bottle& btl) override;
-    
-    bool stop();    //to stop action if needed  --> how? rpc port?
+
 };
 
 #endif 

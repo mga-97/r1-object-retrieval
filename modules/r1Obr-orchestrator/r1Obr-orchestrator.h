@@ -22,18 +22,13 @@
 #include <yarp/os/all.h>
 
 #include "orchestratorThread.h"
-#include "inputManager.h"
-#include "speechSynthesizer.h"
 
 using namespace yarp::os;
 using namespace std;
 
-class Orchestrator : public RFModule
+class Orchestrator : public RFModule, public TypedReaderCallback<Bottle>
 {
 private:
-    
-    //Input Manager
-    InputManager*               m_input_manager;
 
     //Callback thread
     OrchestratorThread*         m_inner_thread;
@@ -42,16 +37,20 @@ private:
     RpcServer                   m_rpc_server_port;
     string                      m_rpc_server_port_name;
     
-    //Other Input port
+    //Input command port
     BufferedPort<Bottle>        m_input_port;
     string                      m_input_port_name;
+    
+    //Feedback port from positive outcome of the search
+    BufferedPort<Bottle>        m_positive_feedback_port;
+    string                      m_positive_feedback_port_name;
 
     //Status port
     BufferedPort<Bottle>        m_status_port;
     string                      m_status_port_name;
 
-    //Speech Synthesizer
-    SpeechSynthesizer*          m_speaker;
+    //additional Speech Synthesizer
+    SpeechSynthesizer*          m_additional_speaker;
 
     //Others
     double                      m_period;
@@ -63,7 +62,12 @@ public:
     virtual double getPeriod();
     virtual bool updateModule();
 
+    //Port inherited from TypedReaderCallback
+    using TypedReaderCallback<Bottle>::onRead;
+    void onRead(Bottle& b) override;
+
     bool respond(const Bottle &cmd, Bottle &reply);
+    bool say(string toSay);
 };
 
 #endif

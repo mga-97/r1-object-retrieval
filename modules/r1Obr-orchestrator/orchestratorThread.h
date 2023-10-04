@@ -20,26 +20,44 @@
 #define R1OBR_ORCHESTRATOR_THREAD_H
 
 #include <yarp/os/all.h>
-#include "nav2home.h"
+#include "nav2loc.h"
 #include "continuousSearch.h"
-#include "speechSynthesizer.h"
+#include "chatBot.h"
 
 using namespace yarp::os;
 using namespace std;
 
 class OrchestratorThread : public Thread, public TypedReaderCallback<Bottle>
 {
-enum R1_status 
-{
-    R1_IDLE,
-    R1_ASKING_NETWORK,
-    R1_SEARCHING,
-    R1_CONTINUOUS_SEARCH,
-    R1_WAITING_FOR_ANSWER,
-    R1_OBJECT_FOUND,
-    R1_OBJECT_NOT_FOUND,
-    R1_STOP      
-};
+private:
+    enum R1_status 
+    {
+        R1_IDLE,
+        R1_ASKING_NETWORK,
+        R1_SEARCHING,
+        R1_CONTINUOUS_SEARCH,
+        R1_OBJECT_FOUND,
+        R1_OBJECT_NOT_FOUND,
+        R1_GOING,
+        R1_STOP      
+    };
+
+public:
+    enum R1_says 
+    {
+        // start_search,
+        // stop_search,
+        // reset_search,
+        // resume_search,
+        object_found_maybe,
+        object_found_true,
+        object_found_false,
+        object_not_found,
+        navigation_position,
+        something_bad_happened,
+        go_target_reached,
+        fallback
+    };
 
 private:
     
@@ -65,19 +83,23 @@ private:
     string                  m_faceexpression_rpc_port_name;
     RpcClient               m_faceexpression_rpc_port;
 
+    //Navigator to Home location
+    Nav2Loc*                m_nav2loc;
+
+    //Continuous Search thread
+    ContinuousSearch*       m_continuousSearch;
+
+    //Chat Bot
+    ChatBot*                m_chat_bot;
+
     // Others
     R1_status               m_status;
     string                  m_object;
     Bottle                  m_request;
     Bottle                  m_result;
-    int                     m_question_count;
     bool                    m_where_specified;
     bool                    m_object_found;
     bool                    m_object_not_found;
-
-    Nav2Home*               m_nav2home;
-    ContinuousSearch*       m_continuousSearch;
-    SpeechSynthesizer*      m_speaker;
 
     ResourceFinder&         m_rf;
 
@@ -96,19 +118,26 @@ public:
     using TypedReaderCallback<Bottle>::onRead;
     void onRead(Bottle& b) override;
 
-    Bottle forwardRequest(const Bottle& b);
-    void search(const Bottle& btl);
-    bool resizeSearchBottle(const Bottle& btl);
-    bool askNetwork();
-    Bottle stopOrReset(const string& cmd);
-    string resume();
-    bool answer(const string& ans);
-    void   setObject(string obj);
-    string getWhat();
-    string getWhere();
-    string getStatus();
-    void info(Bottle& reply);
-    void setEmotion();
+    Bottle      forwardRequest(const Bottle& b);
+    void        search(const Bottle& btl);
+    bool        resizeSearchBottle(const Bottle& btl);
+    bool        askNetwork();
+    string      stopOrReset(const string& cmd);
+    string      resetHome();
+    string      resume();
+    void        objectFound();
+    
+    void        setObject(string obj);
+    string      getWhat();
+    string      getWhere();
+    string      getStatus();
+    void        info(Bottle& reply);
+    
+    void        setEmotion();
+    
+    bool        askChatBotToSpeak(R1_says stat);
+
+    bool        go(string loc);
 
 };
 

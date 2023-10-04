@@ -20,7 +20,9 @@ The commands that can be sent to these ports are:
 - `stop`: stops the robot
 - `resume`: resumes a stopped search
 - `reset`: stops the robot without the possibility to resume it
-- `navpos`: sets the robot in a navigation position.
+- `reset_home`: resets the robot and the chat bot, and starts the navigation of the robot towards the home location
+- `navpos`: sets the robot in a navigation position
+- `go <location>` : navigates the robot to 'location' if it is valid
 
 Sending an RPC command to the port `/r1Obr-orchestrator/rpc`:
 - `search <what>` starts looking for "what" in all the map starting from the closest location
@@ -30,9 +32,12 @@ Sending an RPC command to the port `/r1Obr-orchestrator/rpc`:
 - `stop`: stops the robot
 - `resume`: resumes stopped search
 - `reset`: stops the robot without the possibility to resume it
+- `reset_home`: resets the robot and the chat bot, and starts the navigation of the robot towards the home location
 - `help`: gets this list
 - `status`: returns the current status. The robot could be: idle, asking network, searching (navigating or effectively searching around), waiting for an answer, performing some kind of motion when the object is found or not found.
- - `info`: get the information about what, where and status
+- `info`: get the information about what, where and status
+- `navpos`: sets the robot in a navigation position
+- `go <location>` : navigates the robot to 'location' if it is valid
 
 ### Outputs
 A search can have a negative or a positive outcome.

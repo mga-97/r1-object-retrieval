@@ -25,6 +25,7 @@ YARP_LOG_COMPONENT(SPEECH_SYNTHESIZER, "r1_obr.orchestrator.speechSynthesizer")
 bool SpeechSynthesizer::configure(ResourceFinder &rf, string suffix)
 {
     //Defaults
+    string audioOutPort_name = "/r1Obr-orchestrator/speech_sythesizer" + suffix + "/audio:o";
     string device_nwc = "speechSynthesizer_nwc_yarp";
     string local_nwc = "/r1Obr-orchestrator/speech_sythesizer" + suffix;
     string remote_nwc = "/speechSynthesizer_nws";
@@ -43,6 +44,12 @@ bool SpeechSynthesizer::configure(ResourceFinder &rf, string suffix)
     
     if(m_active)
     {
+        if(speech_config.check("audio_out_port")) audioOutPort_name = speech_config.find("audio_out_port").asString() + suffix;
+        if (!m_audioOutPort.open(audioOutPort_name)){
+            yCError(SPEECH_SYNTHESIZER) << "cannot open port" << audioOutPort_name;
+            return false;
+        }
+
         speechProp.put("device", speech_config.check("device", Value(device_nwc)));
         speechProp.put("local",  speech_config.check("local") ?  Value(speech_config.find("local").asString() + suffix) : Value(local_nwc)) ;
         speechProp.put("remote", speech_config.check("remote", Value(remote_nwc)));
@@ -77,6 +84,8 @@ void SpeechSynthesizer::close()
 {    
     if(m_PolySpeech.isValid())
         m_PolySpeech.close();
+    
+    m_audioOutPort.close();
 
     yCInfo(SPEECH_SYNTHESIZER, "Speech synthesizer thread released");
 }
@@ -88,8 +97,14 @@ bool SpeechSynthesizer::say(string sentence)
     if (!m_active)
         return false;
     
-    yarp::sig::Sound ss;
-    m_iSpeech->synthesize(sentence,ss);
+    Sound& soundToSend = m_audioOutPort.prepare();
+    if(!m_iSpeech->synthesize(sentence,soundToSend))
+    {
+        yCError(SPEECH_SYNTHESIZER, "Some error occurred synthesizing input string");
+        return false;
+    }
+    m_audioOutPort.write();
+    soundToSend.clear();
 
     return true;
 }

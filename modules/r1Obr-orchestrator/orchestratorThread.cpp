@@ -27,7 +27,6 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     TypedReaderCallback(),
     m_rf(rf),
     m_status(R1_IDLE),
-    m_question_count(0),
     m_where_specified(false),
     m_object_found(false),
     m_object_not_found(false)
@@ -100,11 +99,11 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
-    // --------- Nav2Home config --------- //
-    m_nav2home = new Nav2Home();
-    if(!m_nav2home->configure(m_rf))
+    // --------- Nav2Loc config --------- //
+    m_nav2loc = new Nav2Loc();
+    if(!m_nav2loc->configure(m_rf))
     {
-        yCError(R1OBR_ORCHESTRATOR_THREAD,"Nav2Home configuration failed");
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"Nav2Loc configuration failed");
         return false;
     }
 
@@ -116,11 +115,17 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
-    // --------- SpeechSynthesizer config --------- //
-    m_speaker = new SpeechSynthesizer();
-    if(!m_speaker->configure(m_rf, "/thread"))
+    // --------- Chat Bot initialization --------- //
+    m_chat_bot = new ChatBot();
+    if (!m_chat_bot->configure(m_rf)){
+        return false;
+    }
+    string chat_bot_port_name = "/r1Obr-orchestrator/chatBot:rpc";
+    string rpc_server_port_name = m_rf.check("input_rpc_port", Value("/r1Obr-orchestrator/rpc")).asString();
+    bool ok = Network::connect(chat_bot_port_name.c_str(), rpc_server_port_name.c_str());
+    if (!ok)
     {
-        yCError(R1OBR_ORCHESTRATOR_THREAD,"SpeechSynthesizer configuration failed");
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"Could not connect %s to %s", chat_bot_port_name.c_str(), rpc_server_port_name.c_str());
         return false;
     }
 
@@ -151,14 +156,14 @@ void OrchestratorThread::threadRelease()
     if (m_faceexpression_rpc_port.asPort().isOpen())
         m_faceexpression_rpc_port.close(); 
     
-    m_nav2home->close();
-    delete m_nav2home;
+    m_nav2loc->close();
+    delete m_nav2loc;
 
     m_continuousSearch->close();
     delete m_continuousSearch;
 
-    m_speaker->close();
-    delete m_speaker;
+    m_chat_bot->close();
+    delete m_chat_bot;
 
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Orchestrator thread released");
 
@@ -189,19 +194,19 @@ void OrchestratorThread::run()
             if(forwardRequest(req).get(0).asString() == "idle") 
             {
                 m_status = R1_IDLE;
-                m_speaker->say("Attenzione qualcosa è storto, mi devo fermare");
+                askChatBotToSpeak(something_bad_happened);
             }
 
             if(forwardRequest(req).get(0).asString() == "navigating")
             {
-                bool doContSearch = !m_where_specified || m_nav2home->areYouNearToGoal();
+                bool doContSearch = !m_where_specified || m_nav2loc->areYouNearToGoal();
                 if(doContSearch && m_continuousSearch->seeObject(m_object))
                 {
                     stopOrReset("stop");
                     m_status = R1_CONTINUOUS_SEARCH;
                     Time::delay(2.0);  //stopping the navigation the robot starts oscillating, better wait a couple of seconds before continuing
                     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "I thought I saw a %s", m_object.c_str());
-                    m_speaker->say("Forse posso già vedere l'oggetto della ricerca");
+                    askChatBotToSpeak(object_found_maybe);
                 }
             }
             else 
@@ -214,19 +219,14 @@ void OrchestratorThread::run()
                     {
                         if(m_where_specified)
                         {
-                            string mess = "Vuoi continuare la ricerca in altre aree?";
-                            m_speaker->say(mess);
-                            printf("%s", mess.c_str());
-                            yCInfo(R1OBR_ORCHESTRATOR_THREAD, "%s", mess.c_str());
-                            m_status = R1_WAITING_FOR_ANSWER;
+                            yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object not found in the specified location");
                         }
-                        else
-                            m_status = R1_OBJECT_NOT_FOUND;
+                        
+                        m_status = R1_OBJECT_NOT_FOUND;
                     }
                     else     
                     {
                         m_status = R1_OBJECT_FOUND;
-                        m_speaker->say("Oggetto trovato!");
                         Bottle&  sendOk = m_positive_outcome_port.prepare();
                         sendOk.clear();
                         sendOk = m_result;
@@ -246,7 +246,6 @@ void OrchestratorThread::run()
             if (m_continuousSearch->whereObject(m_object, obj_coords) && m_status == R1_CONTINUOUS_SEARCH) //second condition added in case of external stop 
             {
                 m_status = R1_OBJECT_FOUND;
-                m_speaker->say("Oggetto trovato!");
                 m_positive_outcome_port.write();
                 yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found while navigating");
             }
@@ -254,6 +253,7 @@ void OrchestratorThread::run()
             {
                 m_status = R1_SEARCHING;
                 yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object actually not found. Resuming navigation");
+                askChatBotToSpeak(object_found_false);
                 resume();
             }
         }
@@ -265,21 +265,20 @@ void OrchestratorThread::run()
 
         else if (m_status == R1_OBJECT_NOT_FOUND)
         {
-            
             yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object not found");
             m_object_not_found = true;
 
-            m_nav2home->go();
+            m_nav2loc->goHome();
             bool arrived{false};
             while (!arrived && m_status == R1_OBJECT_NOT_FOUND )
             {
-                arrived = m_nav2home->areYouArrived();
+                arrived = m_nav2loc->areYouArrived();
                 Time::delay(0.5);
             }
 
             if (m_status == R1_OBJECT_NOT_FOUND) //in case of external stop
             {
-                m_speaker->say("Mi dispiace, la ricerca non ha avuto successo");
+                askChatBotToSpeak(object_not_found);
                 Bottle&  sendKo = m_negative_outcome_port.prepare();
                 sendKo.clear();
                 sendKo = m_result;
@@ -289,7 +288,22 @@ void OrchestratorThread::run()
             }
         } 
 
-        else if (m_status == R1_IDLE || m_status == R1_WAITING_FOR_ANSWER )
+        else if (m_status == R1_GOING)
+        {
+            bool arrived{false};
+            while (!arrived && m_status == R1_GOING)
+            {
+                arrived = m_nav2loc->areYouArrived();
+                Time::delay(0.5);
+            }
+            
+            if (m_status == R1_OBJECT_NOT_FOUND) //in case of external stop
+                askChatBotToSpeak(go_target_reached);
+            
+            m_status = R1_IDLE;
+        }
+
+        else if (m_status == R1_IDLE)
         {
             Time::delay(0.8);
         }
@@ -316,41 +330,38 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
     {
         string cmd {b.get(0).asString()};
 
-        if (m_status == R1_WAITING_FOR_ANSWER)
+        if (cmd=="stop" || cmd=="reset") 
+        { 
+            stopOrReset(cmd);
+        }
+        if (cmd=="reset_home") 
+        { 
+            resetHome();
+        }
+        else if (cmd=="navpos") 
         {
-            if(!answer(cmd))
-                m_speaker->say("Scusa, non ho capito. Vuoi continuare la ricerca in altre aree?");
+            Bottle request{cmd};
+            forwardRequest(request); 
+            askChatBotToSpeak(navigation_position);
+        }
+        else if (cmd=="resume") 
+        {
+            resume();
+        }
+        else if (cmd=="search")
+        {
+            if (m_status == R1_OBJECT_FOUND || m_status == R1_OBJECT_NOT_FOUND )
+                stopOrReset("stop");
+
+            search(b);            
+        }
+        else if (cmd=="go")
+        {
+            go(b.get(1).asString());           
         }
         else
         {
-            if (cmd=="stop" || cmd=="reset") 
-            { 
-                m_speaker->say("Ok, mi fermo!");
-                stopOrReset(cmd);
-            }
-            else if (cmd=="navpos") 
-            {
-                Bottle request{cmd};
-                forwardRequest(request); 
-                m_speaker->say("Sono in posizione per iniziare a navigare!");
-            }
-            else if (cmd=="resume") 
-            {
-                m_speaker->say("Riparto da dove ero rimasto");
-                resume();
-            }
-            else if (cmd=="search")
-            {
-                if (m_status == R1_OBJECT_FOUND || m_status == R1_OBJECT_NOT_FOUND )
-                    stopOrReset("stop");
-                
-                m_speaker->say("Ok, inizio a cercare");
-                search(b);            
-            }
-            else
-            {
-                yCError(R1OBR_ORCHESTRATOR_THREAD, "Error: input command bottle not valid");
-            }
+            yCError(R1OBR_ORCHESTRATOR_THREAD, "Error: input command bottle not valid");
         }
     }
 }
@@ -418,6 +429,7 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
             {
                 yCError(R1OBR_ORCHESTRATOR_THREAD,"Location specified is not valid.");
                 m_request.clear();
+                askChatBotToSpeak(something_bad_happened);
                 return false;
             }   
         }
@@ -436,22 +448,22 @@ bool OrchestratorThread::askNetwork()
 }
 
 /****************************************************************/
-Bottle OrchestratorThread::stopOrReset(const string& cmd)
+string OrchestratorThread::stopOrReset(const string& cmd)
 {
     Bottle rep, request{cmd};
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Stopping");
-    rep = forwardRequest(request); 
+    forwardRequest(request); 
     
-    if (m_status == R1_OBJECT_NOT_FOUND)
-    {
-        m_nav2home->stop();
-    } 
-    else if (m_status == R1_OBJECT_FOUND)
+    if (m_status == R1_OBJECT_FOUND)
     {
         Bottle&  send = m_positive_outcome_port.prepare();
         send.clear();
         send.addString("stop");
         m_positive_outcome_port.write();
+    } 
+    else if (m_status == R1_OBJECT_NOT_FOUND || m_status == R1_GOING || m_nav2loc->areYouMoving())
+    {
+        m_nav2loc->stop();
     } 
 
     if (cmd == "reset")
@@ -462,12 +474,21 @@ Bottle OrchestratorThread::stopOrReset(const string& cmd)
         forwardRequest(req);
     }
 
-    if (rep.size() == 0)
-        rep.addVocab32(Vocab32::encode("ack"));
-
     m_status = R1_IDLE;
-    return rep;
+    return cmd + " executed";
 }
+
+/****************************************************************/
+string OrchestratorThread::resetHome()
+{
+    stopOrReset("reset");
+
+    m_status = R1_GOING;
+    m_nav2loc->goHome();
+
+    return "reset and sent home";
+}
+
 
 /****************************************************************/
 string OrchestratorThread::resume()
@@ -492,7 +513,7 @@ string OrchestratorThread::resume()
     {
         Bottle req("navpos"); 
         forwardRequest(req);
-        
+
         m_status = R1_OBJECT_NOT_FOUND;
         return "resume: object not found";
     }
@@ -512,33 +533,13 @@ string OrchestratorThread::resume()
 }
 
 /****************************************************************/
-bool OrchestratorThread::answer(const string& ans)
+void OrchestratorThread::objectFound()
 {
-    if (ans=="yes") 
+    if (m_status == R1_OBJECT_FOUND) //in case meanwhile anything happened
     {
-        resume();
-        m_question_count = 0;
+        askChatBotToSpeak(object_found_true);
+        m_status = R1_IDLE;
     }
-    else if (ans=="no") 
-    {
-        m_status = R1_OBJECT_NOT_FOUND;
-        m_question_count = 0;
-    }
-    else
-    {
-        if (m_question_count<3)
-        {
-            yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Say 'yes' or 'no'");
-            m_question_count++;
-        }
-        else
-        {
-            yCError(R1OBR_ORCHESTRATOR_THREAD, "Answer not recognized. Stopping the search.");
-            m_status = R1_IDLE;
-        }
-        return false;
-    }
-    return true;
 }
 
 /****************************************************************/
@@ -586,14 +587,14 @@ string OrchestratorThread::getStatus()
     case R1_CONTINUOUS_SEARCH:
         str = "object_found_while_navigating";
         break;
-    case R1_WAITING_FOR_ANSWER:
-        str = "waiting_for_answer";
-        break;
     case R1_OBJECT_FOUND:
         str = "object_found";
         break;
     case R1_OBJECT_NOT_FOUND:
         str = "object_not_found";
+        break;
+    case R1_GOING:
+        str = "going";
         break;
     case R1_STOP:
         str = "stop";
@@ -641,4 +642,66 @@ void OrchestratorThread::setEmotion()
         request.fromString("emotion 1"); //happy
     
     m_faceexpression_rpc_port.write(request,reply);
+}
+
+
+/****************************************************************/
+bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
+{
+    string str;
+    switch (stat)
+    {
+    case object_found_maybe:
+        str = "object_found_maybe";
+        break;
+    case object_found_true:
+        str = "object_found_true";
+        break;
+    case object_found_false:
+        str = "object_found_false";
+        break;
+    case object_not_found:
+        str = "object_not_found";
+        break;
+    case navigation_position:
+        str = "navigation_position";
+        break;
+    case something_bad_happened:
+        str = "something_bad_happened";
+        break;
+    case go_target_reached:
+        str = "go_target_reached";
+        break;
+    default:
+        str = "fallback";
+        break;
+    };
+
+    m_chat_bot->interactWithChatBot(str);    
+    
+    return true;
+}
+
+
+/****************************************************************/
+bool OrchestratorThread::go(string loc)
+{
+    if (m_status != R1_IDLE) 
+        stopOrReset("stop");
+    
+    Bottle req,rep;
+    req.fromString("find " + loc);
+    m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
+    if (rep.get(0).asString() != "ok")
+    {
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"Location specified is not valid.");
+        askChatBotToSpeak(something_bad_happened);
+        return false;
+    }
+
+    Bottle request{"navpos"};
+    forwardRequest(request);
+
+    m_status = R1_GOING;
+    return m_nav2loc->go(loc);
 }

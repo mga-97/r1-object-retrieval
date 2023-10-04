@@ -21,9 +21,11 @@
 #include <yarp/os/all.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/ISpeechSynthesizer.h>
+#include <yarp/sig/Sound.h>
 
 using namespace yarp::os;
 using namespace yarp::dev;
+using namespace yarp::sig;
 using namespace std;
 
 class SpeechSynthesizer
@@ -34,6 +36,8 @@ private:
 
     PolyDriver              m_PolySpeech;
     ISpeechSynthesizer*     m_iSpeech = nullptr;
+
+    BufferedPort<Sound>     m_audioOutPort;
 
 public:
     SpeechSynthesizer(){};

@@ -21,27 +21,24 @@
 
 YARP_LOG_COMPONENT(R1OBR_ORCHESTRATOR, "r1_obr.orchestrator")
 
+
 Orchestrator::Orchestrator() :
     m_period(1.0)
 {  
     m_rpc_server_port_name  = "/r1Obr-orchestrator/rpc";
     m_input_port_name = "/r1Obr-orchestrator/input:i";
     m_status_port_name = "/r1Obr-orchestrator/status:o";
+    m_positive_feedback_port_name = "/r1Obr-orchestrator/positive_outcome_feedback:i";
 }
 
+
+/****************************************************************/
 bool Orchestrator::configure(ResourceFinder &rf) 
 {   
 
     if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
 
-    if(rf.check("input_port"))
-        m_input_port_name = rf.find("input_port").asString();
-    if (!m_input_port.open(m_input_port_name))
-    {
-        yCError(R1OBR_ORCHESTRATOR, "Unable to open input manager port");
-        return false;
-    }
-
+    
     // --------- Open RPC Server Port --------- //
     if(rf.check("input_rpc_port"))
         m_rpc_server_port_name = rf.find("input_rpc_port").asString();
@@ -56,19 +53,28 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
-    // --------- Input Manager initialization --------- //
-    m_input_manager = new InputManager(0.1, rf);
-    if (!m_input_manager->start()){
-        return false;
-    }
-    string input_manager_port_name = "/r1Obr-orchestrator/inputManager:rpc";
-    bool ok = Network::connect(input_manager_port_name.c_str(), m_rpc_server_port_name.c_str());
-    if (!ok)
+
+    // --------- Open Input command Port --------- //
+    if(rf.check("input_port"))
+        m_input_port_name = rf.find("input_port").asString();
+    if (!m_input_port.open(m_input_port_name))
     {
-        yCError(R1OBR_ORCHESTRATOR,"Could not connect to %s\n", input_manager_port_name.c_str());
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open input port");
         return false;
     }
-   
+
+
+    // --------- Open Positive Feedback Port --------- //
+    if(rf.check("positive_feedback_port"))
+        m_positive_feedback_port_name = rf.find("positive_feedback_port").asString();
+    if (!m_positive_feedback_port.open(m_positive_feedback_port_name))
+    {
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open positive feedback port");
+        return false;
+    }
+    m_positive_feedback_port.useCallback(*this);
+
+
     // --------- Thread initialization --------- //
     m_inner_thread = new OrchestratorThread(rf);
     bool threadOk = m_inner_thread->start();
@@ -77,6 +83,7 @@ bool Orchestrator::configure(ResourceFinder &rf)
     }
     m_input_port.useCallback(*m_inner_thread);
 
+
     // --------- Status output ----------- //
     if(rf.check("status_port")){m_status_port_name = rf.find("status_port").asString();} 
     if (!m_status_port.open(m_status_port_name))
@@ -84,10 +91,10 @@ bool Orchestrator::configure(ResourceFinder &rf)
         yCError(R1OBR_ORCHESTRATOR, "Unable to open output status port");
         return false;
     }
-
+    
     // --------- SpeechSynthesizer config --------- //
-    m_speaker = new SpeechSynthesizer();
-    if(!m_speaker->configure(rf, ""))
+    m_additional_speaker = new SpeechSynthesizer();
+    if(!m_additional_speaker->configure(rf, "/second"))
     {
         yCError(R1OBR_ORCHESTRATOR,"SpeechSynthesizer configuration failed");
         return false;
@@ -97,6 +104,7 @@ bool Orchestrator::configure(ResourceFinder &rf)
 }
 
 
+/****************************************************************/
 bool Orchestrator::close()
 {
     if (m_rpc_server_port.asPort().isOpen())
@@ -104,26 +112,25 @@ bool Orchestrator::close()
         
     if (!m_input_port.isClosed())
         m_input_port.close();
+        
+    if (!m_positive_feedback_port.isClosed())
+        m_positive_feedback_port.close();
     
     m_inner_thread->stop();
     delete m_inner_thread;
-
-    m_input_manager->stop();
-    delete m_input_manager;
-
-    m_speaker->close();
-    delete m_speaker;
     
     return true;
 }
 
 
+/****************************************************************/
 double Orchestrator::getPeriod()
 {
     return m_period;
 }
 
 
+/****************************************************************/
 bool Orchestrator::updateModule()
 {
     Bottle&  status = m_status_port.prepare();
@@ -141,29 +148,32 @@ bool Orchestrator::updateModule()
 }
 
 
-
+/****************************************************************/
 bool Orchestrator::respond(const Bottle &request, Bottle &reply)
 {
+    yCInfo(R1OBR_ORCHESTRATOR,"RPC Received: %s",request.toString().c_str());
+    
     reply.clear();
     string cmd=request.get(0).asString();
-    if (request.size()==1 || cmd == "search")
+    if (request.size()==1)
     {
         if (cmd=="help")
         {
             reply.addVocab32("many");
             reply.addString("help   : gets this list");
+            reply.addString("search <what> : starts to search for 'what'");
+            reply.addString("search <what> <where>: starts searching for 'what' at location 'where'");
+            reply.addString("stop   : stops search");
+            reply.addString("reset  : resets search");
+            reply.addString("reset_home: resets search and navigates the robot home");
+            reply.addString("resume : resumes stopped search");
             reply.addString("status : returns the current status of the search");
             reply.addString("what   : returns the object of the current search");
             reply.addString("where  : returns the location of the current search");
             reply.addString("info   : returns the status, object and location of the current search");
-            reply.addString("stop   : stops search");
-            reply.addString("reset  : resets search");
             reply.addString("navpos : sets the robot in navigation position");
-            reply.addString("");
-            reply.addString(" ---> The following commands cannot be sent if the status is 'waiting_for_answer'");
-            reply.addString("search <what> : starts to search for 'what'");
-            reply.addString("search <what> <where>: starts searching for 'what' at location 'where'");
-            reply.addString("resume : resumes stopped search");
+            reply.addString("go <location> : navigates the robot to 'location' if it is valid");
+
         }
         else if (cmd=="status")
         {
@@ -171,13 +181,15 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         }
         else if (cmd=="stop" || cmd=="reset")
         {
-            reply = m_inner_thread->stopOrReset(cmd);
-            m_speaker->say("Ok, mi fermo!");
+            reply.addString(m_inner_thread->stopOrReset(cmd));
         }
-        else if (cmd=="navpos")
+        else if (cmd=="reset_home")
         {
-            reply = m_inner_thread->forwardRequest(request);
-            m_speaker->say("Sono in posizione per iniziare a navigare!");
+            reply.addString(m_inner_thread->resetHome());
+        }
+        else if (cmd=="resume")
+        {
+            reply.addString(m_inner_thread->resume());
         }
         else if (cmd=="what" || cmd=="where")
         {
@@ -185,46 +197,59 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         }
         else if (cmd=="info")
         {
-            m_inner_thread->info(reply);
-            
+            m_inner_thread->info(reply);            
         }
-        else if (m_inner_thread->getStatus() == "waiting_for_answer")
+        else if (cmd=="navpos")
         {
-            if(m_inner_thread->answer(cmd))
-                reply.addVocab32(Vocab32::encode("ack"));
-            else
-            {
-                reply.addVocab32(Vocab32::encode("nack"));
-                m_speaker->say("Scusa, non ho capito. Vuoi continuare la ricerca in altre aree?");
-                reply.addString("Answer not recognized. Say 'yes' or 'no'");
-            }
-        }
-        else if (cmd=="search")
-        {
-            m_speaker->say("Ok, inizio a cercare");
-            m_inner_thread->search(request);
-            m_inner_thread->setObject(request.get(1).asString());
-            reply.addString("searching for '" + request.get(1).asString() + "'");
-        }
-        else if (cmd=="resume")
-        {
-            m_speaker->say("Riparto da dove ero rimasto");
-            reply.addString(m_inner_thread->resume());
+            reply = m_inner_thread->forwardRequest(request);
+            m_inner_thread->askChatBotToSpeak(OrchestratorThread::navigation_position);
         }
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
             yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
+            m_inner_thread->askChatBotToSpeak(OrchestratorThread::fallback);
         }
+    }
+    else if (cmd=="search")
+    {
+        m_inner_thread->search(request);
+        m_inner_thread->setObject(request.get(1).asString());
+        reply.addString("searching for '" + request.get(1).asString() + "'");
+    }
+    else if (cmd=="say")
+    {   
+        string toSay = request.tail().toString();
+        say(toSay);
+    }
+    else if (cmd=="go")
+    {   
+        string location_name = request.get(1).asString();;
+        m_inner_thread->go(location_name);
+        reply.addString("going to '" + location_name + "'");
     }
     else
     {
         reply.addVocab32(Vocab32::encode("nack"));
         yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
+        m_inner_thread->askChatBotToSpeak(OrchestratorThread::fallback);
     }
 
     if (reply.size()==0)
         reply.addVocab32(Vocab32::encode("ack")); 
 
     return true;
+}
+
+/****************************************************************/
+void Orchestrator::onRead(yarp::os::Bottle &b)
+{
+    yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
+    m_inner_thread->objectFound();
+}
+
+/****************************************************************/
+bool Orchestrator::say(string toSay)
+{
+    return m_additional_speaker->say(toSay);
 }

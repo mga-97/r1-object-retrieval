@@ -15,46 +15,47 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef INPUT_MANAGER_H
-#define INPUT_MANAGER_H
 
-#include <yarp/os/all.h>
+#ifndef NAV_2_LOC_H
+#define NAV_2_LOC_H
+
+#include <yarp/os/Log.h>
+#include <yarp/os/LogStream.h>
 #include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/IChatBot.h>
+#include <yarp/dev/INavigation2D.h>
+#include <yarp/os/Time.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/RFModule.h>
+#include <cmath>
 
 using namespace yarp::os;
 using namespace yarp::dev;
+using namespace yarp::dev::Nav2D;
+using namespace yarp::sig;
 using namespace std;
 
-class InputManager : public PeriodicThread, public TypedReaderCallback<Bottle>
+class Nav2Loc
 {
 private:
-    
-    BufferedPort<Bottle> m_voiceCommandPort;
-    BufferedPort<Bottle> m_inputCommandPort;
-    RpcClient            m_inputManagerRPCPort;
+    Vector                  m_home_position;
+    double                  m_near_distance;
 
-    bool                 m_chatBot_active;
-    PolyDriver           m_PolyCB;
-    IChatBot*            m_iChatBot = nullptr;
-
-    ResourceFinder       &m_rf;
+    // Devices
+    PolyDriver              m_nav2DPoly;
+    Nav2D::INavigation2D*   m_iNav2D{nullptr};
 
 public:
-    
-    InputManager(double _period, yarp::os::ResourceFinder &rf);
-    ~InputManager() = default;
+    Nav2Loc() : m_home_position(3, 0.0), m_near_distance(3.0) {}
+    ~Nav2Loc(){}
 
-    virtual bool threadInit() override;
-    virtual void threadRelease() override;
-    virtual void run() override;
-
-    //Port inherited from TypedReaderCallback
-    using TypedReaderCallback<Bottle>::onRead;
-    virtual void onRead(Bottle& b) override;
-
-    void writeToRPC(Bottle& req);
-
+    bool configure(yarp::os::ResourceFinder &rf);
+    void close();
+    bool goHome();
+    bool go(string loc_name);
+    bool stop();
+    bool areYouArrived();
+    bool areYouNearToGoal();
+    bool areYouMoving();
 };
 
-#endif
+#endif //NAV_2_LOC_H

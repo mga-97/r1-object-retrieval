@@ -15,45 +15,48 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#ifndef CHAT_BOT_ORCHESTRATOR_H
+#define CHAT_BOT_ORCHESTRATOR_H
 
-#ifndef NAV_2_HOME_H
-#define NAV_2_HOME_H
-
-#include <yarp/os/Log.h>
-#include <yarp/os/LogStream.h>
+#include <yarp/os/all.h>
 #include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/INavigation2D.h>
-#include <yarp/os/Time.h>
-#include <yarp/os/Port.h>
-#include <yarp/os/RFModule.h>
-#include <cmath>
+#include <yarp/dev/IChatBot.h>
+#include "speechSynthesizer.h"
 
 using namespace yarp::os;
 using namespace yarp::dev;
-using namespace yarp::dev::Nav2D;
-using namespace yarp::sig;
 using namespace std;
 
-class Nav2Home
+class ChatBot : public TypedReaderCallback<Bottle>
 {
-private:
-    Vector                  m_home_position;
-    double                  m_near_distance;
 
-    // Devices
-    PolyDriver              m_nav2DPoly;
-    Nav2D::INavigation2D*   m_iNav2D{nullptr};
+private:
+    
+    BufferedPort<Bottle>    m_voiceCommandPort;
+    RpcClient               m_chatBotRPCPort;
+
+    bool                    m_chatBot_active;
+    PolyDriver              m_PolyCB;
+    IChatBot*               m_iChatBot = nullptr;
+
+    SpeechSynthesizer*      m_speaker;
+
+    string                  m_language_chatbot;
 
 public:
-    Nav2Home() : m_home_position(3, 0.0), m_near_distance(3.0) {}
-    ~Nav2Home(){}
+    
+    ChatBot() = default;
+    ~ChatBot() = default;
 
-    bool configure(yarp::os::ResourceFinder &rf);
+    bool configure(ResourceFinder &rf);
     void close();
-    bool go();
-    bool stop();
-    bool areYouArrived();
-    bool areYouNearToGoal();
+
+    //Port inherited from TypedReaderCallback
+    using TypedReaderCallback<Bottle>::onRead;
+    virtual void onRead(Bottle& b) override;
+    
+    void interactWithChatBot(const string& msgIn);
+
 };
 
-#endif //NAV_2_HOME_H
+#endif
