@@ -26,6 +26,7 @@ bool SpeechSynthesizer::configure(ResourceFinder &rf, string suffix)
 {
     //Defaults
     string audioOutPort_name = "/r1Obr-orchestrator/speech_sythesizer" + suffix + "/audio:o";
+    string textOutPort_name  = "/r1Obr-orchestrator/speech_sythesizer" + suffix + "/text:o";
     string device_nwc = "speechSynthesizer_nwc_yarp";
     string local_nwc = "/r1Obr-orchestrator/speech_sythesizer" + suffix;
     string remote_nwc = "/speechSynthesizer_nws";
@@ -47,6 +48,12 @@ bool SpeechSynthesizer::configure(ResourceFinder &rf, string suffix)
         if(speech_config.check("audio_out_port")) audioOutPort_name = speech_config.find("audio_out_port").asString() + suffix;
         if (!m_audioOutPort.open(audioOutPort_name)){
             yCError(SPEECH_SYNTHESIZER) << "cannot open port" << audioOutPort_name;
+            return false;
+        }
+
+        if(speech_config.check("text_out_port")) textOutPort_name = speech_config.find("text_out_port").asString() + suffix;
+        if (!m_textOutPort.open(textOutPort_name)){
+            yCError(SPEECH_SYNTHESIZER) << "cannot open port" << textOutPort_name;
             return false;
         }
 
@@ -85,40 +92,49 @@ void SpeechSynthesizer::close()
     if(m_PolySpeech.isValid())
         m_PolySpeech.close();
     
-    m_audioOutPort.close();
+    if(!m_audioOutPort.isClosed())
+        m_audioOutPort.close();
+    
+    if(!m_textOutPort.isClosed())
+        m_textOutPort.close();
 
     yCInfo(SPEECH_SYNTHESIZER, "Speech synthesizer thread released");
 }
 
 
 // ------------------------------------------------------ //
-bool SpeechSynthesizer::say(string sentence)
+bool SpeechSynthesizer::say(string& sentence)
 {
     if (!m_active)
         return false;
     
     Sound& soundToSend = m_audioOutPort.prepare();
+    soundToSend.clear();
     if(!m_iSpeech->synthesize(sentence,soundToSend))
     {
         yCError(SPEECH_SYNTHESIZER, "Some error occurred synthesizing input string");
         return false;
     }
     m_audioOutPort.write();
-    soundToSend.clear();
+
+    Bottle& textToSend = m_textOutPort.prepare();
+    textToSend.clear();
+    textToSend.addString(sentence);
+    m_textOutPort.write();
 
     return true;
 }
 
 
 // ------------------------------------------------------ //
-bool SpeechSynthesizer::setLanguage(string language)
+bool SpeechSynthesizer::setLanguage(string& language)
 {
     return m_iSpeech->setLanguage(language);
 }
 
 
 // ------------------------------------------------------ //
-bool SpeechSynthesizer::setVoice(string voice)
+bool SpeechSynthesizer::setVoice(string& voice)
 {
     return m_iSpeech->setVoice(voice);
 }

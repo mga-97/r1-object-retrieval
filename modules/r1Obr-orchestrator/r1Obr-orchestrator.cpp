@@ -219,8 +219,9 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
     }
     else if (cmd=="say")
     {   
-        string toSay = request.tail().toString();
+        string toSay = request.get(1).asString();
         say(toSay);
+        reply.addString("speaking");
     }
     else if (cmd=="go")
     {   

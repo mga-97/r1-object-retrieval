@@ -38,6 +38,7 @@ private:
     ISpeechSynthesizer*     m_iSpeech = nullptr;
 
     BufferedPort<Sound>     m_audioOutPort;
+    BufferedPort<Bottle>    m_textOutPort;
 
 public:
     SpeechSynthesizer(){};
@@ -45,10 +46,10 @@ public:
 
     bool configure(ResourceFinder &rf, string suffix);
     void close();
-    bool say(string sentence);
+    bool say(string& sentence);
 
-    bool setLanguage(string language);
-    bool setVoice(string voice);
+    bool setLanguage(string& language);
+    bool setVoice(string& voice);
     bool setPitch(double pitch);
     bool setSpeed(double speed);
 
