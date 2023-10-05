@@ -48,16 +48,26 @@ bool Nav2Loc::configure(yarp::os::ResourceFinder &rf)
     }
 
     // --------- Home coordinates config --------- //
+    Vector home_position(3, 0.0);
+
     if(!rf.check("NAV2LOC"))
     {
         yCWarning(NAV_2_LOC,"NAV2LOC section missing in ini file. Using the default values");
     }
     Searchable& home_config = rf.findGroup("NAV2LOC");
-    if(home_config.check("home_x")) {m_home_position[0] = home_config.find("home_x").asFloat32();}
-    if(home_config.check("home_y")) {m_home_position[1] = home_config.find("home_y").asFloat32();}
-    if(home_config.check("home_th")) {m_home_position[2] = home_config.find("home_th").asFloat32();}
+    if(home_config.check("home_x")) {home_position[0] = home_config.find("home_x").asFloat32();}
+    if(home_config.check("home_y")) {home_position[1] = home_config.find("home_y").asFloat32();}
+    if(home_config.check("home_th")) {home_position[2] = home_config.find("home_th").asFloat32();}
     if(home_config.check("near_distance")) {m_near_distance = home_config.find("near_distance").asFloat32();}
 
+    MapGrid2D  map;
+    if(!m_iNav2D->getCurrentNavigationMap(NavigationMapTypeEnum::global_map, map))
+    {
+        yCError(NAV_2_LOC, "Error retrieving current global map");
+        return false;
+    }
+
+    m_home_location = Map2DLocation(map.getMapName(), home_position[0], home_position[1], home_position[2]);
 
     return true;
 }
@@ -72,19 +82,14 @@ void Nav2Loc::close()
 
 bool Nav2Loc::goHome()
 {
-    MapGrid2D  map;
-    if(!m_iNav2D->getCurrentNavigationMap(NavigationMapTypeEnum::global_map, map))
-    {
-        yCError(NAV_2_LOC, "Error retrieving current global map");
-        return false;
-    }
-
-    Map2DLocation loc(map.getMapName(), m_home_position[0], m_home_position[1], m_home_position[2]);
-    if(!m_iNav2D->gotoTargetByAbsoluteLocation(loc))
+    
+    if(!m_iNav2D->gotoTargetByAbsoluteLocation(m_home_location))
     {
         yCError(NAV_2_LOC, "Error with navigation to home location");
         return false;
     }
+
+    m_current_target_location = "home";
 
     return true;
 }
@@ -105,6 +110,8 @@ bool Nav2Loc::go(string loc)
         return false;
     }
 
+    m_current_target_location = loc;
+
     return true;
 }
 
@@ -121,6 +128,15 @@ bool Nav2Loc::stop()
     return true;
 }
 
+bool Nav2Loc::resumeGo()
+{
+    if (m_current_target_location=="home")
+        goHome();
+    else
+        go(m_current_target_location);
+    
+    return true;
+}
 
 bool Nav2Loc::areYouArrived()
 {

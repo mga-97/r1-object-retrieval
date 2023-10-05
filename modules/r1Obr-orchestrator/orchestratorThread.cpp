@@ -29,7 +29,8 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     m_status(R1_IDLE),
     m_where_specified(false),
     m_object_found(false),
-    m_object_not_found(false)
+    m_object_not_found(false),
+    m_going(false)
 {
     //Defaults
     m_sensor_network_rpc_port_name  = "/r1Obr-orchestrator/sensor_network:rpc";
@@ -176,7 +177,7 @@ void OrchestratorThread::run()
     while (true)
     {
         setEmotion();
-        
+        yCDebug(R1OBR_ORCHESTRATOR_THREAD, "3: status: %s", getStatus().c_str());
         if (m_status == R1_ASKING_NETWORK)
         {
             if (!askNetwork())
@@ -297,10 +298,11 @@ void OrchestratorThread::run()
                 Time::delay(0.5);
             }
             
-            if (m_status == R1_OBJECT_NOT_FOUND) //in case of external stop
+            if (m_status == R1_GOING) //in case of external stop
+            {
                 askChatBotToSpeak(go_target_reached);
-            
-            m_status = R1_IDLE;
+                m_status = R1_IDLE;
+            }
         }
 
         else if (m_status == R1_IDLE)
@@ -386,14 +388,15 @@ Bottle OrchestratorThread::forwardRequest(const Bottle& request)
 /****************************************************************/
 void OrchestratorThread::search(const Bottle& btl)
 {
-    if (m_status == R1_OBJECT_NOT_FOUND || m_status == R1_OBJECT_FOUND)
+    if (m_status == R1_OBJECT_NOT_FOUND || m_status == R1_OBJECT_FOUND || m_status == R1_GOING)
     {
         stopOrReset("stop");
     } 
 
     m_object_found = false;
     m_object_not_found = false;
-    
+    m_going = false;
+
     if(resizeSearchBottle(btl))
     {
         m_status = R1_ASKING_NETWORK;
@@ -434,7 +437,7 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
             }   
         }
     }
-    
+
     return true;
 }
 
@@ -451,7 +454,6 @@ bool OrchestratorThread::askNetwork()
 string OrchestratorThread::stopOrReset(const string& cmd)
 {
     Bottle rep, request{cmd};
-    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Stopping");
     forwardRequest(request); 
     
     if (m_status == R1_OBJECT_FOUND)
@@ -470,6 +472,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
     {
         m_object_found = false;
         m_object_not_found = false;
+        m_going = false;
         Bottle req("navpos"); 
         forwardRequest(req);
     }
@@ -516,6 +519,13 @@ string OrchestratorThread::resume()
 
         m_status = R1_OBJECT_NOT_FOUND;
         return "resume: object not found";
+    }
+    else if (m_going)
+    {
+        m_nav2loc->resumeGo();
+
+        m_status = R1_GOING;
+        return "resume: go";
     }
     else
     {
@@ -689,6 +699,9 @@ bool OrchestratorThread::go(string loc)
     if (m_status != R1_IDLE) 
         stopOrReset("stop");
     
+    m_object_found = false;
+    m_object_not_found = false;
+    
     Bottle req,rep;
     req.fromString("find " + loc);
     m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
@@ -703,5 +716,6 @@ bool OrchestratorThread::go(string loc)
     forwardRequest(request);
 
     m_status = R1_GOING;
+    m_going = true;
     return m_nav2loc->go(loc);
 }

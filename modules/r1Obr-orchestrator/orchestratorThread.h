@@ -100,6 +100,7 @@ private:
     bool                    m_where_specified;
     bool                    m_object_found;
     bool                    m_object_not_found;
+    bool                    m_going;
 
     ResourceFinder&         m_rf;
 

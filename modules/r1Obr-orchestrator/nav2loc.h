@@ -37,7 +37,8 @@ using namespace std;
 class Nav2Loc
 {
 private:
-    Vector                  m_home_position;
+    Map2DLocation           m_home_location;
+    string                  m_current_target_location;
     double                  m_near_distance;
 
     // Devices
@@ -45,7 +46,7 @@ private:
     Nav2D::INavigation2D*   m_iNav2D{nullptr};
 
 public:
-    Nav2Loc() : m_home_position(3, 0.0), m_near_distance(3.0) {}
+    Nav2Loc() : m_near_distance(3.0) {}
     ~Nav2Loc(){}
 
     bool configure(yarp::os::ResourceFinder &rf);
@@ -53,6 +54,7 @@ public:
     bool goHome();
     bool go(string loc_name);
     bool stop();
+    bool resumeGo();
     bool areYouArrived();
     bool areYouNearToGoal();
     bool areYouMoving();
