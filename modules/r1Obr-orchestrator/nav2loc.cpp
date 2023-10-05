@@ -97,12 +97,8 @@ bool Nav2Loc::goHome()
 
 bool Nav2Loc::go(string loc)
 {
-    MapGrid2D  map;
-    if(!m_iNav2D->getCurrentNavigationMap(NavigationMapTypeEnum::global_map, map))
-    {
-        yCError(NAV_2_LOC, "Error retrieving current global map");
-        return false;
-    }
+    if (loc == "home")
+        return goHome();
 
     if(!m_iNav2D->gotoTargetByLocationName(loc))
     {

@@ -705,14 +705,17 @@ bool OrchestratorThread::go(string loc)
     m_object_found = false;
     m_object_not_found = false;
     
-    Bottle req,rep;
-    req.fromString("find " + loc);
-    m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
-    if (rep.get(0).asString() != "ok")
+    if (loc != "home")
     {
-        yCError(R1OBR_ORCHESTRATOR_THREAD,"Location specified is not valid.");
-        askChatBotToSpeak(something_bad_happened);
-        return false;
+        Bottle req,rep;
+        req.fromString("find " + loc);
+        m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
+        if (rep.get(0).asString() != "ok")
+        {
+            yCError(R1OBR_ORCHESTRATOR_THREAD,"Location specified is not valid.");
+            askChatBotToSpeak(something_bad_happened);
+            return false;
+        }
     }
 
     Bottle request{"navpos"};
