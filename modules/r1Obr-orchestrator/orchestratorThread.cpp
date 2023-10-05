@@ -570,6 +570,9 @@ string OrchestratorThread::getWhat()
 /****************************************************************/
 string OrchestratorThread::getWhere()
 {
+    if(m_status == R1_GOING)
+        return m_nav2loc->getCurrentTarget();
+    
     Bottle request{"where"};
     return forwardRequest(request).toString();
 }

@@ -58,6 +58,7 @@ public:
     bool areYouArrived();
     bool areYouNearToGoal();
     bool areYouMoving();
+    string getCurrentTarget();
 };
 
 #endif //NAV_2_LOC_H
