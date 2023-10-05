@@ -163,6 +163,14 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Saying: %s", toSay.c_str());
                 m_speaker->say(toSay);
             }
+            else if(cmd->get(0).asString()=="setLanguage")
+            {
+                string lang = cmd->get(1).asString();
+                m_iChatBot->setLanguage(lang);
+                m_speaker->setLanguage(lang);
+                m_language_chatbot=lang;
+                yCInfo(CHAT_BOT_ORCHESTRATOR, "Language set to: %s", lang.c_str());
+            }
             else
             {
                 Bottle reply;

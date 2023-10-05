@@ -177,7 +177,7 @@ void OrchestratorThread::run()
     while (true)
     {
         setEmotion();
-        yCDebug(R1OBR_ORCHESTRATOR_THREAD, "3: status: %s", getStatus().c_str());
+        
         if (m_status == R1_ASKING_NETWORK)
         {
             if (!askNetwork())
