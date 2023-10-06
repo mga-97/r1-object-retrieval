@@ -127,6 +127,10 @@ void ChatBot::onRead(Bottle& b)
     }
 
     string b_str = b.toString();
+
+    if(b_str == "")
+        return;
+
     interactWithChatBot(b_str);
     
 }
