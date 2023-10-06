@@ -136,6 +136,18 @@
    </connection>
 
    <connection>
+      <from>/r1Obr-orchestrator/chatBot/microphone:rpc</from>
+      <to>/audioRecorderWrapper/rpc</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/r1Obr-orchestrator/microphone:rpc</from>
+      <to>/audioRecorderWrapper/rpc</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
       <from>/faceExpressionImage/image:o</from>
       <to>/faceView/img:i</to>
       <protocol>fast_tcp</protocol>

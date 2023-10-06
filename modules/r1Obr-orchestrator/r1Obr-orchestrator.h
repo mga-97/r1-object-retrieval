@@ -54,6 +54,7 @@ private:
 
     //Others
     double                      m_period;
+    RpcClient                   m_audiorecorderRPCPort;
 
 public:
     Orchestrator();

@@ -33,7 +33,8 @@ class ChatBot : public TypedReaderCallback<Bottle>
 private:
     
     BufferedPort<Bottle>    m_voiceCommandPort;
-    RpcClient               m_chatBotRPCPort;
+    RpcClient               m_orchestratorRPCPort;
+    RpcClient               m_audiorecorderRPCPort;
 
     bool                    m_chatBot_active;
     PolyDriver              m_PolyCB;

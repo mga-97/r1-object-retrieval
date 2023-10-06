@@ -100,6 +100,14 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
+    // RPC Client to stop microphone
+    string audiorecorderRPCPortName = "/r1Obr-orchestrator/microphone:rpc";
+    if(!m_audiorecorderRPCPort.open(audiorecorderRPCPortName))
+    {
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open RPC port to audio recorder");
+        return false;
+    }
+
     return true;
 }
 
@@ -252,5 +260,16 @@ void Orchestrator::onRead(yarp::os::Bottle &b)
 /****************************************************************/
 bool Orchestrator::say(string toSay)
 {
-    return m_additional_speaker->say(toSay);
+    //close microphone
+    Bottle req{"stop"}, rep;
+    m_audiorecorderRPCPort.write(req,rep);
+
+    bool ret = m_additional_speaker->say(toSay);
+
+    //re-open microphone
+    req.clear(); rep.clear();
+    req.addString("start");
+    m_audiorecorderRPCPort.write(req,rep);
+
+    return ret;
 }
