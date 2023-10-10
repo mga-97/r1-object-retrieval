@@ -12,8 +12,7 @@ While the search is performed by the goAndFindIt module, this one acts as interf
 ### Inputs
 There are two ways to send commands to this module:
 
-Sending an input bottle to the ports `/r1Obr-orchestrator/input_command:i` or `/r1Obr-orchestrator/voice_command:i` (the names can be modified in the .ini file).
-The first port is designed to send commands via 'yarp write', while the second one is opened to receive voice commands (not yet implemented).
+Sending an input bottle to the port `/r1Obr-orchestrator/input:i` (the name can be modified in the .ini file).
 The commands that can be sent to these ports are:
 - `search <object> <where>`: starts looking for "object" at location "where". In this case, if "object" is not found, the module will ask you if you want to continue the search in other locations. In this case you can answer `yes` or `no` using one of the input ports available.
 - `search <object>`: starts looking for "object" in all the map starting from the closest location
@@ -39,6 +38,8 @@ Sending an RPC command to the port `/r1Obr-orchestrator/rpc`:
 - `navpos`: sets the robot in a navigation position
 - `go <location>` : navigates the robot to 'location' if it is valid
 
+A third way of sending commands to this module is via vocal commands. See the paragraph about the Chat Bot.
+
 ### Outputs
 A search can have a negative or a positive outcome.
 In the first case, if you have specified a location where to perform the search, you will be asked if you want to continue the search in other locations.
@@ -52,6 +53,18 @@ Example:        `ball (156 203)`
 The continous search is an optional feature of this orchestrator. 
 If it set as active, the orchestrator will check constantly, during the navigation of the robot, if the object of the search can already be found without waiting for the robot to reach a certain location.
 If `<where>` has been specified in the `search` command, the continuous search will activate only in proximity of the specified location.
+
+### Chat Bot and speech Synthesizer 
+The orchestrator manages also the vocal interaction between robot and people around it. 
+The trascribed text of what a person tells to the robot is read from an input port (default name is `/r1Obr-orchestrator/voice_command:i`). This text is sent to a Chat Bot device which replies to the orchestrator translating the vocal commands in RPC commands. 
+These RPC commands are the same as described before.
+Together with the Chat Bot device, a Speech Synthesizer device let the robot speak. The exact words that the robot says are asked to the Chat Bot.
+Example:
+- from voice command input port: `can you search an apple in the kitchen?`
+- the orchestrator sends the above string to the Chat Bot device. Reply from Chat Bot: `(search apple kitchen) (say "Sure, I am going to the kitchen looking for an apple")`
+- the command `(search apple kitchen)` is sent to the RPC input port of the orchestrator
+- the sentence to say is sent to the Speech Synthesizer device
+
 
 ### Integration of the Sensor Network
 Before starting looking around for the object, this module asks to the Sensor Network if it can find it, so that the robot can directly navigate to it.
