@@ -55,9 +55,14 @@ bool Nav2Loc::configure(yarp::os::ResourceFinder &rf)
         yCWarning(NAV_2_LOC,"NAV2LOC section missing in ini file. Using the default values");
     }
     Searchable& home_config = rf.findGroup("NAV2LOC");
-    if(home_config.check("home_x")) {home_position[0] = home_config.find("home_x").asFloat32();}
-    if(home_config.check("home_y")) {home_position[1] = home_config.find("home_y").asFloat32();}
-    if(home_config.check("home_th")) {home_position[2] = home_config.find("home_th").asFloat32();}
+    if(home_config.check("home")) 
+    {
+        Bottle home;
+        home.fromString(home_config.find("home").asString());
+        home_position[0]=home.get(0).asFloat32();
+        home_position[1]=home.get(1).asFloat32();
+        home_position[2]=home.get(2).asFloat32();
+    }
     if(home_config.check("near_distance")) {m_near_distance = home_config.find("near_distance").asFloat32();}
 
     MapGrid2D  map;
