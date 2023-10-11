@@ -99,12 +99,19 @@ bool Orchestrator::configure(ResourceFinder &rf)
         yCError(R1OBR_ORCHESTRATOR,"SpeechSynthesizer configuration failed");
         return false;
     }
-
-    // RPC Client to stop microphone
+   
     string audiorecorderRPCPortName = "/r1Obr-orchestrator/microphone:rpc";
     if(!m_audiorecorderRPCPort.open(audiorecorderRPCPortName))
     {
         yCError(R1OBR_ORCHESTRATOR, "Unable to open RPC port to audio recorder");
+        return false;
+    }
+
+    // --------- Story Teller --------- //
+    m_story_teller = new StoryTeller();
+    if(!m_story_teller->configure(rf))
+    {
+        yCError(R1OBR_ORCHESTRATOR,"StoryTeller configuration failed");
         return false;
     }
 
@@ -126,6 +133,11 @@ bool Orchestrator::close()
     
     m_inner_thread->stop();
     delete m_inner_thread;
+
+    m_additional_speaker->close();
+    delete m_additional_speaker;
+
+    delete m_story_teller;
     
     return true;
 }
@@ -181,6 +193,8 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
             reply.addString("info   : returns the status, object and location of the current search");
             reply.addString("navpos : sets the robot in navigation position");
             reply.addString("go <location> : navigates the robot to 'location' if it is valid");
+            reply.addString("say <sentence>: the sentence is synthesized and played by the audio player");
+            reply.addString("tell <key>    : a previously stored sentence is accessed through the corresponfing key and it is played by the audio player");
 
         }
         else if (cmd=="status")
@@ -228,14 +242,22 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
     else if (cmd=="say")
     {   
         string toSay = request.get(1).asString();
-        say(toSay);
         reply.addString("speaking");
+        say(toSay);
     }
     else if (cmd=="go")
     {   
         string location_name = request.get(1).asString();;
         m_inner_thread->go(location_name);
         reply.addString("going to '" + location_name + "'");
+    }
+    else if (cmd=="tell")
+    {   
+        string story;
+        string story_key = request.get(1).asString();
+        m_story_teller->getStory(story_key, story);
+        reply.addString("Telling the story");
+        say(story);
     }
     else
     {

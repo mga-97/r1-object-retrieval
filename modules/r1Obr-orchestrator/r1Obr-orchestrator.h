@@ -22,6 +22,8 @@
 #include <yarp/os/all.h>
 
 #include "orchestratorThread.h"
+#include "speechSynthesizer.h"
+#include "storyTeller.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -51,6 +53,9 @@ private:
 
     //additional Speech Synthesizer
     SpeechSynthesizer*          m_additional_speaker;
+
+    //storyTeller
+    StoryTeller*                m_story_teller;
 
     //Others
     double                      m_period;

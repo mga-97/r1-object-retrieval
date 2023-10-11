@@ -37,6 +37,8 @@ Sending an RPC command to the port `/r1Obr-orchestrator/rpc`:
 - `info`: get the information about what, where and status
 - `navpos`: sets the robot in a navigation position
 - `go <location>` : navigates the robot to 'location' if it is valid
+- `say <sentence>`: the sentence is synthesized and played by the audio player
+- `tell <key>`: a previously stored sentence is accessed through the corresponfing key and it is played by the audio player
 
 A third way of sending commands to this module is via vocal commands. See the paragraph about the Chat Bot.
 
