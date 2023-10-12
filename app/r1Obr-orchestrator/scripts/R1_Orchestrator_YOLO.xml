@@ -180,5 +180,15 @@
       <from>/r1Obr-orchestrator/speech_sythesizer/second/audio:o</from>
       <to>/audioPlayerWrapper/audio:i</to>
    </connection>
+
+   <connection>
+      <from>/audioPlayerWrapper/status:o</from>
+      <to>/r1Obr-orchestrator/chatBot/audioplayerStatus:i</to>
+   </connection>
+
+   <connection>
+      <from>/audioPlayerWrapper/status:o</from>
+      <to>/r1Obr-orchestrator/audioplayerStatus:i</to>
+   </connection>
       
 </application>
