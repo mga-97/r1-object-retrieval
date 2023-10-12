@@ -109,7 +109,7 @@ void AudioProcessor::processAudio(yarp::sig::Sound& inputSound){
         yCError(VADAUDIOPROCESSOR) << "The frequency needs to be at least" << m_vadFrequency;
     }
     double sampleSecondsLength = (double) inputSound.getSamples() / inputSound.getFrequency();
-    if (int(sampleSecondsLength*1000)  % m_vadSampleLength == 0 ) {
+    // if (int(sampleSecondsLength*1000)  % m_vadSampleLength == 0 ) {
         // if (m_microphoneOpen) {
 
             int numberOfSamplesPerPacket = m_vadSampleLength * (m_vadFrequency / 1000);
@@ -124,11 +124,11 @@ void AudioProcessor::processAudio(yarp::sig::Sound& inputSound){
 
                     processPacket(copiedSound);
                 // }
-            // }
-        }
-    } else {
-        yCDebug(VADAUDIOPROCESSOR) << "cannot split samples into packets.";
-    }
+            }
+        // }
+    // } else {
+    //     yCDebug(VADAUDIOPROCESSOR) << "cannot split samples into packets.";
+    // }
     m_soundToProcess.pop_front();
 }
 
