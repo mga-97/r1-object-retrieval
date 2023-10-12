@@ -108,6 +108,13 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
+    string audioplayerStatusPortName = "/r1Obr-orchestrator/audioplayerStatus:i";
+    if(!m_audioPlayPort.open(audioplayerStatusPortName))
+    {
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open audio player status port");
+        return false;
+    }
+
     return true;
 }
 
@@ -264,7 +271,19 @@ bool Orchestrator::say(string toSay)
     Bottle req{"stop"}, rep;
     m_audiorecorderRPCPort.write(req,rep);
 
+    //speak
     bool ret = m_additional_speaker->say(toSay);
+
+    //wait until finish speaking
+    bool audio_is_playing{true};
+    while (audio_is_playing) 
+    {
+        AudioPlayerStatus *player_status = m_audioPlayPort.read(false);
+        if (player_status)
+        {
+            audio_is_playing = player_status->current_buffer_size > 0;
+        }
+    }
 
     //re-open microphone
     req.clear(); rep.clear();

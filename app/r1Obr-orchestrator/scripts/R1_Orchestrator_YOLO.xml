@@ -28,7 +28,7 @@
    <module>
       <name>yarprobotinterface</name>
       <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-base.en.bin </parameters>
-      <node>console2</node>
+      <node>pc</node>
    </module>
 
    <!-- chat bot -->
@@ -36,7 +36,7 @@
       <name>yarprobotinterface</name>
       <parameters>--context googleTest --from testDialog.ini</parameters>
       <workdir>/home/yarp-user/robotology/yarp-devices-google-cloud/build/share/yarp/context/googleTest</workdir>
-      <node>console3</node>
+      <node>console2</node>
    </module>
 
    <!-- speech synthesizer -->
@@ -44,7 +44,7 @@
       <name>yarprobotinterface</name>
       <parameters>--context googleTest --from testSpeech.ini</parameters>
       <workdir>/home/yarp-user/robotology/yarp-devices-google-cloud/build/share/yarp/context/googleTest</workdir>
-      <node>console3</node>
+      <node>console2</node>
    </module>
 
    <!-- orchestrator -->

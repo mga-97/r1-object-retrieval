@@ -22,6 +22,7 @@
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IChatBot.h>
 #include "speechSynthesizer.h"
+#include <yarp/dev/AudioPlayerStatus.h>
 
 using namespace yarp::os;
 using namespace yarp::dev;
@@ -35,6 +36,7 @@ private:
     BufferedPort<Bottle>    m_voiceCommandPort;
     RpcClient               m_orchestratorRPCPort;
     RpcClient               m_audiorecorderRPCPort;
+    BufferedPort<AudioPlayerStatus> m_audioPlayPort;
 
     bool                    m_chatBot_active;
     PolyDriver              m_PolyCB;
