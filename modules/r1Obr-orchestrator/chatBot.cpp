@@ -222,7 +222,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
             else
             {
                 Bottle reply;
-                m_orchestratorRPCPort.write(msg_btl,reply);
+                m_orchestratorRPCPort.write(*cmd,reply);
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Replied from orchestrator: %s", reply.toString().c_str() );
             }
         }
