@@ -13,7 +13,7 @@
    <!-- audio recorder -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context vadModule --from audioRecorderAutoStart.ini</parameters>
+      <parameters>--context whisperTranscribe_demo --config yarp_audioFromMic.xml</parameters>
       <node>pc</node>
    </module>
 
@@ -27,7 +27,7 @@
    <!-- Whisper: speech transcription -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-base.en.bin </parameters>
+      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin </parameters>
       <node>pc</node>
    </module>
 
@@ -100,7 +100,7 @@
   <!--                -->
 
    <connection>
-      <from>/audioRecorderWrapper/audio:o</from>
+      <from>/audioRecorder_nws/audio:o</from>
       <to>/vad/audio:i</to>
       <protocol>fast_tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
    </connection>
@@ -137,13 +137,13 @@
 
    <connection>
       <from>/r1Obr-orchestrator/chatBot/microphone:rpc</from>
-      <to>/audioRecorderWrapper/rpc</to>
+      <to>/audioRecorder_nws/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>
 
    <connection>
       <from>/r1Obr-orchestrator/microphone:rpc</from>
-      <to>/audioRecorderWrapper/rpc</to>
+      <to>/audioRecorder_nws/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>
 
