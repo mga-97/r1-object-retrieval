@@ -130,6 +130,12 @@ void ChatBot::close()
 
     if (m_orchestratorRPCPort.asPort().isOpen())
         m_orchestratorRPCPort.close(); 
+
+    if (m_audiorecorderRPCPort.asPort().isOpen())
+        m_audiorecorderRPCPort.close();
+    
+    if (!m_audioPlayPort.isClosed())
+        m_audioPlayPort.close();
     
     if(m_PolyCB.isValid())
         m_PolyCB.close();

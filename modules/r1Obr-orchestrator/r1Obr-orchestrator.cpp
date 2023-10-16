@@ -131,8 +131,20 @@ bool Orchestrator::close()
     if (!m_positive_feedback_port.isClosed())
         m_positive_feedback_port.close();
     
+    if (!m_status_port.isClosed())
+        m_status_port.close();
+
+    if (m_audiorecorderRPCPort.asPort().isOpen())
+        m_audiorecorderRPCPort.close();
+    
+    if (!m_audioPlayPort.isClosed())
+        m_audioPlayPort.close();
+    
     m_inner_thread->stop();
     delete m_inner_thread;
+
+    m_additional_speaker->close();
+    delete m_additional_speaker;
     
     return true;
 }
