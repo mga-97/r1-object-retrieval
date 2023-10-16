@@ -58,7 +58,7 @@ private:
     //Others
     double                      m_period;
     RpcClient                   m_audiorecorderRPCPort;
-    BufferedPort<AudioPlayerStatus> m_audioPlayPort;
+    BufferedPort<Bottle>        m_audioPlayPort;
 
 public:
     Orchestrator();

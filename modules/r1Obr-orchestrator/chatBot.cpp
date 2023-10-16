@@ -159,6 +159,7 @@ void ChatBot::onRead(Bottle& b)
     if(str == "")
         return;
 
+    yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 1");
     interactWithChatBot(str);
     
 }
@@ -169,6 +170,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
 {
     if(m_chatBot_active)
     {
+        yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 2");
         yCInfo(CHAT_BOT_ORCHESTRATOR,"ChatBot received: %s",msgIn.c_str());
         
         string msgOut;
@@ -195,26 +197,28 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Saying: %s", toSay.c_str());
 
                 //close microphone
-                Bottle req{"stop"}, rep;
+                Bottle req{"stopRecording_RPC"}, rep;
                 m_audiorecorderRPCPort.write(req,rep);
 
                 //speak
                 m_speaker->say(toSay);
 
                 //wait until finish speaking
+                Time::delay(0.5);
                 bool audio_is_playing{true};
                 while (audio_is_playing) 
                 {
-                    AudioPlayerStatus *player_status = m_audioPlayPort.read(false);
+                    Bottle* player_status = m_audioPlayPort.read(false);
                     if (player_status)
                     {
-                        audio_is_playing = player_status->current_buffer_size > 0;
+                        audio_is_playing = (unsigned int)player_status->get(1).asInt64() > 0;
                     }
+                    Time::delay(0.1);                    
                 }
 
                 //re-open microphone
                 req.clear(); rep.clear();
-                req.addString("start");
+                req.addString("startRecording_RPC");
                 m_audiorecorderRPCPort.write(req,rep);
             }
             else if(cmd->get(0).asString()=="setLanguage")
@@ -235,5 +239,6 @@ void ChatBot::interactWithChatBot(const string& msgIn)
     }
     else
         yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
-        
+    
+    yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 3");
 }

@@ -280,26 +280,29 @@ void Orchestrator::onRead(yarp::os::Bottle &b)
 bool Orchestrator::say(string toSay)
 {
     //close microphone
-    Bottle req{"stop"}, rep;
+    Bottle req{"stopRecording_RPC"}, rep;
     m_audiorecorderRPCPort.write(req,rep);
 
     //speak
     bool ret = m_additional_speaker->say(toSay);
+    
 
     //wait until finish speaking
+    Time::delay(0.5);
     bool audio_is_playing{true};
     while (audio_is_playing) 
     {
-        AudioPlayerStatus *player_status = m_audioPlayPort.read(false);
+        Bottle* player_status = m_audioPlayPort.read(false);
         if (player_status)
         {
-            audio_is_playing = player_status->current_buffer_size > 0;
+            audio_is_playing = player_status->get(1).asInt64() > 0;
         }
+        Time::delay(0.1);
     }
 
     //re-open microphone
     req.clear(); rep.clear();
-    req.addString("start");
+    req.addString("startRecording_RPC");
     m_audiorecorderRPCPort.write(req,rep);
 
     return ret;

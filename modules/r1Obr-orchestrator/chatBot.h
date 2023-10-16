@@ -36,7 +36,7 @@ private:
     BufferedPort<Bottle>    m_voiceCommandPort;
     RpcClient               m_orchestratorRPCPort;
     RpcClient               m_audiorecorderRPCPort;
-    BufferedPort<AudioPlayerStatus> m_audioPlayPort;
+    BufferedPort<Bottle>    m_audioPlayPort;
 
     bool                    m_chatBot_active;
     PolyDriver              m_PolyCB;
