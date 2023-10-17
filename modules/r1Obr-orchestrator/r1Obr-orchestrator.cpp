@@ -35,10 +35,8 @@ Orchestrator::Orchestrator() :
 /****************************************************************/
 bool Orchestrator::configure(ResourceFinder &rf) 
 {   
+    if(rf.check("period")){m_period = rf.find("period").asFloat32();}   
 
-    if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
-
-    
     // --------- Open RPC Server Port --------- //
     if(rf.check("input_rpc_port"))
         m_rpc_server_port_name = rf.find("input_rpc_port").asString();

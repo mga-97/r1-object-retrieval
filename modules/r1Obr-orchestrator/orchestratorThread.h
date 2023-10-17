@@ -101,6 +101,7 @@ private:
     bool                    m_object_found;
     bool                    m_object_not_found;
     bool                    m_going;
+    string                  m_map_prefix;
 
     ResourceFinder&         m_rf;
 

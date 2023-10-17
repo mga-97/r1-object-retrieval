@@ -40,6 +40,7 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     m_positive_outcome_port_name    = "/r1Obr-orchestrator/positive_outcome:o";
     m_negative_outcome_port_name    = "/r1Obr-orchestrator/negative_outcome:o";
     m_faceexpression_rpc_port_name  = "/r1Obr-orchestrator/faceExpression:rpc";
+    m_map_prefix = "";
 }
 
 /****************************************************************/
@@ -51,6 +52,8 @@ bool OrchestratorThread::threadInit()
     if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name      = m_rf.find("goandfindit_rpc_port").asString();}
     if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name   = m_rf.find("goandfindit_result_port").asString();}
     if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name   = m_rf.find("faceexpression_rpc_port").asString();}
+
+    if(m_rf.check("map_prefix")){m_map_prefix = m_rf.find("map_prefix").asString();} 
     
     if(!m_sensor_network_rpc_port.open(m_sensor_network_rpc_port_name)){
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Sensor Network RPC port with name" << m_sensor_network_rpc_port_name;
@@ -421,12 +424,18 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
     m_request.clear();
     for (int i=0; i < min(sz,3); i++)
     {
-        m_request.addString(btl.get(i).asString());
-
         if(i==2)
         {
+            string loc = btl.get(i).asString();
+            
+            if (loc.find(m_map_prefix) == string::npos) 
+            {
+                loc = m_map_prefix + loc;
+            }
+                yCDebug(R1OBR_ORCHESTRATOR_THREAD) << "LOC:" << loc;
+            
             Bottle req,rep;
-            req.fromString("find " + btl.get(i).asString());
+            req.fromString("find " + loc);
             m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
             if (rep.get(0).asString() != "ok")
             {
@@ -434,8 +443,11 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
                 m_request.clear();
                 askChatBotToSpeak(something_bad_happened);
                 return false;
-            }   
+            }  
+            m_request.addString(loc); 
         }
+        else
+            m_request.addString(btl.get(i).asString());
     }
 
     return true;
@@ -701,6 +713,11 @@ bool OrchestratorThread::go(string loc)
 {
     if (m_status != R1_IDLE) 
         stopOrReset("stop");
+    
+    if (loc != "home" && loc.find(m_map_prefix) == string::npos) 
+    {
+        loc = m_map_prefix + loc;
+    }
     
     m_object_found = false;
     m_object_not_found = false;
