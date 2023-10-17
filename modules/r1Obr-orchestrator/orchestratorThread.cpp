@@ -347,7 +347,6 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
         {
             Bottle request{cmd};
             forwardRequest(request); 
-            askChatBotToSpeak(navigation_position);
         }
         else if (cmd=="resume") 
         {
@@ -687,9 +686,6 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         break;
     case object_not_found:
         str = "object_not_found";
-        break;
-    case navigation_position:
-        str = "navigation_position";
         break;
     case something_bad_happened:
         str = "something_bad_happened";

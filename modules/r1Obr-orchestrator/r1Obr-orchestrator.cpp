@@ -216,18 +216,13 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         {
             reply.addString(m_inner_thread->resume());
         }
-        else if (cmd=="what" || cmd=="where")
+        else if (cmd=="what" || cmd=="where" || cmd=="navpos")
         {
             reply = m_inner_thread->forwardRequest(request);
         }
         else if (cmd=="info")
         {
             m_inner_thread->info(reply);            
-        }
-        else if (cmd=="navpos")
-        {
-            reply = m_inner_thread->forwardRequest(request);
-            m_inner_thread->askChatBotToSpeak(OrchestratorThread::navigation_position);
         }
         else
         {

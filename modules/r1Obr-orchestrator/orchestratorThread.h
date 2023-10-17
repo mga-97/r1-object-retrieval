@@ -45,15 +45,10 @@ private:
 public:
     enum R1_says 
     {
-        // start_search,
-        // stop_search,
-        // reset_search,
-        // resume_search,
         object_found_maybe,
         object_found_true,
         object_found_false,
         object_not_found,
-        navigation_position,
         something_bad_happened,
         go_target_reached,
         fallback
