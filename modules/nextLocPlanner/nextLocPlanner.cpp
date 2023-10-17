@@ -23,7 +23,7 @@ YARP_LOG_COMPONENT(NEXT_LOC_PLANNER, "r1_obr.nextLocPlanner")
 
 NextLocPlanner::NextLocPlanner() :
     m_period(1.0),
-    m_area("cris_new")
+    m_area("")
 {  
 }
 
@@ -31,7 +31,7 @@ NextLocPlanner::NextLocPlanner() :
 bool NextLocPlanner::configure(ResourceFinder &rf) 
 {   
     m_period = rf.check("period")  ? rf.find("period").asFloat32() : 1.0;
-    m_area   = rf.check("area")    ? rf.find("area").asString()    : "cris_new";
+    m_area   = rf.check("area")    ? rf.find("area").asString()    : "";
 
     //Open RPC Server Port
     string rpcPortName = rf.check("rpcPort") ? rf.find("rpcPort").asString() : "/nextLocPlanner/request/rpc";
@@ -79,24 +79,50 @@ bool NextLocPlanner::configure(ResourceFinder &rf)
         return false;
     }
 
+    MapGrid2D  map;
+    if(!m_iNav2D->getCurrentNavigationMap(NavigationMapTypeEnum::global_map, map))
+    {
+        yCError(NEXT_LOC_PLANNER, "Error retrieving current global map");
+    }
+    m_map_name = map.getMapName();
+
     //Load all the locations in m_all_locations
-    if(!m_iNav2D->getLocationsList(m_all_locations)) 
+    vector<string> all_locations;
+    if (!m_iNav2D->getLocationsList(all_locations)) 
     {
         yCError(NEXT_LOC_PLANNER,"Error getting locations list from map server");
         return false;
     }
 
-    if(!m_all_locations.empty()) 
-    {
-        //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
-        auto new_end = remove_if(m_all_locations.begin(), m_all_locations.end(), [this](string& str){return (str.find(m_area) == string::npos);} );
-        m_all_locations.erase(new_end, m_all_locations.end());
 
+    if(!all_locations.empty()) 
+    {
+        for (string & loc_name : all_locations)
+        {
+            Map2DLocation loc;
+            m_iNav2D->getLocation(loc_name, loc);
+            if(loc.map_id == m_map_name)
+                m_all_locations.push_back(loc_name);
+        }
         if(m_all_locations.empty()) 
         {
-            yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server for the area specified");
+            yCWarning(NEXT_LOC_PLANNER,"Error: no locations from map server for the area specified");
+            return false;
         }
+        
+        if (m_area != "")
+        {
+            //remove elements not belonging to the area defined in .ini file (i.e. whose name starts with the name of the area)
+            auto new_end = remove_if(m_all_locations.begin(), m_all_locations.end(), [this](string& str){return (str.find(m_area) == string::npos);} );
+            m_all_locations.erase(new_end, m_all_locations.end());
 
+            if(m_all_locations.empty()) 
+            {
+                yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server for the area specified");
+                return false;
+            }
+        }
+        
         m_locations_unchecked.insert(m_locations_unchecked.end(), m_all_locations.begin(), m_all_locations.end());
 
     }
@@ -104,8 +130,7 @@ bool NextLocPlanner::configure(ResourceFinder &rf)
     {
         yCWarning(NEXT_LOC_PLANNER,"Warning: no locations from map server");
     }
-  
-     
+    
     return true;
 }
 
@@ -237,8 +262,9 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
             reply.addString("set <locationName> <status> : sets the status of a location to unchecked, checking or checked");
             reply.addString("set all <status> : sets the status of all locations");
             reply.addString("find <locationName> : checks if a location is in the list of the available ones");
-            reply.addString("add <locationName> : adds the defined location in the unchecked list");
             reply.addString("remove <locationName> : removes the defined location by any list");
+            reply.addString("add <locationName> : adds a previously defined location in the unchecked list");
+            reply.addString("add <locationName> <x,y,th coordinates>: adds a new location in the unchecked list");
             reply.addString("list : lists all the locations and their status");
             reply.addString("list2 : lists all the locations divided by their status");
             reply.addString("close : closes the nextLocationPlanner module");
@@ -373,6 +399,30 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
             yCWarning(NEXT_LOC_PLANNER,"Error: wrong RPC command. Type 'help'");
         }
     }
+    else if (cmd.size()==5)    //expected 'add <location> <x> <y> <th>'
+    {
+        
+        string locName = cmd.get(1).asString();
+        double x = cmd.get(2).asFloat32();
+        double y = cmd.get(3).asFloat32();
+        double th = cmd.get(4).asFloat32();
+
+        Map2DLocation loc;
+        loc.map_id=m_map_name;
+        loc.x=x;
+        loc.x=y;
+        loc.theta=th;
+        loc.description=locName;
+
+        if(addLocation(locName, loc))
+            reply.addString(locName + " added");
+        else
+        {
+            reply.addString(locName + " NOT added");
+            yCWarning(NEXT_LOC_PLANNER,"Cannot add %s", locName.c_str());
+        }
+            
+    }
     else
     {
         reply.addVocab32(Vocab32::encode("nack"));
@@ -486,20 +536,6 @@ void NextLocPlanner::sortUncheckedLocations()
 
 
 /****************************************************************/
-bool NextLocPlanner::addLocation(string& location_name)
-{
-    vector<string>::iterator findLoc {find(m_all_locations.begin(), m_all_locations.end(), location_name)};
-    
-    if (findLoc != m_all_locations.end())   
-        m_locations_unchecked.push_back(location_name);
-    else 
-        return false;
-    
-    return true;
-}
-
-
-/****************************************************************/
 bool NextLocPlanner::removeLocation(string& location_name)
 {
     vector<string>::iterator findUnchecked {find(m_locations_unchecked.begin(), m_locations_unchecked.end(), location_name)};
@@ -512,5 +548,29 @@ bool NextLocPlanner::removeLocation(string& location_name)
     else 
         return false;
     
+    return true;
+}
+
+
+/****************************************************************/
+bool NextLocPlanner::addLocation(string& location_name)
+{
+    vector<string>::iterator findLoc {find(m_all_locations.begin(), m_all_locations.end(), location_name)};
+    
+    if (findLoc != m_all_locations.end())   
+        m_locations_unchecked.push_back(location_name);
+    else 
+        return false;
+    
+    return true;
+}
+
+/****************************************************************/
+bool NextLocPlanner::addLocation(string locName, Map2DLocation loc)
+{
+    m_iNav2D->storeLocation(locName, loc);
+    m_all_locations.push_back(locName);
+    m_locations_unchecked.push_back(locName);
+
     return true;
 }

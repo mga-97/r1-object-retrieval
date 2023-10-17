@@ -43,6 +43,7 @@ class NextLocPlanner : public RFModule
 private:  
     double            m_period;
     string            m_area;
+    string            m_map_name;
 
     //Devices
     PolyDriver        m_nav2DPoly;
@@ -72,8 +73,9 @@ public:
     bool getUncheckedLocations(vector<string>& location_list);
     bool getCheckedLocations(vector<string>& location_list);
     void sortUncheckedLocations();
-    bool addLocation(string& loc);
     bool removeLocation(string& loc);
+    bool addLocation(string& loc); //add a previously defined location 
+    bool addLocation(string locName, Map2DLocation loc); //add a new location 
 
 private:
     double distRobotLocation(const string& location_name);
