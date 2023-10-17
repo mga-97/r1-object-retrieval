@@ -16,6 +16,10 @@
       <parameters>--context whisperTranscribe_demo --config yarp_audioFromMic.xml</parameters>
       <node>pc</node>
    </module>
+   <module>
+      <name>yarpaudiocontrolgui</name>
+      <parameters>--remote-rec /audioRecorder_nws</parameters>
+   </module>
 
    <!-- VAD -->
    <module>
