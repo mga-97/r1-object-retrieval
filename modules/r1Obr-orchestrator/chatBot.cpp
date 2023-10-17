@@ -159,7 +159,6 @@ void ChatBot::onRead(Bottle& b)
     if(str == "")
         return;
 
-    yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 1");
     interactWithChatBot(str);
     
 }
@@ -170,7 +169,6 @@ void ChatBot::interactWithChatBot(const string& msgIn)
 {
     if(m_chatBot_active)
     {
-        yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 2");
         yCInfo(CHAT_BOT_ORCHESTRATOR,"ChatBot received: %s",msgIn.c_str());
         
         string msgOut;
@@ -240,5 +238,4 @@ void ChatBot::interactWithChatBot(const string& msgIn)
     else
         yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
     
-    yCDebug(CHAT_BOT_ORCHESTRATOR, "CHATBOT QUI 3");
 }
