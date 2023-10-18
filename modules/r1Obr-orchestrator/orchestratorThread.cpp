@@ -564,6 +564,22 @@ void OrchestratorThread::objectFound()
 }
 
 /****************************************************************/
+void OrchestratorThread::objectActuallyNotFound() //in case we lose the sight of the object while approaching it
+{
+    if (m_status == R1_OBJECT_FOUND)
+    {
+        m_status = R1_SEARCHING;
+        m_object_found = false;
+
+        Bottle req;
+        req.fromString("set " + getWhere() + " unchecked");
+        m_nextLoc_rpc_port.write(req);
+
+        resume();
+    }
+}
+
+/****************************************************************/
 void OrchestratorThread::setObject(string obj)
 {
     m_object = obj;

@@ -265,8 +265,17 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
 /****************************************************************/
 void Orchestrator::onRead(yarp::os::Bottle &b)
 {
-    yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
-    m_inner_thread->objectFound();
+    if(b.size() == 2)
+    {
+        yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
+        m_inner_thread->objectFound();
+    }
+    else if (b.size() == 1)
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "The object cannot be found anymore");
+        m_inner_thread->objectActuallyNotFound();
+    }
+
 }
 
 /****************************************************************/

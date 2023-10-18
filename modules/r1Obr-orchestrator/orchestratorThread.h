@@ -123,6 +123,7 @@ public:
     string      resetHome();
     string      resume();
     void        objectFound();
+    void        objectActuallyNotFound();
     
     void        setObject(string obj);
     string      getWhat();
