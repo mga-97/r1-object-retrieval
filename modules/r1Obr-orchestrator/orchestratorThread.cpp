@@ -194,14 +194,9 @@ void OrchestratorThread::run()
         else if (m_status == R1_SEARCHING)
         {
             Bottle req{"status"};
+            string goandfindit_status = forwardRequest(req).get(0).asString();
 
-            if(forwardRequest(req).get(0).asString() == "idle") 
-            {
-                m_status = R1_IDLE;
-                askChatBotToSpeak(something_bad_happened);
-            }
-
-            if(forwardRequest(req).get(0).asString() == "navigating")
+            if(goandfindit_status == "navigating")
             {
                 bool doContSearch = !m_where_specified || m_nav2loc->areYouNearToGoal();
                 if(doContSearch && m_continuousSearch->seeObject(m_object))
@@ -237,6 +232,11 @@ void OrchestratorThread::run()
                         m_positive_outcome_port.write();
                         yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
                     }
+                }
+                else if( goandfindit_status == "idle") 
+                {
+                    m_status = R1_IDLE;
+                    askChatBotToSpeak(something_bad_happened);
                 }
             }
         }
