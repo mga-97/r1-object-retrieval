@@ -181,7 +181,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
         {     
             Bottle* cmd=msg_btl.get(i).asList();
             
-            if(cmd->get(0).asString()=="dialogRestarted")
+            if(cmd->get(0).asString()=="dialogReset")
             {
                 m_iChatBot->resetBot();
                 m_iChatBot->setLanguage(m_language_chatbot);
