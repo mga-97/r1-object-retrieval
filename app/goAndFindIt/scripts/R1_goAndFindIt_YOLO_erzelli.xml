@@ -43,7 +43,7 @@
 
    <module>
       <name>goAndFindIt</name>
-      <parameters>--context goAndFindIt --from goAndFindIt_R1.ini</parameters>
+      <parameters>--context goAndFindIt --from goAndFindIt_R1_erzelli.ini</parameters>
       <node>console</node>
    </module>
 
