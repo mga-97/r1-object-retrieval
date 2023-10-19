@@ -272,22 +272,22 @@ CMD if [ -e /dev/ttyUSB0 ]; then sudo chown user1:user1 /dev/ttyUSB0 && sudo cho
 
 # ------------------------------------------------------------------------------ #
 
-# Build multimodal
-USER user1
-WORKDIR ${user1_home}
-RUN git clone --recursive https://github.com/facebookresearch/multimodal.git multimodal
-ENV multimodal_install_folder  ${user1_home}/multimodal
-
-# Install Mdetr requirements
-RUN pip install opencv-python
-RUN pip install timm
-RUN pip install prettytable==3.3.0
-RUN pip install pycocotools
-RUN pip install pytorch-lightning==1.6.0
-RUN pip install transformers==4.30.0
-RUN python3 -m pip install torchmultimodal-nightly
-
-RUN python3 -c "import torch; torch.hub.load('ashkamath/mdetr:main', 'mdetr_resnet101', pretrained=True, return_postprocessor=True);"
+############ mdetr things ############
+# # Build multimodal
+# USER user1
+# WORKDIR ${user1_home}
+# RUN git clone --recursive https://github.com/facebookresearch/multimodal.git multimodal
+# ENV multimodal_install_folder  ${user1_home}/multimodal
+# 
+# # Install Mdetr requirements
+# RUN pip install opencv-python
+# RUN pip install timm
+# RUN pip install prettytable==3.3.0
+# RUN pip install pycocotools
+# RUN pip install pytorch-lightning==1.6.0
+# RUN pip install transformers==4.30.0
+# RUN python3 -m pip install torchmultimodal-nightly
+######################################
 
 # Install YOLO requirements
 RUN pip install ultralytics
