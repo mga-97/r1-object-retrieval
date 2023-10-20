@@ -216,9 +216,20 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         {
             reply.addString(m_inner_thread->resume());
         }
-        else if (cmd=="what" || cmd=="where" || cmd=="navpos")
+        else if (cmd=="what" || cmd=="where")
         {
             reply = m_inner_thread->forwardRequest(request);
+        }
+        else if (cmd=="navpos")
+        {
+            if(m_inner_thread->setNavigationPosition())
+            {
+                reply.addString("Navpos set");
+            }
+            else
+            {
+                reply.addString("Navpos NOT set");
+            }
         }
         else if (cmd=="info")
         {

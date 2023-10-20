@@ -51,6 +51,7 @@ public:
         object_not_found,
         something_bad_happened,
         go_target_reached,
+        hardware_failure,
         fallback
     };
 
@@ -126,6 +127,7 @@ public:
     void        objectActuallyNotFound();
     
     void        setObject(string obj);
+    bool        setNavigationPosition();
     string      getWhat();
     string      getWhere();
     string      getStatus();

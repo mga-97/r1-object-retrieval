@@ -35,12 +35,15 @@ private:
     yarp::dev::PolyDriver           m_drivers[4];
     yarp::dev::IControlMode*        m_ictrlmode[4];     //to set the Position control mode
     yarp::dev::IPositionControl*    m_iposctrl[4];      //to retrieve the number of joints of each part
+    yarp::dev::IEncoders*           m_iencoder[4];      //to retrieve joint position
 
     std::string                     m_set_nav_position_file;
     yarp::os::Bottle                m_right_arm_pos;
     yarp::os::Bottle                m_left_arm_pos;
     yarp::os::Bottle                m_head_pos;
     yarp::os::Bottle                m_torso_pos;
+
+    double                          m_time;
 
 public:
     //Constructor/Distructor
@@ -49,8 +52,10 @@ public:
 
     //Internal methods
     bool configure(yarp::os::ResourceFinder &rf);
-    void navPosition();
-    void setPosCtrlMode(const int part);
+    bool navPosition();
+    bool setPosCtrlMode(const int part);
+    bool setJointsSpeed(const int part);
+    bool movePart(const int part);
     bool areJointsOk();
 
     void close();

@@ -345,8 +345,10 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
         }
         else if (cmd=="navpos") 
         {
-            Bottle request{cmd};
-            forwardRequest(request); 
+            if(!setNavigationPosition())
+            {
+                yCWarning(R1OBR_ORCHESTRATOR_THREAD, "Cannot set navigation position now");
+            } 
         }
         else if (cmd=="resume") 
         {
@@ -484,8 +486,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_object_found = false;
         m_object_not_found = false;
         m_going = false;
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        setNavigationPosition();
     }
 
     m_status = R1_IDLE;
@@ -511,8 +512,11 @@ string OrchestratorThread::resume()
 
     if (m_object_found)
     {
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        if(!setNavigationPosition())
+        {
+            m_status = R1_IDLE;
+            return "not resumed";
+        }
         
         Bottle&  send = m_positive_outcome_port.prepare();
         send.clear();
@@ -525,8 +529,11 @@ string OrchestratorThread::resume()
     }
     else if (m_object_not_found)
     {
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        if(!setNavigationPosition())
+        {
+            m_status = R1_IDLE;
+            return "not resumed";
+        }
 
         m_status = R1_OBJECT_NOT_FOUND;
         return "resume: object not found";
@@ -583,6 +590,19 @@ void OrchestratorThread::objectActuallyNotFound() //in case we lose the sight of
 void OrchestratorThread::setObject(string obj)
 {
     m_object = obj;
+}
+
+/****************************************************************/
+bool OrchestratorThread::setNavigationPosition()
+{
+    Bottle request{"navpos"};
+    if(forwardRequest(request).get(0).asString() != "setting robot in navigation position")
+    {
+        askChatBotToSpeak(hardware_failure);
+        return false;
+    }
+    
+    return true;
 }
 
 
@@ -709,6 +729,9 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
     case go_target_reached:
         str = "go_target_reached";
         break;
+    case hardware_failure:
+        str = "hardware_failure";
+        break;
     default:
         str = "fallback";
         break;
@@ -747,8 +770,11 @@ bool OrchestratorThread::go(string loc)
         }
     }
 
-    Bottle request{"navpos"};
-    forwardRequest(request);
+    if(!setNavigationPosition())
+    {
+        m_status = R1_IDLE;
+        return false;
+    }
 
     m_status = R1_GOING;
     m_going = true;
