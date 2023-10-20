@@ -58,6 +58,7 @@ public:
     bool areYouArrived();
     bool areYouNearToGoal();
     bool areYouMoving();
+    bool isNavigationAborted();
     string getCurrentTarget();
 };
 

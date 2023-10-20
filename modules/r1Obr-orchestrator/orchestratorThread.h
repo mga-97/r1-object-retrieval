@@ -51,6 +51,7 @@ public:
         object_not_found,
         something_bad_happened,
         go_target_reached,
+        go_target_not_reached,
         hardware_failure,
         fallback
     };

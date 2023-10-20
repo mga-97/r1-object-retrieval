@@ -295,11 +295,20 @@ void OrchestratorThread::run()
         else if (m_status == R1_GOING)
         {
             bool arrived{false};
-            while (!arrived && m_status == R1_GOING)
+            bool nav_aborted{false};
+            while (!arrived && !nav_aborted && m_status == R1_GOING)
             {
                 arrived = m_nav2loc->areYouArrived();
-                Time::delay(0.5);
+                nav_aborted = m_nav2loc->isNavigationAborted();
+                Time::delay(0.2);
             }
+
+            if (nav_aborted)
+            {
+                askChatBotToSpeak(go_target_not_reached);
+                m_status = R1_IDLE;
+            }
+
             
             if (m_status == R1_GOING) //in case of external stop
             {
@@ -433,7 +442,6 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
             {
                 loc = m_map_prefix + loc;
             }
-                yCDebug(R1OBR_ORCHESTRATOR_THREAD) << "LOC:" << loc;
             
             Bottle req,rep;
             req.fromString("find " + loc);
@@ -728,6 +736,9 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         break;
     case go_target_reached:
         str = "go_target_reached";
+        break;
+    case go_target_not_reached:
+        str = "destination_not_reached";
         break;
     case hardware_failure:
         str = "hardware_failure";
