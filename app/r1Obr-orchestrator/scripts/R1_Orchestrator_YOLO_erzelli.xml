@@ -1,5 +1,5 @@
 <application>
-   <name>R1_Orchestrator_MDETR</name>
+   <name>R1_Orchestrator_YOLO_erzelli</name>
 
    <dependencies>
    </dependencies>
@@ -53,24 +53,47 @@
 
    <!-- orchestrator -->
    <application>
-      <name>R1_goAndFindIt_MDETR</name>
+      <name>R1_goAndFindIt_YOLO_erzelli</name>
       <prefix></prefix>
    </application>  
    <module>
       <name>r1Obr-orchestrator</name>
-      <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1_noContinousSearch.ini</parameters>
+      <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1_erzelli.ini</parameters>
+      <environment>YARP_PORTNUMBER_r1Obr_orchestrator_voice_command_i=3000</environment>
       <node>console</node>
    </module>
    
    <!-- positive outcome -->
    <application>
-      <name>R1_approachObject_MDETR</name>
+      <name>R1_approachObject_YOLO</name>
       <prefix></prefix>
    </application>
-   <application>
-      <name>R1_handPointing</name>
-      <prefix></prefix>
-   </application>
+   <module>
+      <name>handPointing</name>
+      <parameters>--context handPointing --from handPointing_R1.ini</parameters>
+      <environment></environment>
+      <node>console</node>
+   </module>   
+   <module>
+      <name>cer_reaching-solver</name>
+      <parameters>--robot cer --arm-type right --verbosity 1</parameters>
+      <node>console</node>
+   </module>
+   <module>
+      <name>cer_reaching-controller</name>
+      <parameters>--robot cer --arm-type right --verbosity 1 --T 1.0</parameters>
+      <node>console</node>
+   </module>
+   <module>
+      <name>cer_reaching-solver</name>
+      <parameters>--robot cer --arm-type left --verbosity 1</parameters>
+      <node>console</node>
+   </module>
+   <module>
+      <name>cer_reaching-controller</name>
+      <parameters>--robot cer --arm-type left --verbosity 1 --T 1.0</parameters>
+      <node>console</node>
+   </module>
    
    <!-- negative outcome -->
    <application>
@@ -164,8 +187,44 @@
    </connection>
 
    <connection>
-      <from>/yarpMdetr/where_coords:o</from>
+      <from>/yarpYolo/where_coords:o</from>
       <to>/r1Obr-orchestrator/continousSearch/object_finder_result:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/cer_reaching-controller/right/solver:rpc</from>
+      <to>/cer_reaching-solver/right/rpc</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/cer_reaching-controller/left/solver:rpc</from>
+      <to>/cer_reaching-solver/left/rpc</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/handPointing/r_target:o</from>
+      <to>/cer_reaching-controller/right/target:i</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/handPointing/l_target:o</from>
+      <to>/cer_reaching-controller/left/target:i</to>
+      <protocol>tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/handPointing/gazeTarget:o</from>
+      <to>/cer_gaze-controller/target:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/handPointing/get_arm_home:o</from>
+      <to>/handPointing/go_home:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
 

@@ -20,12 +20,14 @@
 #define R1OBR_ORCHESTRATOR_H
 
 #include <yarp/os/all.h>
+#include <yarp/dev/AudioPlayerStatus.h>
 
 #include "orchestratorThread.h"
 #include "speechSynthesizer.h"
 #include "storyTeller.h"
 
 using namespace yarp::os;
+using namespace yarp::dev;
 using namespace std;
 
 class Orchestrator : public RFModule, public TypedReaderCallback<Bottle>
@@ -60,6 +62,7 @@ private:
     //Others
     double                      m_period;
     RpcClient                   m_audiorecorderRPCPort;
+    BufferedPort<Bottle>        m_audioPlayPort;
 
 public:
     Orchestrator();

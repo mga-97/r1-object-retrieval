@@ -35,10 +35,8 @@ Orchestrator::Orchestrator() :
 /****************************************************************/
 bool Orchestrator::configure(ResourceFinder &rf) 
 {   
+    if(rf.check("period")){m_period = rf.find("period").asFloat32();}   
 
-    if(rf.check("period")){m_period = rf.find("period").asFloat32();}  
-
-    
     // --------- Open RPC Server Port --------- //
     if(rf.check("input_rpc_port"))
         m_rpc_server_port_name = rf.find("input_rpc_port").asString();
@@ -107,6 +105,13 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
+    string audioplayerStatusPortName = "/r1Obr-orchestrator/audioplayerStatus:i";
+    if(!m_audioPlayPort.open(audioplayerStatusPortName))
+    {
+        yCError(R1OBR_ORCHESTRATOR, "Unable to open audio player status port");
+        return false;
+    }
+
     // --------- Story Teller --------- //
     m_story_teller = new StoryTeller();
     if(!m_story_teller->configure(rf))
@@ -130,6 +135,15 @@ bool Orchestrator::close()
         
     if (!m_positive_feedback_port.isClosed())
         m_positive_feedback_port.close();
+    
+    if (!m_status_port.isClosed())
+        m_status_port.close();
+
+    if (m_audiorecorderRPCPort.asPort().isOpen())
+        m_audiorecorderRPCPort.close();
+    
+    if (!m_audioPlayPort.isClosed())
+        m_audioPlayPort.close();
     
     m_inner_thread->stop();
     delete m_inner_thread;
@@ -217,14 +231,20 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         {
             reply = m_inner_thread->forwardRequest(request);
         }
+        else if (cmd=="navpos")
+        {
+            if(m_inner_thread->setNavigationPosition())
+            {
+                reply.addString("Navpos set");
+            }
+            else
+            {
+                reply.addString("Navpos NOT set");
+            }
+        }
         else if (cmd=="info")
         {
             m_inner_thread->info(reply);            
-        }
-        else if (cmd=="navpos")
-        {
-            reply = m_inner_thread->forwardRequest(request);
-            m_inner_thread->askChatBotToSpeak(OrchestratorThread::navigation_position);
         }
         else
         {
@@ -275,22 +295,46 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
 /****************************************************************/
 void Orchestrator::onRead(yarp::os::Bottle &b)
 {
-    yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
-    m_inner_thread->objectFound();
+    if(b.size() == 2)
+    {
+        yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
+        m_inner_thread->objectFound();
+    }
+    else if (b.size() == 1)
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "The object cannot be found anymore");
+        m_inner_thread->objectActuallyNotFound();
+    }
+
 }
 
 /****************************************************************/
 bool Orchestrator::say(string toSay)
 {
     //close microphone
-    Bottle req{"stop"}, rep;
+    Bottle req{"stopRecording_RPC"}, rep;
     m_audiorecorderRPCPort.write(req,rep);
 
+    //speak
     bool ret = m_additional_speaker->say(toSay);
+    
+
+    //wait until finish speaking
+    Time::delay(0.5);
+    bool audio_is_playing{true};
+    while (audio_is_playing) 
+    {
+        Bottle* player_status = m_audioPlayPort.read(false);
+        if (player_status)
+        {
+            audio_is_playing = player_status->get(1).asInt64() > 0;
+        }
+        Time::delay(0.1);
+    }
 
     //re-open microphone
     req.clear(); rep.clear();
-    req.addString("start");
+    req.addString("startRecording_RPC");
     m_audiorecorderRPCPort.write(req,rep);
 
     return ret;

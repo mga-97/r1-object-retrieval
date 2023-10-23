@@ -28,6 +28,7 @@ bool ChatBot::configure(ResourceFinder &rf)
     string voiceCommandPortName     = "/r1Obr-orchestrator/voice_command:i";
     string orchestratorRPCPortName  = "/r1Obr-orchestrator/chatBot:rpc";
     string audiorecorderRPCPortName = "/r1Obr-orchestrator/chatBot/microphone:rpc";
+    string audioplayerStatusPortName= "/r1Obr-orchestrator/chatBot/audioplayerStatus:i";
     string device_chatBot_nwc       = "chatBot_nwc_yarp";
     string local_chatBot_nwc        = "/r1Obr-orchestrator/chatBot";
     string remote_chatBot_nwc       = "/chatBot_nws";
@@ -99,6 +100,16 @@ bool ChatBot::configure(ResourceFinder &rf)
 
     }
 
+
+    //audio player status
+    if(config.check("audioplayer_input_port")) {audioplayerStatusPortName = config.find("audioplayer_input_port").asString();}
+    if(!m_audioPlayPort.open(audioplayerStatusPortName))
+    {
+        yCError(CHAT_BOT_ORCHESTRATOR, "Unable to open audio player status port");
+        return false;
+    }
+
+
     // --------- SpeechSynthesizer config --------- //
     m_speaker = new SpeechSynthesizer();
     if(!m_speaker->configure(rf, ""))
@@ -119,6 +130,12 @@ void ChatBot::close()
 
     if (m_orchestratorRPCPort.asPort().isOpen())
         m_orchestratorRPCPort.close(); 
+
+    if (m_audiorecorderRPCPort.asPort().isOpen())
+        m_audiorecorderRPCPort.close();
+    
+    if (!m_audioPlayPort.isClosed())
+        m_audioPlayPort.close();
     
     if(m_PolyCB.isValid())
         m_PolyCB.close();
@@ -137,12 +154,12 @@ void ChatBot::onRead(Bottle& b)
         return;
     }
 
-    string b_str = b.toString();
+    string str = b.get(0).asString();
 
-    if(b_str == "")
+    if(str == "")
         return;
 
-    interactWithChatBot(b_str);
+    interactWithChatBot(str);
     
 }
 
@@ -155,7 +172,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
         yCInfo(CHAT_BOT_ORCHESTRATOR,"ChatBot received: %s",msgIn.c_str());
         
         string msgOut;
-        m_iChatBot->interact(msgIn, msgOut); //msgOut should be something like "(say <....>) (<other command>)"
+        m_iChatBot->interact(msgIn, msgOut); //msgOut should be something like "(say <....>) (<other command 1>) (<other command 2>) ..."
         yCInfo(CHAT_BOT_ORCHESTRATOR,"ChatBot replied: %s",msgOut.c_str());
 
         Bottle msg_btl; msg_btl.fromString(msgOut);
@@ -164,7 +181,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
         {     
             Bottle* cmd=msg_btl.get(i).asList();
             
-            if(cmd->get(0).asString()=="dialogRestarted")
+            if(cmd->get(0).asString()=="dialogReset")
             {
                 m_iChatBot->resetBot();
                 m_iChatBot->setLanguage(m_language_chatbot);
@@ -178,15 +195,28 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Saying: %s", toSay.c_str());
 
                 //close microphone
-                Bottle req{"stop"}, rep;
+                Bottle req{"stopRecording_RPC"}, rep;
                 m_audiorecorderRPCPort.write(req,rep);
 
                 //speak
                 m_speaker->say(toSay);
 
+                //wait until finish speaking
+                Time::delay(0.5);
+                bool audio_is_playing{true};
+                while (audio_is_playing) 
+                {
+                    Bottle* player_status = m_audioPlayPort.read(false);
+                    if (player_status)
+                    {
+                        audio_is_playing = (unsigned int)player_status->get(1).asInt64() > 0;
+                    }
+                    Time::delay(0.1);                    
+                }
+
                 //re-open microphone
                 req.clear(); rep.clear();
-                req.addString("start");
+                req.addString("startRecording_RPC");
                 m_audiorecorderRPCPort.write(req,rep);
             }
             else if(cmd->get(0).asString()=="setLanguage")
@@ -200,12 +230,12 @@ void ChatBot::interactWithChatBot(const string& msgIn)
             else
             {
                 Bottle reply;
-                m_orchestratorRPCPort.write(msg_btl,reply);
+                m_orchestratorRPCPort.write(*cmd,reply);
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Replied from orchestrator: %s", reply.toString().c_str() );
             }
         }
     }
     else
         yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
-        
+    
 }

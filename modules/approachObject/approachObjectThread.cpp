@@ -389,6 +389,10 @@ void ApproachObjectThread::run()
             else
             {
                 yCError(APPROACH_OBJECT_THREAD,"I cannot find the object again");
+                Bottle&  toSend = m_output_coordinates_port.prepare();
+                toSend.clear();
+                toSend.addString("object lost");
+                m_output_coordinates_port.write();
             }
         }   
     } 
@@ -421,6 +425,10 @@ void ApproachObjectThread::run()
             else
             {
                 yCError(APPROACH_OBJECT_THREAD,"I cannot find the object again");
+                Bottle&  toSend = m_output_coordinates_port.prepare();
+                toSend.clear();
+                toSend.addString("object lost");
+                m_output_coordinates_port.write();
             }
         }
     }
@@ -445,10 +453,10 @@ bool ApproachObjectThread::lookAgain(string object )
 {
     vector<pair<double,double>> head_positions = {
         {0.0,  0.0 }  ,   //front
-        {0.0,  20.0}  ,   //up
-        {0.0, -20.0}  ,   //down
         {35.0, 0.0 }  ,   //left
-        {-35.0,0.0 }  };  //right
+        {-35.0,0.0 }  ,   //right
+        {0.0,  20.0}  ,   //up
+        {0.0, -20.0} };   //down
 
     for (int i=0; i<(int)head_positions.size(); i++)
     {                        

@@ -40,6 +40,7 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     m_positive_outcome_port_name    = "/r1Obr-orchestrator/positive_outcome:o";
     m_negative_outcome_port_name    = "/r1Obr-orchestrator/negative_outcome:o";
     m_faceexpression_rpc_port_name  = "/r1Obr-orchestrator/faceExpression:rpc";
+    m_map_prefix = "";
 }
 
 /****************************************************************/
@@ -51,6 +52,8 @@ bool OrchestratorThread::threadInit()
     if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name      = m_rf.find("goandfindit_rpc_port").asString();}
     if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name   = m_rf.find("goandfindit_result_port").asString();}
     if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name   = m_rf.find("faceexpression_rpc_port").asString();}
+
+    if(m_rf.check("map_prefix")){m_map_prefix = m_rf.find("map_prefix").asString();} 
     
     if(!m_sensor_network_rpc_port.open(m_sensor_network_rpc_port_name)){
         yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Sensor Network RPC port with name" << m_sensor_network_rpc_port_name;
@@ -191,14 +194,9 @@ void OrchestratorThread::run()
         else if (m_status == R1_SEARCHING)
         {
             Bottle req{"status"};
+            string goandfindit_status = forwardRequest(req).get(0).asString();
 
-            if(forwardRequest(req).get(0).asString() == "idle") 
-            {
-                m_status = R1_IDLE;
-                askChatBotToSpeak(something_bad_happened);
-            }
-
-            if(forwardRequest(req).get(0).asString() == "navigating")
+            if(goandfindit_status == "navigating")
             {
                 bool doContSearch = !m_where_specified || m_nav2loc->areYouNearToGoal();
                 if(doContSearch && m_continuousSearch->seeObject(m_object))
@@ -234,6 +232,11 @@ void OrchestratorThread::run()
                         m_positive_outcome_port.write();
                         yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Object found");
                     }
+                }
+                else if( goandfindit_status == "idle") 
+                {
+                    m_status = R1_IDLE;
+                    askChatBotToSpeak(something_bad_happened);
                 }
             }
         }
@@ -292,11 +295,20 @@ void OrchestratorThread::run()
         else if (m_status == R1_GOING)
         {
             bool arrived{false};
-            while (!arrived && m_status == R1_GOING)
+            bool nav_aborted{false};
+            while (!arrived && !nav_aborted && m_status == R1_GOING)
             {
                 arrived = m_nav2loc->areYouArrived();
-                Time::delay(0.5);
+                nav_aborted = m_nav2loc->isNavigationAborted();
+                Time::delay(0.2);
             }
+
+            if (nav_aborted)
+            {
+                askChatBotToSpeak(go_target_not_reached);
+                m_status = R1_IDLE;
+            }
+
             
             if (m_status == R1_GOING) //in case of external stop
             {
@@ -342,9 +354,10 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
         }
         else if (cmd=="navpos") 
         {
-            Bottle request{cmd};
-            forwardRequest(request); 
-            askChatBotToSpeak(navigation_position);
+            if(!setNavigationPosition())
+            {
+                yCWarning(R1OBR_ORCHESTRATOR_THREAD, "Cannot set navigation position now");
+            } 
         }
         else if (cmd=="resume") 
         {
@@ -421,12 +434,17 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
     m_request.clear();
     for (int i=0; i < min(sz,3); i++)
     {
-        m_request.addString(btl.get(i).asString());
-
         if(i==2)
         {
+            string loc = btl.get(i).asString();
+            
+            if (loc.find(m_map_prefix) == string::npos) 
+            {
+                loc = m_map_prefix + loc;
+            }
+            
             Bottle req,rep;
-            req.fromString("find " + btl.get(i).asString());
+            req.fromString("find " + loc);
             m_nextLoc_rpc_port.write(req,rep); //check if location name is valid
             if (rep.get(0).asString() != "ok")
             {
@@ -434,8 +452,11 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
                 m_request.clear();
                 askChatBotToSpeak(something_bad_happened);
                 return false;
-            }   
+            }  
+            m_request.addString(loc); 
         }
+        else
+            m_request.addString(btl.get(i).asString());
     }
 
     return true;
@@ -473,8 +494,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_object_found = false;
         m_object_not_found = false;
         m_going = false;
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        setNavigationPosition();
     }
 
     m_status = R1_IDLE;
@@ -500,8 +520,11 @@ string OrchestratorThread::resume()
 
     if (m_object_found)
     {
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        if(!setNavigationPosition())
+        {
+            m_status = R1_IDLE;
+            return "not resumed";
+        }
         
         Bottle&  send = m_positive_outcome_port.prepare();
         send.clear();
@@ -514,8 +537,11 @@ string OrchestratorThread::resume()
     }
     else if (m_object_not_found)
     {
-        Bottle req("navpos"); 
-        forwardRequest(req);
+        if(!setNavigationPosition())
+        {
+            m_status = R1_IDLE;
+            return "not resumed";
+        }
 
         m_status = R1_OBJECT_NOT_FOUND;
         return "resume: object not found";
@@ -553,9 +579,38 @@ void OrchestratorThread::objectFound()
 }
 
 /****************************************************************/
+void OrchestratorThread::objectActuallyNotFound() //in case we lose the sight of the object while approaching it
+{
+    if (m_status == R1_OBJECT_FOUND)
+    {
+        m_status = R1_SEARCHING;
+        m_object_found = false;
+
+        Bottle req;
+        req.fromString("set " + getWhere() + " unchecked");
+        m_nextLoc_rpc_port.write(req);
+
+        resume();
+    }
+}
+
+/****************************************************************/
 void OrchestratorThread::setObject(string obj)
 {
     m_object = obj;
+}
+
+/****************************************************************/
+bool OrchestratorThread::setNavigationPosition()
+{
+    Bottle request{"navpos"};
+    if(forwardRequest(request).get(0).asString() != "setting robot in navigation position")
+    {
+        askChatBotToSpeak(hardware_failure);
+        return false;
+    }
+    
+    return true;
 }
 
 
@@ -676,14 +731,17 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
     case object_not_found:
         str = "object_not_found";
         break;
-    case navigation_position:
-        str = "navigation_position";
-        break;
     case something_bad_happened:
         str = "something_bad_happened";
         break;
     case go_target_reached:
         str = "go_target_reached";
+        break;
+    case go_target_not_reached:
+        str = "destination_not_reached";
+        break;
+    case hardware_failure:
+        str = "hardware_failure";
         break;
     default:
         str = "fallback";
@@ -702,6 +760,11 @@ bool OrchestratorThread::go(string loc)
     if (m_status != R1_IDLE) 
         stopOrReset("stop");
     
+    if (loc != "home" && loc.find(m_map_prefix) == string::npos) 
+    {
+        loc = m_map_prefix + loc;
+    }
+    
     m_object_found = false;
     m_object_not_found = false;
     
@@ -718,8 +781,11 @@ bool OrchestratorThread::go(string loc)
         }
     }
 
-    Bottle request{"navpos"};
-    forwardRequest(request);
+    if(!setNavigationPosition())
+    {
+        m_status = R1_IDLE;
+        return false;
+    }
 
     m_status = R1_GOING;
     m_going = true;

@@ -11,8 +11,9 @@ Possible RPC commands:
 - `set <locationName> <status>` : sets the status of a location to unchecked, checking or checked
 - `set all <status>` : sets the status of all locations
 - `find <locationName>` : checks if a location is in the list of the available ones
-- `add <locationName>` : adds the defined location in the unchecked list
 - `remove <locationName>` : removes the defined location by any list
+- `add <locationName>` : adds a previously defined location in the unchecked list
+- `add <locationName> <x,y,th coordinates>` : adds a new location in the unchecked list
 - `list` : lists all the locations and their status
 - `list2` : lists all the locations divided by their status
 - `close` : closes the nextLocationPlanner module

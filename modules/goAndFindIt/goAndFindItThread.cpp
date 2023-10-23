@@ -316,7 +316,9 @@ bool GoAndFindItThread::setNavigationPosition()
 {
     if(m_getReadyToNav->areJointsOk())
     {
-        m_getReadyToNav->navPosition();
+        if(!m_getReadyToNav->navPosition())
+            return false;
+            
         Time::delay(m_setNavPos_time);
         m_in_nav_position = true;
         return true;

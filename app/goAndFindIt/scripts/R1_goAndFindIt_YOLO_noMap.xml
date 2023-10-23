@@ -1,12 +1,12 @@
 <application>
-   <name>R1_goAndFindIt_MDETR</name>
+   <name>R1_goAndFindIt_YOLO_noMap</name>
 
    <dependencies>
    </dependencies>
    
    <!--  MODULES  -->
    <application>
-        <name>Navigation_ROS2_R1SN003</name>
+        <name>Navigation_ROS2_R1SN003_dummy</name>
         <prefix></prefix>
     </application>
 
@@ -16,21 +16,22 @@
       <node>r1-base</node>
    </module>
 
-    <module>
+   <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
+		<parameters>yarpYolo.py --from yarpYolo_R1.ini</parameters>
+      <workdir>/home/user1/r1-object-retrieval/modules/yarpYolo/</workdir>
 		<node>console</node>
 	</module>
 
    <module>
       <name>yarpview</name>
-      <parameters>--name /view/mdetrView:i </parameters>
+      <parameters>--name /view/yoloView:i </parameters>
       <node>console</node>
    </module>
 
    <module>
       <name>lookForObject</name>
-      <parameters>--context lookForObject --from lookForObject_R1.ini</parameters>
+      <parameters>--context lookForObject --from lookForObject_R1_demo.ini</parameters>
       <node>console</node>
    </module>
 
@@ -56,13 +57,13 @@
    <!--  CONNECTIONS  -->
    <connection>
       <from>/cer/realsense_repeater/rgbImage:o</from>
-      <to>/yarpMdetr/image:i</to>
+      <to>/yarpYolo/image:i</to>
       <protocol>mjpeg</protocol>
    </connection>
 
    <connection>
-      <from>/yarpMdetr/image:o</from>
-      <to>/view/mdetrView:i</to>
+      <from>/yarpYolo/image:o</from>
+      <to>/view/yoloView:i</to>
       <protocol>mjpeg</protocol>
    </connection>
 
@@ -74,12 +75,12 @@
 
    <connection>
       <from>/lookForObject/findObject:rpc</from>
-      <to>/yarpMdetr/command/rpc</to>
+      <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
    
    <connection>
-      <from>/yarpMdetr/where_coords:o</from>
+      <from>/yarpYolo/where_coords:o</from>
       <to>/lookForObject/objectCoordinates:i</to>
       <protocol>tcp</protocol>
    </connection> 

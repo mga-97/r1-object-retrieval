@@ -166,6 +166,14 @@ bool Nav2Loc::areYouMoving()
     return currentStatus == navigation_status_moving;
 }
 
+bool Nav2Loc::isNavigationAborted()
+{
+    NavigationStatusEnum currentStatus;
+    m_iNav2D->getNavigationStatus(currentStatus);
+
+    return currentStatus == navigation_status_aborted;
+}
+
 string Nav2Loc::getCurrentTarget()
 {
     return m_current_target_location;

@@ -45,17 +45,14 @@ private:
 public:
     enum R1_says 
     {
-        // start_search,
-        // stop_search,
-        // reset_search,
-        // resume_search,
         object_found_maybe,
         object_found_true,
         object_found_false,
         object_not_found,
-        navigation_position,
         something_bad_happened,
         go_target_reached,
+        go_target_not_reached,
+        hardware_failure,
         fallback
     };
 
@@ -101,6 +98,7 @@ private:
     bool                    m_object_found;
     bool                    m_object_not_found;
     bool                    m_going;
+    string                  m_map_prefix;
 
     ResourceFinder&         m_rf;
 
@@ -127,8 +125,10 @@ public:
     string      resetHome();
     string      resume();
     void        objectFound();
+    void        objectActuallyNotFound();
     
     void        setObject(string obj);
+    bool        setNavigationPosition();
     string      getWhat();
     string      getWhere();
     string      getStatus();

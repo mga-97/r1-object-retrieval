@@ -20,7 +20,7 @@
 
 YARP_LOG_COMPONENT(GET_READY_TO_NAV, "r1_obr.goAndFindIt.getReadyToNav")
 
-GetReadyToNav::GetReadyToNav()
+GetReadyToNav::GetReadyToNav() : m_time(2.0)
 {
     m_right_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
     m_left_arm_pos.fromString("-9.0 9.0 -10.0 50.0 0.0 0.0 0.0 0.0");
@@ -32,6 +32,10 @@ GetReadyToNav::GetReadyToNav()
 bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
 {
     std::string robot=rf.check("robot",yarp::os::Value("cer")).asString();
+
+    if(rf.check("set_nav_pos_time"))  
+        m_time = rf.find("set_nav_pos_time").asFloat32()-0.5;
+
     bool okConfig = rf.check("SET_NAVIGATION_POSITION");
     if(!okConfig)
     {
@@ -114,53 +118,140 @@ bool GetReadyToNav::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
+    m_drivers[0].view(m_iencoder[0]);
+    m_drivers[1].view(m_iencoder[1]);
+    m_drivers[2].view(m_iencoder[2]);
+    m_drivers[3].view(m_iencoder[3]);
+    if(!m_iencoder[0] || !m_iencoder[1] || !m_iencoder[2] || !m_iencoder[3])
+    {
+        yCError(GET_READY_TO_NAV,"Error opening IEncoders interfaces. Devices not available");
+        return false;
+    }
+
     return true;
 }
 
 
-void GetReadyToNav::setPosCtrlMode(const int part)
+bool GetReadyToNav::setPosCtrlMode(const int part)
 {
     int NUMBER_OF_JOINTS;
+    std::vector<int> joints;
+    std::vector<int> modes;
     m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
-    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++){ m_ictrlmode[part]->setControlMode(i_joint, VOCAB_CM_POSITION); } 
+    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++)
+    { 
+        joints.push_back(i_joint);
+        modes.push_back(VOCAB_CM_POSITION);
+    } 
+
+    m_ictrlmode[part]->setControlModes(NUMBER_OF_JOINTS, joints.data(), modes.data());
+
+    yarp::os::Time::delay(0.01);  // give time to update control modes value
+    m_ictrlmode[part]->getControlModes(NUMBER_OF_JOINTS, joints.data(), modes.data());
+    for (size_t i=0; i<NUMBER_OF_JOINTS; i++)
+    {
+        if(modes[i] != VOCAB_CM_POSITION)
+        {
+            yCError(GET_READY_TO_NAV) << "Joint " << i << " not in position mode for part" << part;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 
-void GetReadyToNav::navPosition()
+bool GetReadyToNav::setJointsSpeed(const int part)
+{
+    int NUMBER_OF_JOINTS;
+    std::vector<int>    joints;
+    std::vector<double> speeds;
+    m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
+    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++)
+    { 
+        double start, goal;
+        m_iencoder[part]->getEncoder(i_joint,&start);
+
+        if (part == 0)
+            goal = m_right_arm_pos.get(i_joint).asFloat32();
+        else if (part == 1)
+            goal = m_left_arm_pos.get(i_joint).asFloat32();
+        else if (part == 2)
+            goal = m_head_pos.get(i_joint).asFloat32();
+        else if (part == 3)
+            goal = m_torso_pos.get(i_joint).asFloat32();
+
+        double disp = start - goal;
+        if(disp<0.0) disp *= -1;
+
+        joints.push_back(i_joint);
+        speeds.push_back(disp/m_time);
+    } 
+
+    return m_iposctrl[part]->setRefSpeeds(NUMBER_OF_JOINTS, joints.data(), speeds.data());
+}
+
+
+bool GetReadyToNav::movePart(const int part)
+{
+    int NUMBER_OF_JOINTS;
+    std::vector<int>    joints;
+    std::vector<double> positions;
+    m_iposctrl[part]->getAxes(&NUMBER_OF_JOINTS);
+    for (int i_joint=0; i_joint < NUMBER_OF_JOINTS; i_joint++)
+    { 
+        joints.push_back(i_joint);
+
+        if (part == 0)
+            positions.push_back(m_right_arm_pos.get(i_joint).asFloat32());
+        else if (part == 1)
+            positions.push_back(m_left_arm_pos.get(i_joint).asFloat32());
+        else if (part == 2)
+            positions.push_back(m_head_pos.get(i_joint).asFloat32());
+        else if (part == 3)
+            positions.push_back(m_torso_pos.get(i_joint).asFloat32());
+
+    } 
+
+    return m_iposctrl[part]->positionMove(NUMBER_OF_JOINTS, joints.data(), positions.data());
+}
+
+
+bool GetReadyToNav::navPosition()
 {    
+    //set all joints in position control mode
     for (int i = 0 ; i<=3 ; i++)
     {
-        setPosCtrlMode(i);
+        if(!setPosCtrlMode(i))
+        {
+            yCError(GET_READY_TO_NAV, "Error while setting navigation position: setPosCtrlMode");
+            return false;
+        }
+    }
+    
+    //set the joints' speeds to get to final position at the same time
+    for (int i = 0 ; i<=3 ; i++)
+    {
+        if(!setJointsSpeed(i))
+        {
+            yCError(GET_READY_TO_NAV, "Error while setting navigation position: setJointsSpeed");
+            return false;
+        }
     }
 
-    yCInfo(GET_READY_TO_NAV, "Setting navigation position");    
-    
-    //right arm
-    m_iposctrl[0]->positionMove(0, m_right_arm_pos.get(0).asFloat32());
-    m_iposctrl[0]->positionMove(1, m_right_arm_pos.get(1).asFloat32());
-    m_iposctrl[0]->positionMove(2, m_right_arm_pos.get(2).asFloat32());
-    m_iposctrl[0]->positionMove(3, m_right_arm_pos.get(3).asFloat32());
-    m_iposctrl[0]->positionMove(4, m_right_arm_pos.get(4).asFloat32());
-    m_iposctrl[0]->positionMove(5, m_right_arm_pos.get(5).asFloat32());
-    m_iposctrl[0]->positionMove(6, m_right_arm_pos.get(6).asFloat32());
-    m_iposctrl[0]->positionMove(7, m_right_arm_pos.get(7).asFloat32());
-    
-    //left arm
-    m_iposctrl[1]->positionMove(0, m_left_arm_pos.get(0).asFloat32());
-    m_iposctrl[1]->positionMove(1, m_left_arm_pos.get(1).asFloat32());
-    m_iposctrl[1]->positionMove(2, m_left_arm_pos.get(2).asFloat32());
-    m_iposctrl[1]->positionMove(3, m_left_arm_pos.get(3).asFloat32());
-    m_iposctrl[1]->positionMove(4, m_left_arm_pos.get(4).asFloat32());
-    m_iposctrl[1]->positionMove(5, m_left_arm_pos.get(5).asFloat32());
-    m_iposctrl[1]->positionMove(6, m_left_arm_pos.get(6).asFloat32());
-    m_iposctrl[1]->positionMove(7, m_left_arm_pos.get(7).asFloat32());
-    
-    //head
-    m_iposctrl[2]->positionMove(0, m_head_pos.get(0).asFloat32());
-    m_iposctrl[2]->positionMove(1, m_head_pos.get(1).asFloat32());
-    
-    //torso
-    m_iposctrl[3]->positionMove(0, m_torso_pos.get(0).asFloat32());
+    yCInfo(GET_READY_TO_NAV, "Setting navigation position");  
+      
+    for (int i = 0 ; i<=3 ; i++)
+    {
+        if(!movePart(i))
+        {
+            yCError(GET_READY_TO_NAV, "Error while setting navigation position: movePart");
+            return false;
+        }
+    }
+
+    return true;
+
 }
 
 

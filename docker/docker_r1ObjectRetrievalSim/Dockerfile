@@ -248,22 +248,22 @@ RUN sudo apt-get update && sudo apt-get install -y cyclonedds-dev cyclonedds-too
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 # ------------------------------------------------------------------------------ #
-# Build multimodal
-USER user1
-WORKDIR ${user1_home}
-RUN git clone --recursive https://github.com/facebookresearch/multimodal.git multimodal
-ENV multimodal_install_folder  ${user1_home}/multimodal
-
-# Install Mdetr requirements
-RUN pip install opencv-python
-RUN pip install timm
-RUN pip install prettytable==3.3.0
-RUN pip install pycocotools
-RUN pip install pytorch-lightning==1.6.0
-RUN pip install transformers==4.30.0
-RUN python3 -m pip install torchmultimodal-nightly
-
-RUN python3 -c "import torch; torch.hub.load('ashkamath/mdetr:main', 'mdetr_resnet101', pretrained=True, return_postprocessor=True);"
+############ mdetr things ############
+# # Build multimodal
+# USER user1
+# WORKDIR ${user1_home}
+# RUN git clone --recursive https://github.com/facebookresearch/multimodal.git multimodal
+# ENV multimodal_install_folder  ${user1_home}/multimodal
+# 
+# # Install Mdetr requirements
+# RUN pip install opencv-python
+# RUN pip install timm
+# RUN pip install prettytable==3.3.0
+# RUN pip install pycocotools
+# RUN pip install pytorch-lightning==1.6.0
+# RUN pip install transformers==4.30.0
+# RUN python3 -m pip install torchmultimodal-nightly
+######################################
 
 # Install YOLO requirements
 RUN pip install ultralytics
@@ -280,7 +280,10 @@ ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh
 RUN echo "mkdir build && cd build && cmake .. && make -j11" >> update_repo.sh
-RUN ln -s ${user1_home}/tour-guide-robot/app/navigation2/scripts/start_sim.sh start_sim.sh
+RUN echo "cd ${robotology_install_folder}/cer && git pull" >> update_repo.sh
+RUN echo "cd ${robotology_install_folder}/cer/build && cmake .. && make -j11" >> update_repo.sh
+RUN echo "cd ${user1_home}/tour-guide-robot && git pull" >> update_repo.sh
+RUN echo "cd ${user1_home}/tour-guide-robot/build && cmake .. && make -j11" >> update_repo.sh
 RUN sudo chmod 777 update_repo.sh
 
 ENV ROS_DOMAIN_ID=39
