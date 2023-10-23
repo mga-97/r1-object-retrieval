@@ -107,13 +107,13 @@
    <connection>
       <from>/cer/realsense_repeater/rgbImage:o</from>
       <to>/yarpMdetr/image:i</to>
-      <protocol>tcp</protocol>
+      <protocol>mjpeg</protocol>
    </connection>
 
    <connection>
       <from>/yarpMdetr/image:o</from>
       <to>/view/mdetrView:i</to>
-      <protocol>tcp</protocol>
+      <protocol>mjpeg</protocol>
    </connection>
 
    <connection>

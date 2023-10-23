@@ -58,13 +58,13 @@
    <connection>
       <from>/cer/realsense_repeater/rgbImage:o</from>
       <to>/yarpYolo/image:i</to>
-      <protocol>tcp</protocol>
+      <protocol>mjpeg</protocol>
    </connection>
 
    <connection>
       <from>/yarpYolo/image:o</from>
       <to>/view/yoloView:i</to>
-      <protocol>tcp</protocol>
+      <protocol>mjpeg</protocol>
    </connection>
 
    <connection>
