@@ -1,0 +1,5 @@
+add_executable(micActivation src/Module.cpp main.cpp)
+find_package(YARP REQUIRED COMPONENTS os dev)
+target_include_directories(micActivation PUBLIC include)
+target_link_libraries(micActivation ${YARP_LIBRARIES})
+install(TARGETS micActivation DESTINATION bin)
