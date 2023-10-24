@@ -292,20 +292,16 @@ bool TinyDancer::doDance(string& dance_name)
                         yCError(TINY_DANCER) << "An error occurred occured while preparing motion";
                         return false;
                     }
-                    yCDebug(TINY_DANCER, "fin qui ok: time %f", time);
+
                     //Move each part
                     if (armR_joints)
                         ok = ok && movePart(0, armR_joints);
-                    yCDebug(TINY_DANCER, "qui 5");
                     if (armL_joints)
                         ok = ok && movePart(1, armL_joints);
-                    yCDebug(TINY_DANCER, "qui 6");
                     if (head_joints)
                         ok = ok && movePart(2, head_joints);
-                    yCDebug(TINY_DANCER, "qui 7");
                     if (torso_joints)
                         ok = ok && movePart(3, torso_joints);
-                    yCDebug(TINY_DANCER, "qui 8");
 
                     //Check again that no error occurred
                     if (!ok || !areJointsOk())

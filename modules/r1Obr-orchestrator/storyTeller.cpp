@@ -77,8 +77,7 @@ bool StoryTeller::configure(ResourceFinder& rf)
             }
         }  
     }
-    
-    yCDebug(STORY_TELLER) << "m_stories:" << m_stories;
+
     return true;
 }
 
