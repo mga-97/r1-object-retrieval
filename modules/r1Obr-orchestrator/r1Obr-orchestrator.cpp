@@ -209,6 +209,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
             reply.addString("go <location> : navigates the robot to 'location' if it is valid");
             reply.addString("say <sentence>: the sentence is synthesized and played by the audio player");
             reply.addString("tell <key>    : a previously stored sentence is accessed through the corresponfing key and it is played by the audio player");
+            reply.addString("dance <motion>: make the robot move as defined in the corresponding ini file containing the choreography");
 
         }
         else if (cmd=="status")
@@ -278,6 +279,12 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         m_story_teller->getStory(story_key, story);
         reply.addString("Telling the story");
         say(story);
+    }
+    else if (cmd=="dance")
+    {   
+        string dance_name = request.get(1).asString();
+        m_inner_thread->dance(dance_name);
+        reply.addString("dancing");
     }
     else
     {

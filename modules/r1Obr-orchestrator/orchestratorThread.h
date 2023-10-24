@@ -23,6 +23,7 @@
 #include "nav2loc.h"
 #include "continuousSearch.h"
 #include "chatBot.h"
+#include "tinyDancer.h"
 
 using namespace yarp::os;
 using namespace std;
@@ -89,6 +90,9 @@ private:
     //Chat Bot
     ChatBot*                m_chat_bot;
 
+    //TinyDancer
+    TinyDancer*             m_tiny_dancer;
+
     // Others
     R1_status               m_status;
     string                  m_object;
@@ -139,6 +143,8 @@ public:
     bool        askChatBotToSpeak(R1_says stat);
 
     bool        go(string loc);
+
+    bool        dance(string& dance_name);
 
 };
 

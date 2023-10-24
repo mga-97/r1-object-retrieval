@@ -133,6 +133,14 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
+    // --------- Tiny Dancer --------- //
+    m_tiny_dancer = new TinyDancer(m_rf);
+    if(!m_tiny_dancer->configure())
+    {
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"TinyDancer configuration failed");
+        return false;
+    }
+
     return true;
 }
 
@@ -168,6 +176,9 @@ void OrchestratorThread::threadRelease()
 
     m_chat_bot->close();
     delete m_chat_bot;
+
+    m_tiny_dancer->close();
+    delete m_tiny_dancer;
 
     yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Orchestrator thread released");
 
@@ -790,4 +801,18 @@ bool OrchestratorThread::go(string loc)
     m_status = R1_GOING;
     m_going = true;
     return m_nav2loc->go(loc);
+}
+
+
+/****************************************************************/
+bool OrchestratorThread::dance(string& dance_name)
+{
+    if(getStatus()=="idle")
+    {
+        return m_tiny_dancer->doDance(dance_name);
+    }
+
+    yCError(R1OBR_ORCHESTRATOR_THREAD,"Cannot dance now. Status should be 'idle', send a 'stop' command");
+
+    return false;
 }
