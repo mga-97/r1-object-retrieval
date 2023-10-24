@@ -8,7 +8,7 @@ bool Module::configure(yarp::os::ResourceFinder &rf)
 {
     /* Configure joystick input port and microphone driver */
 
-    std::string joystick_port_name = rf.check("joystick_port",yarp::os::Value("/joystick_port:i")).asString();
+    std::string joystick_port_name = rf.check("joystick_port",yarp::os::Value("/micActivation/joystick:i")).asString();
     if(!joystick_port_.open(joystick_port_name))
     {
         yError() << "Cannot open joystick port";
@@ -17,7 +17,7 @@ bool Module::configure(yarp::os::ResourceFinder &rf)
     yarp::os::Property prop;
     prop.put("device","audioRecorder_nwc_yarp");
     prop.put("local","/micActivation");
-    prop.put("remote","/audioRecorder_nwsrpc");
+    prop.put("remote","/audioRecorder_nws");
 
     if(!drv_.open(prop))
     {
@@ -53,7 +53,7 @@ bool Module::updateModule()
 
         iAudioGrabber_->isRecording(is_microphone_open_);
 
-        if (button_pressed->get(0).asInt8() == 1)
+        if (button_pressed->get(0).asInt8() != 0 || button_pressed->get(1).asInt8() != 0)
         {
             /* Start recording if microphone is stopped */
             if(!is_microphone_open_)
@@ -63,7 +63,7 @@ bool Module::updateModule()
             }
         }
 
-        if (button_pressed->get(0).asInt8() == 0)
+        if (button_pressed->get(0).asInt8() == 0 && button_pressed->get(1).asInt8() == 0)
         {
             if(is_microphone_open_)
             {
