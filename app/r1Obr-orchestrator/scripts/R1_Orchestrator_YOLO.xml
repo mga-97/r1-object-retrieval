@@ -97,7 +97,17 @@
       <node>r1-face</node>
    </module>
 
+   <!-- microphone button trigger -->
+   <module>
+      <name>joystickCtrl</name>
+      <parameters>--context micActivation --from joystick_trigger_8bitdo.ini</parameters>
+      <node>console</node>
+   </module>
 
+   <module>
+      <name>micActivation</name>
+      <node>console</node>
+   </module>
 
   <!--                -->
   <!--  CONNECTIONS   -->
@@ -198,5 +208,11 @@
       <to>/r1Obr-orchestrator/audioplayerStatus:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
-      
+
+   <connection>
+      <from>/joystickCtrl/raw_axis:o</from>
+      <to>/micActivation/joystick:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
 </application>

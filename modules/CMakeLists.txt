@@ -9,6 +9,7 @@ add_subdirectory(r1Obr-orchestrator)
 add_subdirectory(disappointmentPose)
 add_subdirectory(approachObject)
 add_subdirectory(look_and_point)
+add_subdirectory(micActivation)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libfvad IMPORTED_TARGET libfvad)
