@@ -13,25 +13,20 @@
    <!-- audio recorder -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_audioFromMic.xml</parameters>
+      <parameters>--config yarp_audio_from_mic.xml</parameters>
+      <workdir>/home/r1-user</workdir>
       <node>r1-torso</node>
-   </module>
+    </module>
    <module>
       <name>yarpaudiocontrolgui</name>
       <parameters>--remote-rec /audioRecorder_nws</parameters>
    </module>
 
-   <!-- VAD -->
-   <module>
-      <name>backupVAD</name>
-      <parameters></parameters>
-      <node>console</node>
-   </module>
-
    <!-- Whisper: speech transcription -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin </parameters>
+      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin</parameters>
+      <workdir>/usr/local/src/robot/yarp-device-speechTranscription-whisper/build/share/WhisperTranscribe/contexts/whisperTranscribe_demo</workdir>
       <node>pc</node>
    </module>
 
@@ -97,6 +92,17 @@
       <node>r1-face</node>
    </module>
 
+   <!-- microphone button trigger -->
+   <module>
+      <name>joystickCtrl</name>
+      <parameters>--context micActivation --from joystick_trigger_8bitdo.ini</parameters>
+      <node>console</node>
+   </module>
+
+   <module>
+      <name>micActivation</name>
+      <node>console</node>
+   </module>
 
 
   <!--                -->
@@ -196,6 +202,12 @@
    <connection>
       <from>/audioPlayerWrapper/status:o</from>
       <to>/r1Obr-orchestrator/audioplayerStatus:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/joystickCtrl/raw_axis:o</from>
+      <to>/micActivation/joystick:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
       

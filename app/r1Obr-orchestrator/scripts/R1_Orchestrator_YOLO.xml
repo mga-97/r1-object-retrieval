@@ -13,9 +13,10 @@
    <!-- audio recorder -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_audioFromMic.xml</parameters>
+      <parameters>--config yarp_audio_from_mic.xml</parameters>
+      <workdir>/home/r1-user</workdir>
       <node>r1-torso</node>
-   </module>
+    </module>
    <module>
       <name>yarpaudiocontrolgui</name>
       <parameters>--remote-rec /audioRecorder_nws</parameters>
@@ -31,7 +32,8 @@
    <!-- Whisper: speech transcription -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin </parameters>
+      <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin</parameters>
+      <workdir>/usr/local/src/robot/yarp-device-speechTranscription-whisper/build/share/WhisperTranscribe/contexts/whisperTranscribe_demo</workdir>
       <node>pc</node>
    </module>
 
