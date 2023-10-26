@@ -474,7 +474,14 @@ bool OrchestratorThread::askNetwork()
 /****************************************************************/
 string OrchestratorThread::stopOrReset(const string& cmd)
 {
-    Bottle rep, request{cmd};
+    Bottle request;
+    if (cmd == "reset_home" || cmd == "reset") 
+        request.fromString("reset");
+    else if (cmd == "stop") 
+        request.fromString("stop");
+    else
+        return "wrong command";
+
     forwardRequest(request); 
     
     if (m_status == R1_OBJECT_FOUND)
@@ -496,6 +503,12 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_going = false;
         setNavigationPosition();
     }
+    else if (cmd == "reset_home")
+    {
+        m_object_found = false;
+        m_object_not_found = false;
+        m_going = false;
+    }
 
     m_status = R1_IDLE;
     return cmd + " executed";
@@ -504,10 +517,15 @@ string OrchestratorThread::stopOrReset(const string& cmd)
 /****************************************************************/
 string OrchestratorThread::resetHome()
 {
-    stopOrReset("reset");
+    stopOrReset("reset_home");
 
-    m_status = R1_GOING;
-    m_nav2loc->goHome();
+    if (setNavigationPosition())
+    {
+        m_status = R1_GOING;
+        m_nav2loc->goHome();
+    }
+    else
+        return "reset but NOT sent home";
 
     return "reset and sent home";
 }

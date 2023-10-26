@@ -279,6 +279,7 @@ void Orchestrator::onRead(yarp::os::Bottle &b)
     if(b.size() == 2)
     {
         yCInfo(R1OBR_ORCHESTRATOR, "Received confirmation that the object has been found");
+        Time::delay(2.0); //TEMPORARY: just to have a delayed vocal feedback when object found
         m_inner_thread->objectFound();
     }
     else if (b.size() == 1)

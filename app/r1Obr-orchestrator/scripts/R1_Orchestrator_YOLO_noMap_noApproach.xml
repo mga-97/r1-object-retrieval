@@ -96,10 +96,10 @@
    <!-- microphone button trigger -->
    <module>
       <name>joystickCtrl</name>
-      <parameters>--context micActivation --from joystick_trigger_8bitdo.ini</parameters>
-      <node>console</node>
+      <parameters>--from joystick_trigger_8bitdo.ini --silent</parameters>
+      <workdir>/usr/local/src/robot/assistive-rehab/build/share/ICUBcontrib/contexts/AssistiveRehab</workdir>
+      <node>pc</node>
    </module>
-
    <module>
       <name>micActivation</name>
       <node>console</node>
@@ -143,18 +143,6 @@
    <connection>
       <from>/goAndFindIt/output:o</from>
       <to>/r1Obr-orchestrator/goAndFindIt/result:i</to>
-      <protocol>fast_tcp</protocol>
-   </connection>
-
-   <connection>
-      <from>/r1Obr-orchestrator/chatBot/microphone:rpc</from>
-      <to>/audioRecorder_nws/rpc</to>
-      <protocol>fast_tcp</protocol>
-   </connection>
-
-   <connection>
-      <from>/r1Obr-orchestrator/microphone:rpc</from>
-      <to>/audioRecorder_nws/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>
 
