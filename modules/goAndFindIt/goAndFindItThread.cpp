@@ -251,6 +251,12 @@ void GoAndFindItThread::setWhat(string& what)
         
         m_status = GaFI_NEW_SEARCH;  
         m_what = what;    
+
+        Time::delay(0.1);
+        Bottle&  l = m_lookObject_port.prepare();
+        l.clear();
+        l.addString("label"); l.addString(what);
+        m_lookObject_port.write();
     }  
 }
 
@@ -276,6 +282,12 @@ void GoAndFindItThread::setWhatWhere(string& what, string& where)
         m_status = GaFI_NAVIGATING;
         m_where = where;
         m_what = what;   
+
+        Time::delay(0.1);
+        Bottle&  l = m_lookObject_port.prepare();
+        l.clear();
+        l.addString("label"); l.addString(what);
+        m_lookObject_port.write();
 
         Bottle request,_rep_;
         request.fromString("set " + m_where + " checking");
@@ -552,6 +564,11 @@ bool GoAndFindItThread::resetSearch()
     Bottle request,reply;
     request.fromString("set all unchecked");
     m_nextLoc_rpc_port.write(request,reply);
+
+    Bottle&  ask = m_lookObject_port.prepare();
+    ask.clear();
+    ask.addString("detect");
+    m_lookObject_port.write();
 
     return true;
 }

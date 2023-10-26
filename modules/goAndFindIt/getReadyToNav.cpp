@@ -158,7 +158,7 @@ bool GetReadyToNav::setPosCtrlMode(const int part)
             else if(part==2) part_name = "head";
             else if(part==3) part_name = "torso";
             
-            yCError(GET_READY_TO_NAV) << "Joint " << i << " not in position mode for part:" << part_name;
+            yCError(GET_READY_TO_NAV) << "Joint" << i << "not in position mode for part:" << part_name;
             return false;
         }
     }

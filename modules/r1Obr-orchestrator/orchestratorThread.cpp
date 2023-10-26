@@ -475,7 +475,7 @@ bool OrchestratorThread::askNetwork()
 string OrchestratorThread::stopOrReset(const string& cmd)
 {
     Bottle request;
-    if (cmd == "reset_home" || cmd == "reset") 
+    if (cmd == "reset_noNavpos" || cmd == "reset") 
         request.fromString("reset");
     else if (cmd == "stop") 
         request.fromString("stop");
@@ -496,18 +496,14 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_nav2loc->stop();
     } 
 
-    if (cmd == "reset")
+    if (cmd == "reset_noNavpos" || cmd == "reset")
     {
         m_object_found = false;
         m_object_not_found = false;
         m_going = false;
-        setNavigationPosition();
-    }
-    else if (cmd == "reset_home")
-    {
-        m_object_found = false;
-        m_object_not_found = false;
-        m_going = false;
+
+        if (cmd == "reset")
+            setNavigationPosition();
     }
 
     m_status = R1_IDLE;
@@ -517,7 +513,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
 /****************************************************************/
 string OrchestratorThread::resetHome()
 {
-    stopOrReset("reset_home");
+    stopOrReset("reset_noNavpos");
 
     if (setNavigationPosition())
     {
@@ -776,15 +772,13 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
 bool OrchestratorThread::go(string loc)
 {
     if (m_status != R1_IDLE) 
-        stopOrReset("stop");
+        stopOrReset("reset_noNavpos");
+
     
     if (loc != "home" && loc.find(m_map_prefix) == string::npos) 
     {
         loc = m_map_prefix + loc;
     }
-    
-    m_object_found = false;
-    m_object_not_found = false;
     
     if (loc != "home")
     {
