@@ -193,12 +193,19 @@ void LookForObjectThread::onRead(yarp::os::Bottle &b)
         
         if(b.size() > 1)
         {
-            yCWarning(LOOK_FOR_OBJECT_THREAD,"The input bottle has the wrong number of elements. Using only the first element.");
+            if (obj=="label")
+                m_findObjectPort.write(b);
+            else
+                yCWarning(LOOK_FOR_OBJECT_THREAD,"The input bottle has the wrong number of elements. Using only the first element.");
         }
         
         if (obj=="stop") 
         { 
             externalStop(); 
+        }
+        else if (obj=="detect") 
+        { 
+            m_findObjectPort.write(b);
         }
         else
         {

@@ -1,5 +1,5 @@
 <application>
-   <name>R1_Orchestrator_YOLO_noMap</name>
+   <name>R1_Orchestrator_YOLO_noMap_noNav</name>
 
    <dependencies>
    </dependencies>
@@ -60,10 +60,11 @@
    </module>
    
    <!-- positive outcome -->
-   <application>
-      <name>R1_approachObject_YOLO</name>
-      <prefix></prefix>
-   </application>
+   <module>
+      <name>look_and_point</name>
+      <parameters>--context look_and_point</parameters>
+      <node>console</node>
+   </module>
    <application>
       <name>R1_handPointing</name>
       <prefix></prefix>
@@ -160,7 +161,19 @@
    </connection>
 
    <connection>
-      <from>/approachObject/output_coords:o</from>
+      <from>/r1Obr-orchestrator/positive_outcome:o</from>
+      <to>/look_and_point/in:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection> 
+   
+   <connection>
+      <from>/look_and_point/out:o</from>
+      <to>/handPointing/clicked_point:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
+   <connection>
+      <from>/look_and_point/out:o</from>
       <to>/r1Obr-orchestrator/positive_outcome_feedback:i</to>
       <protocol>fast_tcp</protocol>
    </connection>

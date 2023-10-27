@@ -13,9 +13,10 @@
    <!-- audio recorder -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context whisperTranscribe_demo --config yarp_audioFromMic.xml</parameters>
+      <parameters>--config yarp_audio_from_mic.xml</parameters>
+      <workdir>/home/r1-user</workdir>
       <node>r1-torso</node>
-   </module>
+    </module>
    <module>
       <name>yarpaudiocontrolgui</name>
       <parameters>--remote-rec /audioRecorder_nws</parameters>
@@ -28,26 +29,29 @@
       <node>console</node>
    </module>
 
-   <!-- Whisper: speech transcription -->
+   <!-- Speech transcription -->
    <module>
       <name>yarprobotinterface</name>
       <parameters>--context whisperTranscribe_demo --config yarp_transcribe.xml --model ggml-small3.it.bin </parameters>
       <node>pc</node>
    </module>
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--context google --from googleSpeechToText.ini</parameters>
+      <node>console1</node>
+   </module>
 
    <!-- chat bot -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context googleTest --from testDialog.ini</parameters>
-      <workdir>/home/yarp-user/robotology/yarp-devices-google-cloud/build/share/yarp/context/googleTest</workdir>
+      <parameters>--context google --from googleChatBot.ini</parameters>
       <node>console1</node>
    </module>
 
    <!-- speech synthesizer -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context googleTest --from testSpeech.ini</parameters>
-      <workdir>/home/yarp-user/robotology/yarp-devices-google-cloud/build/share/yarp/context/googleTest</workdir>
+      <parameters>--context google --from googleSynthesizer.ini</parameters>
       <node>console1</node>
    </module>
 
@@ -97,7 +101,17 @@
       <node>r1-face</node>
    </module>
 
-
+   <!-- microphone button trigger -->
+   <module>
+      <name>joystickCtrl</name>
+      <parameters>--from joystick_trigger_8bitdo.ini --silent</parameters>
+      <workdir>/usr/local/src/robot/assistive-rehab/build/share/ICUBcontrib/contexts/AssistiveRehab</workdir>
+      <node>pc</node>
+   </module>
+   <module>
+      <name>micActivation</name>
+      <node>console</node>
+   </module>
 
   <!--                -->
   <!--  CONNECTIONS   -->
@@ -198,5 +212,11 @@
       <to>/r1Obr-orchestrator/audioplayerStatus:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
-      
+
+   <connection>
+      <from>/joystickCtrl/raw_axis:o</from>
+      <to>/micActivation/joystick:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>
+
 </application>
