@@ -77,10 +77,10 @@
    </application>
    
    <!-- negative outcome -->
-   <application>
+   <!-- <application>
       <name>R1_disappointmentPose</name>
       <prefix></prefix>
-   </application>
+   </application> -->
 
    <!-- face expressions -->
    <module>

@@ -300,6 +300,7 @@ void OrchestratorThread::run()
                 m_negative_outcome_port.write();
 
                 m_status = R1_IDLE;
+                dance("sadness");
             }
         } 
 
@@ -817,7 +818,7 @@ bool OrchestratorThread::go(string loc)
 
 
 /****************************************************************/
-bool OrchestratorThread::dance(string& dance_name)
+bool OrchestratorThread::dance(string dance_name)
 {
     if(getStatus()=="idle")
     {
