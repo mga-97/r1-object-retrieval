@@ -30,17 +30,7 @@ TinyDancer::TinyDancer(ResourceFinder &_rf) : m_rf(_rf)
 // --------------------------------------------------------------- //
 bool TinyDancer::configure()
 {
-    bool okConfig = m_rf.check("TINY_DANCER");
-    if(!okConfig)
-    {
-        yCWarning(TINY_DANCER,"TINY_DANCER section missing in ini file. Using the default values");
-    }
-    else
-    {
-        Searchable& config = m_rf.findGroup("TINY_DANCER");
-        if(config.check("robot")) {m_robot = config.find("robot").asString();}
-
-    }
+    if(m_rf.check("robot")) {m_robot = m_rf.find("robot").asString();}
     
     // Polydriver config
     Property prop;
