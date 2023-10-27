@@ -219,4 +219,10 @@
       <protocol>fast_tcp</protocol>
    </connection>
 
+   <connection>
+      <from>/audioPlayerWrapper/status:o</from>
+      <to>/faceExpressionImage/mouthAudioData:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>   
+
 </application>

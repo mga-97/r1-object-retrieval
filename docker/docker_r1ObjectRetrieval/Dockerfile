@@ -294,13 +294,16 @@ RUN pip install ultralytics
 
 # r1-object-retrieval
 WORKDIR ${user1_home}
+USER user1
 RUN echo "ciao"
 RUN git clone https://github.com/colombraf/r1-object-retrieval
-RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
+RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share/R1_OBJECT_RETRIEVAL
 ENV PATH=${PATH}:${user1_home}/.local/bin
 ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
+
+RUN cd $robotology_install_folder/cer && git pull && cd build && cmake .. && make -j1
 
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh
