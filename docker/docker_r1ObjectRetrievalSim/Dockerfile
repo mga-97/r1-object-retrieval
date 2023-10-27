@@ -270,6 +270,7 @@ RUN pip install ultralytics
 
 # r1-object-retrieval
 WORKDIR ${user1_home}
+RUN echo "ciao"
 RUN git clone https://github.com/colombraf/r1-object-retrieval
 RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
@@ -279,9 +280,10 @@ ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
 
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh
-RUN echo "cd build && cmake .. && make -j11" >> update_repo.sh
+RUN echo "cd build && cmake .. && sudo make -j11" >> update_repo.sh
+
 RUN echo "cd ${robotology_install_folder}/cer && git pull" >> update_repo.sh
-RUN echo "cd ${robotology_install_folder}/cer/build && cmake .. && sudo make -j11" >> update_repo.sh
+RUN echo "cd ${robotology_install_folder}/cer/build && cmake .. && make -j11" >> update_repo.sh
 RUN echo "cd ${user1_home}/tour-guide-robot && git pull" >> update_repo.sh
 RUN echo "cd ${user1_home}/tour-guide-robot/build && cmake .. && make -j11" >> update_repo.sh
 RUN sudo chmod 777 update_repo.sh
