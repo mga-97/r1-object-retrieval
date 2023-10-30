@@ -730,7 +730,7 @@ void OrchestratorThread::setEmotion()
         request.fromString("emotion 1"); //happy
     else if (m_status == R1_OBJECT_NOT_FOUND || m_object_not_found)
         request.fromString("emotion 0"); //sad
-    else if (getStatus() == "searching - searching" || getStatus() == "searching - new_search" ) //|| m_status == R1_ASKING_NETWORK)
+    else if ((m_status == R1_SEARCHING && getStatus() != "searching - navigating" ) || m_status == R1_ASKING_NETWORK)
         request.fromString("emotion 2"); //thinking
     else 
         request.fromString("emotion 1"); //happy
