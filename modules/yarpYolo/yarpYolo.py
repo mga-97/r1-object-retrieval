@@ -89,12 +89,14 @@ class YarpYolo(yarp.RFModule):
                 reply.addString('labeling: ' + str(label))
             else:
                 reply.addString('cannot label (not in the available list): ' + str(label))
+                self.label_num = 999
         elif command.get(0).asString() == 'where':
             print('Command \'where\' received')
             label = command.get(1).asString()
             if label in self.label_inv:
                 self.label_num = self.label_inv[label]
             else:
+                self.label_num = 999
                 reply.addString('not found')
                 reply.addString('cannot find (not in the available list): ' + str(label))
                 return True
