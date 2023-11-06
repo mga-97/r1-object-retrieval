@@ -14,7 +14,7 @@ class YarpYolo(yarp.RFModule):
     def configure(self, rf):
         
         # Generic configs
-        self.period = rf.find('period').asFloat32() if rf.check('period') else 0.1
+        self.period = rf.find('period').asFloat32() if rf.check('period') else 0.035
         
         self.image_w = rf.find('image_width').asInt32() if rf.check('image_width') else 640
         self.image_h = rf.find('image_height').asInt32() if rf.check('image_height') else 480
