@@ -4,7 +4,12 @@ import cv2
 import yarp
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
+import torch
 
+#Setup GPU
+device = "0" if torch.cuda.is_available() else "cpu"
+if device == "0":
+    torch.cuda.set_device(0) 
 
 # Initialise YARP
 yarp.Network.init()
