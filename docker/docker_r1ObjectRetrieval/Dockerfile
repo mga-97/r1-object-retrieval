@@ -295,7 +295,6 @@ RUN pip install ultralytics
 # r1-object-retrieval
 WORKDIR ${user1_home}
 USER user1
-RUN echo "ciao"
 RUN git clone https://github.com/colombraf/r1-object-retrieval
 RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
