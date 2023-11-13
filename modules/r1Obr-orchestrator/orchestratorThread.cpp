@@ -40,6 +40,7 @@ OrchestratorThread::OrchestratorThread(yarp::os::ResourceFinder &rf):
     m_positive_outcome_port_name    = "/r1Obr-orchestrator/positive_outcome:o";
     m_negative_outcome_port_name    = "/r1Obr-orchestrator/negative_outcome:o";
     m_faceexpression_rpc_port_name  = "/r1Obr-orchestrator/faceExpression:rpc";
+    m_sn_feedback_port_name         = "/r1Obr-orchestrator/sensorNetworkFeedback:o";
     m_map_prefix = "";
 }
 
@@ -52,6 +53,7 @@ bool OrchestratorThread::threadInit()
     if (m_rf.check("goandfindit_rpc_port"))     {m_goandfindit_rpc_port_name      = m_rf.find("goandfindit_rpc_port").asString();}
     if (m_rf.check("goandfindit_result_port"))  {m_goandfindit_result_port_name   = m_rf.find("goandfindit_result_port").asString();}
     if (m_rf.check("faceexpression_rpc_port"))  {m_faceexpression_rpc_port_name   = m_rf.find("faceexpression_rpc_port").asString();}
+    if (m_rf.check("sn_feedback_port"))         {m_sn_feedback_port_name          = m_rf.find("sn_feedback_port").asString();}
 
     if(m_rf.check("map_prefix")){m_map_prefix = m_rf.find("map_prefix").asString();} 
     
@@ -141,6 +143,17 @@ bool OrchestratorThread::threadInit()
         return false;
     }
 
+    // -------- Sensor Network Integration -------- // 
+    m_sn_active = m_rf.check("sensor_network_active") ? (m_rf.find("sensor_network_active").asString() == "true") : false;
+    if (m_sn_active)
+    {
+        if(!m_sn_feedback_port.open(m_sn_feedback_port_name))
+        {
+            yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Sensor Network Feedback port with name" << m_sn_feedback_port_name;
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -167,6 +180,9 @@ void OrchestratorThread::threadRelease()
         
     if (m_faceexpression_rpc_port.asPort().isOpen())
         m_faceexpression_rpc_port.close(); 
+        
+    if (m_sn_feedback_port.isClosed())
+        m_sn_feedback_port.close(); 
     
     m_nav2loc->close();
     delete m_nav2loc;
@@ -518,6 +534,14 @@ string OrchestratorThread::stopOrReset(const string& cmd)
             setNavigationPosition();
     }
 
+    if (m_sn_active && m_status != R1_IDLE)
+    {
+        Bottle&  toSend = m_sn_feedback_port.prepare();
+        toSend.clear();
+        toSend.addString("mi è arrivato un comando di stop e mi sono dovuto fermare");
+        m_sn_feedback_port.write();
+    }
+
     m_status = R1_IDLE;
     return cmd + " executed";
 }
@@ -742,7 +766,7 @@ void OrchestratorThread::setEmotion()
 /****************************************************************/
 bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
 {
-    string str;
+    string str, feedback{""};
     switch (stat)
     {
     case object_found_maybe:
@@ -750,24 +774,30 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         break;
     case object_found_true:
         str = "object_found_true";
+        feedback = "Ho trovato " + m_object + "! Hai bisogno di qualcos'altro?";
         break;
     case object_found_false:
         str = "object_found_false";
         break;
     case object_not_found:
         str = "object_not_found";
+        feedback = "Non ho trovato " + m_object + "! Hai bisogno di qualcos'altro?";
         break;
     case something_bad_happened:
         str = "something_bad_happened";
+        feedback = "Ho riscontrato un errore. Ti chiedo di aspettare qualche minuto per sistemare il problema";
         break;
     case go_target_reached:
         str = "go_target_reached";
+        feedback = "Sono arrivato a destinazione. Hai bisogno di qualcos'altro?";
         break;
     case go_target_not_reached:
         str = "destination_not_reached";
+        feedback = "Non sono riuscito a raggiungere la mia destinazione. Hai bisogno di qualcos'altro?";
         break;
     case hardware_failure:
         str = "hardware_failure";
+        feedback = "Ho riscontrato un problema al mio hardware. Ti chiedo di aspettare qualche minuto per sistemare il problema";
         break;
     default:
         str = "fallback";
@@ -775,6 +805,15 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
     };
 
     m_chat_bot->interactWithChatBot(str);    
+    
+
+    if (m_sn_active && feedback != "")
+    {
+        Bottle&  toSend = m_sn_feedback_port.prepare();
+        toSend.clear();
+        toSend.addString(feedback);
+        m_sn_feedback_port.write();
+    }
     
     return true;
 }

@@ -93,6 +93,11 @@ private:
     //TinyDancer
     TinyDancer*             m_tiny_dancer;
 
+    //Sensor Network Integration
+    bool                    m_sn_active;
+    string                  m_sn_feedback_port_name;
+    BufferedPort<Bottle>    m_sn_feedback_port;
+
     // Others
     R1_status               m_status;
     string                  m_object;

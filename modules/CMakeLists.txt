@@ -10,6 +10,7 @@ add_subdirectory(disappointmentPose)
 add_subdirectory(approachObject)
 add_subdirectory(look_and_point)
 add_subdirectory(micActivation)
+add_subdirectory(sensorNetworkReceiver)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libfvad IMPORTED_TARGET libfvad)

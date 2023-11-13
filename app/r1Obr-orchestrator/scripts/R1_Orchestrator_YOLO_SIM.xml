@@ -100,6 +100,12 @@
       <node>pc</node>
    </module>
 
+   <!-- sensor network receiver -->
+   <module>
+      <name>sensorNetworkReceiver</name>
+      <parameters>--context sensorNetworkReceiver --from sensorNetworkReceiver.ini</parameters>
+      <node>console</node>
+   </module>
 
 
   <!--                -->
@@ -205,6 +211,18 @@
    <connection>
       <from>/audioPlayerWrapper/status:o</from>
       <to>/faceExpressionImage/mouthAudioData:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection> 
+
+   <connection>
+      <from>/sensorNetworkReceiver/output:o</from>
+      <to>/r1Obr-orchestrator/voice_command:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection> 
+
+   <connection>
+      <from>/r1Obr-orchestrator/sensorNetworkFeedback:o</from>
+      <to>/sensorNetworkReceiver/input:i</to>
       <protocol>fast_tcp</protocol>
    </connection>   
       
