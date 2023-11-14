@@ -102,6 +102,12 @@
 
    <!-- sensor network receiver -->
    <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/GIT/robotology/yarp-devices-llm/assets</workdir>
+      <node>pc</node>
+   </module>
+   <module>
       <name>sensorNetworkReceiver</name>
       <parameters>--context sensorNetworkReceiver --from sensorNetworkReceiver.ini</parameters>
       <node>console</node>
@@ -223,6 +229,12 @@
    <connection>
       <from>/r1Obr-orchestrator/sensorNetworkFeedback:o</from>
       <to>/sensorNetworkReceiver/input:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>  
+
+   <connection>
+      <from>/sensorNetworkReceiver/orchestrator:rpc</from>
+      <to>/r1Obr-orchestrator/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>   
       

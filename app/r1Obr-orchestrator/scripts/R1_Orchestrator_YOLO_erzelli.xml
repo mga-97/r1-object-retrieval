@@ -123,7 +123,18 @@
       <node>r1-face</node>
    </module>
 
-
+   <!-- sensor network receiver -->
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/usr/local/src/robot/yarp-devices-llm/assets</workdir>
+      <node>pc</node>
+   </module>
+   <module>
+      <name>sensorNetworkReceiver</name>
+      <parameters>--context sensorNetworkReceiver --from sensorNetworkReceiver.ini</parameters>
+      <node>console</node>
+   </module>
 
   <!--                -->
   <!--  CONNECTIONS   -->
@@ -264,6 +275,24 @@
    <connection>
       <from>/audioPlayerWrapper/status:o</from>
       <to>/faceExpressionImage/mouthAudioData:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>   
+
+   <connection>
+      <from>/sensorNetworkReceiver/output:o</from>
+      <to>/r1Obr-orchestrator/voice_command:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection> 
+
+   <connection>
+      <from>/r1Obr-orchestrator/sensorNetworkFeedback:o</from>
+      <to>/sensorNetworkReceiver/input:i</to>
+      <protocol>fast_tcp</protocol>
+   </connection>  
+
+   <connection>
+      <from>/sensorNetworkReceiver/orchestrator:rpc</from>
+      <to>/r1Obr-orchestrator/rpc</to>
       <protocol>fast_tcp</protocol>
    </connection>   
       
