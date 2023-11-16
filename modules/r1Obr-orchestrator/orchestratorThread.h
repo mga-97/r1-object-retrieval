@@ -95,6 +95,7 @@ private:
 
     //Sensor Network Integration
     bool                    m_sn_active;
+    string                  m_sn_language;
     string                  m_sn_feedback_port_name;
     BufferedPort<Bottle>    m_sn_feedback_port;
 

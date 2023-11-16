@@ -147,6 +147,11 @@ bool OrchestratorThread::threadInit()
     m_sn_active = m_rf.check("sensor_network_active") ? (m_rf.find("sensor_network_active").asString() == "true") : false;
     if (m_sn_active)
     {
+        if(m_rf.check("sensor_network_language"))
+            m_sn_language = m_rf.find("sensor_network_language").asString() ;
+        else 
+            m_sn_language = "eng";
+        
         if(!m_sn_feedback_port.open(m_sn_feedback_port_name))
         {
             yCError(R1OBR_ORCHESTRATOR_THREAD) << "Cannot open Sensor Network Feedback port with name" << m_sn_feedback_port_name;
@@ -538,8 +543,10 @@ string OrchestratorThread::stopOrReset(const string& cmd)
     {
         Bottle&  toSend = m_sn_feedback_port.prepare();
         toSend.clear();
-        // toSend.addString("mi è arrivato un comando di stop e mi sono dovuto fermare");
-        toSend.addString("I received a stop command and I had to stop");
+        if(m_sn_language == "ita") 
+            toSend.addString("mi è arrivato un comando di stop e mi sono dovuto fermare");
+        else if(m_sn_language == "eng")
+            toSend.addString("I received a stop command and I had to stop");
         m_sn_feedback_port.write();
     }
 
@@ -775,36 +782,48 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         break;
     case object_found_true:
         str = "object_found_true";
-        // feedback = "Ho trovato " + m_object + "! Hai bisogno di qualcos'altro?";
-        feedback = "I have found a " + m_object + "! Do you need anything else?";
+        if(m_sn_language == "ita")  
+            feedback = "Ho trovato " + m_object + "! Hai bisogno di qualcos'altro?";
+        else if(m_sn_language == "eng") 
+            feedback = "I have found a " + m_object + "! Do you need anything else?";
         break;
     case object_found_false:
         str = "object_found_false";
         break;
     case object_not_found:
         str = "object_not_found";
-        // feedback = "Non ho trovato " + m_object + "! Hai bisogno di qualcos'altro?";
-        feedback = "I did not found a " + m_object + "! Do you need anything else?";
+        if(m_sn_language == "ita")  
+            feedback = "Non ho trovato " + m_object + "!";
+        else if(m_sn_language == "eng") 
+            feedback = "I did not found a " + m_object + "!";
         break;
     case something_bad_happened:
         str = "something_bad_happened";
-        // feedback = "Ho riscontrato un errore. Ti chiedo di aspettare qualche minuto per sistemare il problema";
-        feedback = "I encountered an error. Please wait some moments to fix the problem";
+        if(m_sn_language == "ita")  
+            feedback = "Ho riscontrato un errore. Ti chiedo di aspettare qualche minuto per sistemare il problema";
+        else if(m_sn_language == "eng") 
+            feedback = "I encountered an error. Please wait some moments for me to fix the problem";
         break;
     case go_target_reached:
         str = "go_target_reached";
-        // feedback = "Sono arrivato a destinazione. Hai bisogno di qualcos'altro?";
-        feedback = "I reached my destination. Do you need anything else?";
+        if(m_sn_language == "ita")  
+            feedback = "Sono arrivato a destinazione.";
+        else if(m_sn_language == "eng") 
+            feedback = "I reached my destination.";
         break;
     case go_target_not_reached:
         str = "destination_not_reached";
-        // feedback = "Non sono riuscito a raggiungere la mia destinazione. Hai bisogno di qualcos'altro?";
-        feedback = "I couldn't reach my destination. Do you need anything else?";
+        if(m_sn_language == "ita")  
+            feedback = "Non sono riuscito a raggiungere la mia destinazione.";
+        else if(m_sn_language == "eng") 
+            feedback = "I couldn't reach my destination.";
         break;
     case hardware_failure:
         str = "hardware_failure";
-        // feedback = "Ho riscontrato un problema al mio hardware. Ti chiedo di aspettare qualche minuto per sistemare il problema";
-        feedback = "I encountered an hardware error. Please wait some moments to fix the problem";
+        if(m_sn_language == "ita")  
+            feedback = "Ho riscontrato un problema al mio hardware. Ti chiedo di aspettare qualche minuto per sistemare il problema";
+        else if(m_sn_language == "eng") 
+            feedback = "I encountered an hardware error. Please wait some moments for me to fix the problem";
         break;
     default:
         str = "fallback";
