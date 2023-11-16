@@ -302,7 +302,32 @@ ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share
 ENV PATH=${PATH}:${user1_home}/.local/bin
 ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
 
-RUN cd $robotology_install_folder/cer && git pull && cd build && cmake .. && make -j1
+# Install openai c++ dependencies
+RUN sudo apt-get update && sudo apt-get install -y unzip curl zip
+RUN git clone https://github.com/Microsoft/vcpkg.git && \
+    cd vcpkg && ./bootstrap-vcpkg.sh -disableMetrics && \
+    ./vcpkg integrate install && ./vcpkg install curl && \
+    ./vcpkg install nlohmann-json
+
+# Install openai c++ community library
+RUN git clone https://github.com/D7EAD/liboai.git && \
+    cd liboai/liboai && \
+    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
+    cd build && make -j11 && sudo make install
+
+# Install yarpGPT
+WORKDIR ${robotology_install_folder}
+RUN git clone https://github.com/robotology/yarp-devices-llm.git
+RUN cd ${robotology_install_folder}/yarp-devices-llm && \
+    cmake -B build -S . \
+    -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
+    -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build && \ 
+    sudo make install -j11
+ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
+RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env" >> /home/user1/.bashrc
+
+RUN cd ${robotology_install_folder}/cer && git pull && cd build && cmake .. && make -j11
 
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh

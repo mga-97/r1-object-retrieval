@@ -104,8 +104,8 @@
    <module>
       <name>yarprobotinterface</name>
       <parameters>--config LLMDevice.xml</parameters>
-      <workdir>/GIT/robotology/yarp-devices-llm/assets</workdir>
-      <node>pc</node>
+      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <node>console</node>
    </module>
    <module>
       <name>sensorNetworkReceiver</name>
