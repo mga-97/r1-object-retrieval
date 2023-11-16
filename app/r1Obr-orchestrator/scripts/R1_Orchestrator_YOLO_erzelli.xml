@@ -12,14 +12,14 @@
    <!-- chat bot -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context google --from googleChatBot.ini</parameters>
+      <parameters>--context google --from googleChatBot_EN.ini</parameters>
       <node>console1</node>
    </module>
 
    <!-- speech synthesizer -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context google --from googleSynthesizer.ini</parameters>
+      <parameters>--context google --from googleSynthesizer_EN.ini</parameters>
       <node>console1</node>
    </module>
 

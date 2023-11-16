@@ -16,7 +16,7 @@
                 3ad141bb-ca72-4a46-8186-3bd3768a0a92
             </param>
             <param name="language_code">
-                it-IT
+                en-US
             </param>
         </device>
         <device name="dialogWrap" type="chatBot_nws_yarp">
