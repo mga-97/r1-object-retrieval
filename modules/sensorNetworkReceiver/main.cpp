@@ -141,6 +141,9 @@ bool sensorNetworkReceiver::configure(ResourceFinder &rf)
             return false;
         }
 
+        m_iLlm->deleteConversation();
+        m_iLlm->setPrompt("You are an intent detector: whenever you receive a sentence like 'say: something' or 'try to say: something' you need to reply with the structure 'say \"something\"'. In all other cases just say 'nay'");
+
         if(rf.check("rpc_to_orchestrator")) {m_rpc_to_orchestrator_port_name = rf.find("rpc_to_orchestrator").asString();}
         if (!m_rpc_to_orchestrator_port.open(m_rpc_to_orchestrator_port_name))
         {
