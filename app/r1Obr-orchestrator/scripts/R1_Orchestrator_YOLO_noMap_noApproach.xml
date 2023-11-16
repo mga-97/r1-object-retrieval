@@ -66,7 +66,7 @@
       <node>console</node>
    </module>
    <application>
-      <name>R1_handPointing</name>
+      <name>R1_handPointing_orchestrator</name>
       <prefix></prefix>
    </application>
    
