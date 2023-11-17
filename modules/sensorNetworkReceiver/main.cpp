@@ -29,6 +29,7 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/dev/ILLM.h>
 #include <yarp/dev/PolyDriver.h>
+#include <algorithm>
 
 YARP_LOG_COMPONENT(SENSOR_NETWORK_RECEIVER, "r1_obr.sensorNetworkReceiver")
 
@@ -142,7 +143,10 @@ bool sensorNetworkReceiver::configure(ResourceFinder &rf)
         }
 
         m_iLlm->deleteConversation();
-        m_iLlm->setPrompt("You are an intent detector: whenever you receive a sentence like 'say: something' or 'try to say: something' you need to reply with the structure 'say \"something\"'. In all other cases just say 'nay'");
+        if(rf.check("llm_prompt"))
+            m_iLlm->setPrompt(rf.find("llm_prompt").asString());
+        else
+            m_iLlm->setPrompt("You are an intent detector: whenever you receive a sentence like 'say: something' or 'try to say: something' you need to reply with the structure 'say \"something\"'. In all other cases just say 'nay'");
 
         if(rf.check("rpc_to_orchestrator")) {m_rpc_to_orchestrator_port_name = rf.find("rpc_to_orchestrator").asString();}
         if (!m_rpc_to_orchestrator_port.open(m_rpc_to_orchestrator_port_name))
@@ -180,13 +184,31 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
             reply.addString("Sto parlando");
             return true;
         }
+        if (btl.get(0).asString()=="go")
+        {
+            Bottle go_btl, temp;
+            go_btl.addString("go");
+            temp.copy(btl, 1, -1); //copyng all btl except first element
+            string temp_str =  temp.toString();
+            replace(temp_str.begin(), temp_str.end(), ' ', '_'); //replacing spaces
+            go_btl.addString(temp_str);
+            m_rpc_to_orchestrator_port.write(go_btl);
+        }
+        else
+        {
+            Bottle&  out = m_output_port.prepare();
+            out.clear();
+            out.addString(b.toString());
+            m_output_port.write();
+        }  
     }
-  
-
-    Bottle&  out = m_output_port.prepare();
-    out.clear();
-    out.addString(b.toString());
-    m_output_port.write();
+    else
+    {
+        Bottle&  out = m_output_port.prepare();
+        out.clear();
+        out.addString(b.toString());
+        m_output_port.write();
+    }  
 
     bool reply_arrived{false};
     while (!reply_arrived) 
