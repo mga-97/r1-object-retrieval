@@ -163,6 +163,7 @@ bool sensorNetworkReceiver::configure(ResourceFinder &rf)
 bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
 {
     yCInfo(SENSOR_NETWORK_RECEIVER,"RPC Received: %s",b.toString().c_str());
+    double start_time = Time::now();
 
     reply.clear();
     string cmd=b.get(0).asString();
@@ -213,6 +214,9 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
     bool reply_arrived{false};
     while (!reply_arrived) 
     {
+        if (Time::now() - start_time > 300) //timeout after five minutes
+            break;
+        
         Bottle* reply_ptr = m_input_port.read(false);
         if (reply_ptr)
         {
