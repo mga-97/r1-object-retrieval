@@ -86,24 +86,6 @@
   <!--                -->
   <!--  CONNECTIONS   -->
   <!--                -->
-
-   <connection>
-      <from>/audioRecorder_nws/audio:o</from>
-      <to>/vad/audio:i</to>
-      <protocol>fast_tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
-   </connection>
-
-   <connection>
-      <from>/vad/audio:o</from>
-      <to>/speechTranscription_nws/sound:i</to>
-      <protocol>fast_tcp</protocol>
-   </connection>
-
-   <connection>
-      <from>/speechTranscription_nws/text:o</from>
-      <to>/r1Obr-orchestrator/voice_command:i</to>
-      <protocol>fast_tcp</protocol>
-   </connection>
   
    <connection>
       <from>/r1Obr-orchestrator/nextLocPlanner/request:rpc</from>
