@@ -535,7 +535,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_object_not_found = false;
         m_going = false;
 
-        if (cmd == "reset")
+        if (cmd != "reset_noNavpos" )
             setNavigationPosition();
     }
 
