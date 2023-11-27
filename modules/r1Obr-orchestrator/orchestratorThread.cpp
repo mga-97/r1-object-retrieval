@@ -379,7 +379,7 @@ void OrchestratorThread::onRead(yarp::os::Bottle &b)
 
         if (cmd=="stop" || cmd=="reset") 
         { 
-            stopOrReset(cmd);
+            stopOrReset("ext_"+cmd);
         }
         if (cmd=="reset_home") 
         { 
@@ -508,9 +508,9 @@ bool OrchestratorThread::askNetwork()
 string OrchestratorThread::stopOrReset(const string& cmd)
 {
     Bottle request;
-    if (cmd == "reset_noNavpos" || cmd == "reset") 
+    if (cmd == "reset_noNavpos" || cmd == "reset" || cmd == "ext_reset") 
         request.fromString("reset");
-    else if (cmd == "stop") 
+    else if (cmd == "stop" || cmd == "ext_stop") 
         request.fromString("stop");
     else
         return "wrong command";
@@ -529,7 +529,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
         m_nav2loc->stop();
     } 
 
-    if (cmd == "reset_noNavpos" || cmd == "reset")
+    if (cmd == "reset_noNavpos" || cmd == "reset" || cmd == "ext_reset")
     {
         m_object_found = false;
         m_object_not_found = false;
@@ -539,7 +539,7 @@ string OrchestratorThread::stopOrReset(const string& cmd)
             setNavigationPosition();
     }
 
-    if (m_sn_active && m_status != R1_IDLE)
+    if (m_sn_active && m_status != R1_IDLE && (cmd == "ext_reset" || cmd == "ext_stop") )
     {
         Bottle&  toSend = m_sn_feedback_port.prepare();
         toSend.clear();
@@ -827,6 +827,7 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         break;
     default:
         str = "fallback";
+        feedback = "no command";
         break;
     };
 

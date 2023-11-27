@@ -218,7 +218,7 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         }
         else if (cmd=="stop" || cmd=="reset")
         {
-            reply.addString(m_inner_thread->stopOrReset(cmd));
+            reply.addString(m_inner_thread->stopOrReset("ext_"+cmd));
         }
         else if (cmd=="reset_home")
         {

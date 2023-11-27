@@ -104,7 +104,7 @@ RUN cd yarp && mkdir build && cd build && \
     -DENABLE_yarppm_image_compression_ffmpeg=ON \
     -DENABLE_yarppm_depthimage_to_mono=ON \
     -DENABLE_yarppm_depthimage_to_rgb=ON && \
-    make -j11
+    make -j11 
 ENV YARP_ROOT=$robotology_install_folder/yarp
 ENV YARP_DIR=$robotology_install_folder/yarp/build
 

@@ -231,6 +231,9 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
     if (reply.size()==0)
         reply.addVocab32(Vocab32::encode("nack")); 
     
+    while(m_input_port.getPendingReads()>0)
+        m_input_port.read(false); //removing pending input messages
+    
     return true;
 }
 
