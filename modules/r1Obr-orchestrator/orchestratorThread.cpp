@@ -551,7 +551,14 @@ string OrchestratorThread::stopOrReset(const string& cmd)
     }
 
     m_status = R1_IDLE;
-    return cmd + " executed";
+
+    string s = cmd;
+    if (s == "ext_reset" || s == "reset_noNavpos")
+        s = "reset";
+    else if (s == "ext_stop")
+        s = "stop";
+    
+    return s + " executed";
 }
 
 /****************************************************************/
