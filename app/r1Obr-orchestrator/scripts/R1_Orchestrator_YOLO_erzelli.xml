@@ -72,6 +72,11 @@
 
    <!-- sensor network receiver -->
    <module>
+      <name>./sourceLLMDevice.sh</name>
+      <workdir>/home/user1/r1-object-retrieval/app/r1Obr-orchestrator/scripts</workdir>
+      <node>console</node>
+   </module>
+   <module>
       <name>yarprobotinterface</name>
       <parameters>--config LLMDevice.xml</parameters>
       <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
