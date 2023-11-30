@@ -185,7 +185,7 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
             reply.addString("Sto parlando");
             return true;
         }
-        if (btl.get(0).asString()=="go")
+        else if (btl.get(0).asString()=="go")
         {
             Bottle go_btl, temp;
             go_btl.addString("go");
@@ -194,6 +194,10 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
             replace(temp_str.begin(), temp_str.end(), ' ', '_'); //replacing spaces
             go_btl.addString(temp_str);
             m_rpc_to_orchestrator_port.write(go_btl);
+        }
+        else if (btl.get(0).asString()=="search")
+        {
+            m_rpc_to_orchestrator_port.write(btl);
         }
         else
         {

@@ -227,6 +227,7 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 m_language_chatbot=lang;
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Language set to: %s", lang.c_str());
             }
+            else if(cmd->get(0).asString()=="no_command") {}
             else
             {
                 Bottle reply;
