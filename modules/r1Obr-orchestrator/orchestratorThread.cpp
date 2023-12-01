@@ -461,6 +461,8 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
 
     if (sz > 2)
         m_where_specified = true;
+    else if (sz == 2 && m_sn_active)
+        m_where_specified = true;
     else 
         m_where_specified = false;
 
@@ -491,6 +493,10 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
         else
             m_request.addString(btl.get(i).asString());
     }
+
+    if (sz == 2 && m_sn_active)
+        m_request.addString(getWhere());
+
 
     return true;
 }
@@ -692,6 +698,13 @@ string OrchestratorThread::getWhere()
 {
     if(m_status == R1_GOING)
         return m_nav2loc->getCurrentTarget();
+
+    if(m_sn_active && m_status == R1_IDLE)
+    {
+        string current_target = m_nav2loc->getCurrentTarget();
+        if (current_target != "")
+            return current_target;
+    }
     
     Bottle request{"where"};
     return forwardRequest(request).toString();

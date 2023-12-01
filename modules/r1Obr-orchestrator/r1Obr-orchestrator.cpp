@@ -228,9 +228,13 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         {
             reply.addString(m_inner_thread->resume());
         }
-        else if (cmd=="what" || cmd=="where")
+        else if (cmd=="what")
         {
-            reply = m_inner_thread->forwardRequest(request);
+            reply.addString(m_inner_thread->getWhat());
+        }
+        else if (cmd=="where")
+        {
+            reply.addString(m_inner_thread->getWhere());
         }
         else if (cmd=="navpos")
         {
