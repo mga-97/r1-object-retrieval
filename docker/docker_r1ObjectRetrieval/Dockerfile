@@ -165,7 +165,7 @@ RUN cd cer && mkdir build && cd build && cmake .. \
 ENV CER_ROOT=$robotology_install_folder/cer
 ENV CER_DIR=$robotology_install_folder/cer/build
 # ----------------  fetch colombraf --------------------------------------------- #
-RUN echo "fetch colombraf"
+RUN echo "fetch remote"
 WORKDIR $robotology_install_folder/cer
 RUN git remote add colombraf https://github.com/colombraf/cer
 RUN git fetch colombraf
@@ -318,14 +318,14 @@ RUN git clone https://github.com/D7EAD/liboai.git && \
 
 # Install yarpGPT
 WORKDIR ${robotology_install_folder}
-RUN git clone https://github.com/robotology/yarp-devices-llm.git
+RUN git clone --branch feat/aux_module https://github.com/robotology/yarp-devices-llm.git 
 RUN cd ${robotology_install_folder}/yarp-devices-llm && \
     cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build && \ 
     sudo make install -j11
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
-RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env" >> /home/user1/.bashrc
+RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env/config.env" >> /home/user1/.bashrc
 
 RUN cd ${robotology_install_folder}/cer && git pull && cd build && cmake .. && make -j11
 
