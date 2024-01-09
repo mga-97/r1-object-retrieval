@@ -325,7 +325,9 @@ RUN cd ${robotology_install_folder}/yarp-devices-llm && \
     -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build && \ 
     sudo make install -j11
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
+RUN echo "set -a" >> /home/user1/.bashrc
 RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env/config.env" >> /home/user1/.bashrc
+RUN echo "set +a" >> /home/user1/.bashrc
 
 RUN cd ${robotology_install_folder}/cer && git pull && cd build && cmake .. && make -j11
 

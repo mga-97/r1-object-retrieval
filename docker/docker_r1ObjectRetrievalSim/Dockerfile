@@ -300,7 +300,9 @@ RUN cd ${robotology_install_folder}/yarp-devices-llm && \
     -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build && \ 
     sudo make install -j11
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
+RUN echo "set -a" >> /home/user1/.bashrc
 RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env" >> /home/user1/.bashrc
+RUN echo "set +a" >> /home/user1/.bashrc
 
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh

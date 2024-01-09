@@ -159,7 +159,10 @@ void ChatBot::onRead(Bottle& b)
     if(str == "")
         return;
 
-    interactWithChatBot(str);
+    if(m_chatBot_active)
+        interactWithChatBot(str);
+    else
+        yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
     
 }
 
@@ -236,7 +239,5 @@ void ChatBot::interactWithChatBot(const string& msgIn)
             }
         }
     }
-    else
-        yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
     
 }

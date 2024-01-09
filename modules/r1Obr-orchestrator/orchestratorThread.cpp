@@ -497,7 +497,6 @@ bool OrchestratorThread::resizeSearchBottle(const Bottle& btl)
     if (sz == 2 && m_sn_active)
         m_request.addString(getWhere());
 
-
     return true;
 }
 
@@ -869,8 +868,8 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
 /****************************************************************/
 bool OrchestratorThread::go(string loc)
 {
-    if (m_status != R1_IDLE) 
-        stopOrReset("reset_noNavpos");
+    // if (m_status != R1_IDLE) 
+    stopOrReset("reset_noNavpos");      
 
     
     if (loc != "home" && loc.find(m_map_prefix) == string::npos) 
