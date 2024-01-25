@@ -12,7 +12,7 @@
    <!-- chat bot -->
    <module>
       <name>yarprobotinterface</name>
-      <parameters>--context google --from googleChatBot_EN.ini</parameters>
+      <parameters>--context google --from googleChatBot_EN_stateless.ini</parameters>
       <node>console1</node>
    </module>
 
@@ -42,12 +42,6 @@
    </application>
    <application>
       <name>R1_handPointing_orchestrator</name>
-      <prefix></prefix>
-   </application>
-   
-   <!-- negative outcome -->
-   <application>
-      <name>R1_disappointmentPose</name>
       <prefix></prefix>
    </application>
 
