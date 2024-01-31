@@ -251,10 +251,16 @@ bool Orchestrator::respond(const Bottle &request, Bottle &reply)
         {
             m_inner_thread->info(reply);            
         }
+        else if (cmd=="cmd_unk")
+        {
+            reply.addVocab32(Vocab32::encode("ack"));
+            yCWarning(R1OBR_ORCHESTRATOR,"Uknown command received");
+            m_inner_thread->askChatBotToSpeak(OrchestratorThread::cmd_unknown);            
+        }
         else
         {
             reply.addVocab32(Vocab32::encode("nack"));
-            yCWarning(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
+            yCError(R1OBR_ORCHESTRATOR,"Error: wrong RPC command. Type 'help'");
             m_inner_thread->askChatBotToSpeak(OrchestratorThread::fallback);
         }
     }

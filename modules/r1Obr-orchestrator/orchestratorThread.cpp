@@ -844,6 +844,12 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
         else if(m_sn_language == "eng") 
             feedback = "I encountered an hardware error. Please wait some moments for me to fix the problem";
         break;
+    case cmd_unknown:
+        if(m_sn_language == "ita")  
+            feedback = "Chiedo perdono, non ho capito il comando";
+        else if(m_sn_language == "eng") 
+            feedback = "I am sorry, I do not understand the command";
+        break;
     default:
         str = "fallback";
         feedback = "no command";

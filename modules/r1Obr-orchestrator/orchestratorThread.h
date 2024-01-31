@@ -54,7 +54,8 @@ public:
         go_target_reached,
         go_target_not_reached,
         hardware_failure,
-        fallback
+        fallback,
+        cmd_unknown
     };
 
 private:

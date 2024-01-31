@@ -162,14 +162,19 @@ void ChatBot::onRead(Bottle& b)
     if(m_chatBot_active)
         interactWithChatBot(str);
     else
+    {
         yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
-    
+        Bottle req{"unk_cmd"};
+        m_orchestratorRPCPort.write(req);
+    }
 }
 
 
 // ****************************************************** //
 void ChatBot::interactWithChatBot(const string& msgIn)
 {
+    if (msgIn == "") return;
+
     if(m_chatBot_active)
     {
         yCInfo(CHAT_BOT_ORCHESTRATOR,"ChatBot received: %s",msgIn.c_str());
@@ -198,8 +203,8 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Saying: %s", toSay.c_str());
 
                 //close microphone
-                Bottle req{"stopRecording_RPC"}, rep;
-                m_audiorecorderRPCPort.write(req,rep);
+                Bottle req{"stopRecording_RPC"};
+                m_audiorecorderRPCPort.write(req);
 
                 //speak
                 m_speaker->say(toSay);
@@ -218,9 +223,9 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 }
 
                 //re-open microphone
-                req.clear(); rep.clear();
+                req.clear(); 
                 req.addString("startRecording_RPC");
-                m_audiorecorderRPCPort.write(req,rep);
+                m_audiorecorderRPCPort.write(req);
             }
             else if(cmd->get(0).asString()=="setLanguage")
             {

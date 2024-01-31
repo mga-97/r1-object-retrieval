@@ -170,7 +170,7 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
 
     if (cmd=="help")
     {   
-        reply.addString("Everything you will send to this port will be forwarded to the port " + m_output_port_name + ". The reply is forwarded from port " + m_input_port_name);
+        reply.addString("Everything you will send to this port will be forwarded to the port " + m_output_port_name + ". The reply is forwarded from port " + m_input_port_name + " . Except the 'say' commands, in that case the robot will say the sentence following the word 'say'");
         return true;
     }
     
@@ -185,14 +185,14 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
         if (btl.get(0).asString()=="say")
         {
             m_rpc_to_orchestrator_port.write(btl);
-            reply.addString("Sto parlando");
+            reply.addString("Ok");   //answering "ok, I am saying what you asked"
             return true;
         }
         else if (btl.get(0).asString()=="go")
         {
             Bottle go_btl, temp;
             go_btl.addString("go");
-            temp.copy(btl, 1, -1); //copyng all btl except first element
+            temp.copy(btl, 1, -1); //copying all btl except first element
             string temp_str =  temp.toString();
             replace(temp_str.begin(), temp_str.end(), ' ', '_'); //replacing spaces
             go_btl.addString(temp_str);
