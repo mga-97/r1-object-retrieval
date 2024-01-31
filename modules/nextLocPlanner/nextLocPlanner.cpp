@@ -410,7 +410,7 @@ bool NextLocPlanner::respond(const Bottle &cmd, Bottle &reply)
         Map2DLocation loc;
         loc.map_id=m_map_name;
         loc.x=x;
-        loc.x=y;
+        loc.y=y;
         loc.theta=th;
         loc.description=locName;
 
