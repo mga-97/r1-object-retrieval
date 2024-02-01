@@ -144,6 +144,33 @@ bool GetReadyToNav::setPosCtrlMode(const int part)
         modes.push_back(VOCAB_CM_POSITION);
     } 
 
+    //need to stop the arm controllers so that the control mode of the arms can be set to Position
+    std::string right_arm_controller_port{"/cer_reaching-controller/right/rpc"};
+    std::string left_arm_controller_port{"/cer_reaching-controller/left/rpc"};
+    yarp::os::Bottle stop_command{"stop"}; 
+    if (yarp::os::Network::exists(right_arm_controller_port)) 
+    {
+        yarp::os::RpcClient tmpRightArmRPC;
+        tmpRightArmRPC.open("/tmpRightArmRPC");
+        if (yarp::os::Network::connect(tmpRightArmRPC.getName(), right_arm_controller_port)) 
+        {
+            tmpRightArmRPC.write(stop_command);
+            yarp::os::Network::disconnect(tmpRightArmRPC.getName(), right_arm_controller_port);
+        } 
+        tmpRightArmRPC.close();
+    }
+    if (yarp::os::Network::exists(left_arm_controller_port)) 
+    {
+        yarp::os::RpcClient tmpLeftArmRPC;
+        tmpLeftArmRPC.open("/tmpLeftArmRPC");
+        if (yarp::os::Network::connect(tmpLeftArmRPC.getName(), left_arm_controller_port)) 
+        {
+            tmpLeftArmRPC.write(stop_command);
+            yarp::os::Network::disconnect(tmpLeftArmRPC.getName(), left_arm_controller_port);
+        } 
+        tmpLeftArmRPC.close();
+    }
+
     m_ictrlmode[part]->setControlModes(NUMBER_OF_JOINTS, joints.data(), modes.data());
 
     yarp::os::Time::delay(0.01);  // give time to update control modes value

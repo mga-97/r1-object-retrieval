@@ -25,6 +25,7 @@
 #include <yarp/os/Time.h>
 #include <yarp/os/Port.h>
 #include <yarp/os/RFModule.h>
+#include <yarp/os/RpcClient.h>
 #include <yarp/dev/ControlBoardInterfaces.h>
 #include <vector>
 
