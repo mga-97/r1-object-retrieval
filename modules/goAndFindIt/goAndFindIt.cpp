@@ -206,7 +206,7 @@ bool GoAndFindIt::respond(const Bottle &cmd, Bottle &reply)
             if (m_thread->getStatus() != "navigating" && m_thread->getStatus() != "searching")
             {
                 if(m_thread->setNavigationPosition())
-                    reply.addString("setting robot in navigation position");
+                    reply.addString("robot set in navigation position");
                 else
                     reply.addString("cannot set the robot in navigation position");
             }

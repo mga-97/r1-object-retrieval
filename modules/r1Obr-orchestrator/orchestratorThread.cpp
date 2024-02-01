@@ -674,7 +674,7 @@ void OrchestratorThread::setObject(string obj)
 bool OrchestratorThread::setNavigationPosition()
 {
     Bottle request{"navpos"};
-    if(forwardRequest(request).get(0).asString() != "setting robot in navigation position")
+    if(forwardRequest(request).get(0).asString() != "robot set in navigation position")
     {
         askChatBotToSpeak(hardware_failure);
         return false;
