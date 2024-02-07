@@ -221,7 +221,6 @@ ENV YARP_COLORED_OUTPUT=1
 ENV QT_X11_NO_MITSHM=1
 ENV PYTHONPATH=$PYTHONPATH:/home/user1/robotology/yarp/bindings/build/lib/python3/
 ENV YARP_CLOCK=/clock
-#ENV CYCLONEDDS_URI=/home/user1/tour-guide-robot/app/navigation2/conf/cyclone_dds_settings.xml
 
 # Manage yarp port
 EXPOSE 10000/tcp 10000/udp
@@ -268,6 +267,13 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # Install YOLO requirements
 RUN pip install ultralytics
 
+# colombraf/tour-guide-robot
+WORKDIR $user1_home/tour-guide-robot
+RUN git remote add colombraf https://github.com/colombraf/tour-guide-robot
+RUN git fetch colombraf
+RUN git checkout ${ros_distro}_rc
+RUN cd build && cmake .. && make -j11
+
 # r1-object-retrieval
 WORKDIR ${user1_home}
 RUN git clone https://github.com/colombraf/r1-object-retrieval
@@ -295,14 +301,20 @@ RUN git clone https://github.com/D7EAD/liboai.git && \
 WORKDIR ${robotology_install_folder}
 RUN git clone --branch feat/aux_module https://github.com/robotology/yarp-devices-llm.git
 RUN cd ${robotology_install_folder}/yarp-devices-llm && \
+    rm -rf build && \
     cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
-    -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build && \ 
-    sudo make install -j11
+    -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build \ 
+    # && sudo make install -j11  #IT IS NOT COMPILING BECAUSE IT CANNOT FIND yarp/dev/LLM_Message.h
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
 RUN echo "set -a" >> /home/user1/.bashrc
 RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env" >> /home/user1/.bashrc
 RUN echo "set +a" >> /home/user1/.bashrc
+
+# Gazebo worlds
+WORKDIR ${user1_home}
+RUN git clone https://github.com/leonhartyao/gazebo_models_worlds_collection
+ENV GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:/home/user1/gazebo_models_worlds_collection/models
 
 WORKDIR ${user1_home}/r1-object-retrieval
 RUN echo "git pull" >> update_repo.sh
@@ -314,7 +326,7 @@ RUN echo "cd ${user1_home}/tour-guide-robot && git pull" >> update_repo.sh
 RUN echo "cd ${user1_home}/tour-guide-robot/build && cmake .. && make -j11" >> update_repo.sh
 RUN sudo chmod 777 update_repo.sh
 
-RUN ln -s ${user1_home}/tour-guide-robot/app/navigation2/scripts/start_sim.sh start_sim.sh
+RUN ln -s ${user1_home}/tour-guide-robot/app/navigation2/scripts/stop.sh stop_sim.sh
 
 ENV ROS_DOMAIN_ID=39
 # ------------------------------------------------------------------------------ #
