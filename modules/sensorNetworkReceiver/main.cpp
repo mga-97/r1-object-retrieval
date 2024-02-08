@@ -162,7 +162,7 @@ bool sensorNetworkReceiver::configure(ResourceFinder &rf)
 
 bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
 {
-    yCInfo(SENSOR_NETWORK_RECEIVER,"RPC Received: %s",b.toString().c_str());
+    yCInfo(SENSOR_NETWORK_RECEIVER,"RPC received: %s",b.toString().c_str());
     double start_time = Time::now();
 
     reply.clear();
@@ -186,6 +186,8 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
         {
             m_rpc_to_orchestrator_port.write(btl);
             reply.addString("Ok");   //answering "ok, I am saying what you asked"
+            yCInfo(SENSOR_NETWORK_RECEIVER,"'say' command detected by LLM");
+            yCInfo(SENSOR_NETWORK_RECEIVER,"RPC replying: %s",reply.toString().c_str());
             return true;
         }
         else if (btl.get(0).asString()=="go")
@@ -197,10 +199,12 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
             replace(temp_str.begin(), temp_str.end(), ' ', '_'); //replacing spaces
             go_btl.addString(temp_str);
             m_rpc_to_orchestrator_port.write(go_btl);
+            yCInfo(SENSOR_NETWORK_RECEIVER,"'go' command detected by LLM. Forwarding it to orchestrator");
         }
         else if (btl.get(0).asString()=="search")
         {
             m_rpc_to_orchestrator_port.write(btl);
+            yCInfo(SENSOR_NETWORK_RECEIVER,"'search' command detected by LLM. Forwarding it to orchestrator");
         }
         else
         {
@@ -238,6 +242,7 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
     if (reply.size()==0)
         reply.addVocab32(Vocab32::encode("nack")); 
     
+    yCInfo(SENSOR_NETWORK_RECEIVER,"RPC replying: %s",reply.toString().c_str());
     
     return true;
 }
