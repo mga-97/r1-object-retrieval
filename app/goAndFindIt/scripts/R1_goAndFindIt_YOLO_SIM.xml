@@ -6,7 +6,7 @@
    
    <!--  MODULES  -->
    <application>
-        <name>Navigation_ROS2_R1_SIM</name>
+        <name>Navigation_ROS2_R1_SIM_office</name>
         <prefix></prefix>
     </application>
 
