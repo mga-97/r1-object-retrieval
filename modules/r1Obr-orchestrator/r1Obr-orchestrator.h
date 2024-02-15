@@ -88,8 +88,8 @@ public:
     //inherited from r1OrchestratorRPC
     bool searchObject(const string& what)  override;
     bool searchObjectLocation(const string& what, const string& where)  override;
-    bool stop()  override;
-    bool reset()  override;
+    bool stopSearch()  override;
+    bool resetSearch()  override;
     bool resetHome()  override;
     bool resume()  override;
     string status()  override;

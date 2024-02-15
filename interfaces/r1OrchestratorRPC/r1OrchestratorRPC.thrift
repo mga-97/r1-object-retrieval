@@ -19,13 +19,13 @@ service r1OrchestratorRPC {
      * stops the search
      * @return true/false on success/failure
      */
-    bool stop();
+    bool stopSearch();
 
     /**
      * resets the search
      * @return true/false on success/failure
      */
-    bool reset();
+    bool resetSearch();
 
     /**
      * resets the search and navigates the robot home

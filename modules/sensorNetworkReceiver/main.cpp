@@ -197,7 +197,9 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
         {
             string loc =  btl.tail().toString();
             replace(loc.begin(), loc.end(), ' ', '_'); //replacing spaces
-            m_r1Orchestrator.go(loc);
+            if (m_r1Orchestrator.go(loc))
+                yCDebug(SENSOR_NETWORK_RECEIVER, "go %s", loc.c_str());
+
             yCInfo(SENSOR_NETWORK_RECEIVER,"'go' command detected by LLM. Forwarding it to orchestrator");
         }
         else if (btl.get(0).asString()=="search")

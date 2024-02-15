@@ -158,12 +158,12 @@ bool OrchestratorThread::threadInit()
 /****************************************************************/
 void OrchestratorThread::threadRelease()
 {
-    if (m_sensor_network_rpc_port.asPort().isOpen())
+if (m_sensor_network_rpc_port.asPort().isOpen())
         m_sensor_network_rpc_port.close(); 
         
     if (m_nextLoc_rpc_port.asPort().isOpen())
         m_nextLoc_rpc_port.close(); 
-        
+    
     if (m_goandfindit_rpc_port.asPort().isOpen())
         m_goandfindit_rpc_port.close(); 
     
@@ -505,6 +505,8 @@ bool OrchestratorThread::askNetwork()
 /****************************************************************/
 string OrchestratorThread::stopOrReset(const string& cmd)
 {
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "%s command received", cmd.c_str());
+
     Bottle request;
     if (cmd == "reset_noNavpos" || cmd == "reset" || cmd == "ext_reset") 
         request.fromString("reset");
@@ -867,6 +869,8 @@ bool OrchestratorThread::askChatBotToSpeak(R1_says stat)
 /****************************************************************/
 bool OrchestratorThread::go(string loc)
 {
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Going to %s", loc.c_str());
+    
     // if (m_status != R1_IDLE) 
     stopOrReset("reset_noNavpos");      
 
@@ -904,6 +908,8 @@ bool OrchestratorThread::go(string loc)
 /****************************************************************/
 bool OrchestratorThread::dance(string dance_name)
 {
+    yCInfo(R1OBR_ORCHESTRATOR_THREAD, "Received dance: %s", dance_name.c_str());
+    
     if(getStatus()=="idle")
     {
         return m_tiny_dancer->doDance(dance_name);

@@ -350,6 +350,8 @@ void Orchestrator::onRead(yarp::os::Bottle &b)
 /****************************************************************/
 bool Orchestrator::searchObject(const string& what)  
 {
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: search %s", what.c_str());
+    
     Bottle request;
     request.fromString("search " + what);
     m_inner_thread->search(request);
@@ -361,6 +363,8 @@ bool Orchestrator::searchObject(const string& what)
 /****************************************************************/
 bool Orchestrator::searchObjectLocation(const string& what, const string& where)  
 {
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: search %s , %s", what.c_str(), where.c_str());
+    
     Bottle request;
     request.fromString("search " + what + " " + where);
     m_inner_thread->search(request);
@@ -370,16 +374,16 @@ bool Orchestrator::searchObjectLocation(const string& what, const string& where)
 }
 
 /****************************************************************/
-bool Orchestrator::stop()  
-{
+bool Orchestrator::stopSearch()  
+{    
     m_inner_thread->stopOrReset("ext_stop");
 
     return status()=="idle";  //return false if orchestrator status is NOT idle
 }
 
 /****************************************************************/
-bool Orchestrator::reset()  
-{
+bool Orchestrator::resetSearch()  
+{    
     m_inner_thread->stopOrReset("ext_reset");
 
     return status()=="idle";  //return false if orchestrator status is NOT idle
@@ -387,13 +391,13 @@ bool Orchestrator::reset()
 
 /****************************************************************/
 bool Orchestrator::resetHome()  
-{
+{    
     return m_inner_thread->resetHome()=="reset and sent home";
 }
 
 /****************************************************************/
 bool Orchestrator::resume()  
-{
+{   
     return m_inner_thread->resume()!="not resumed";
 }
 
@@ -417,19 +421,19 @@ string Orchestrator::where()
 
 /****************************************************************/
 bool Orchestrator::navpos()  
-{
+{   
     return m_inner_thread->setNavigationPosition();
 }
 
 /****************************************************************/
 bool Orchestrator::go(const string& location)  
-{
+{    
     return m_inner_thread->go(location);
 }
 
 /****************************************************************/
 bool Orchestrator::say(const string& toSay)
-{
+{    
     //close microphone
     Bottle req{"stopRecording_RPC"}, rep;
     m_audiorecorderRPCPort.write(req,rep);
@@ -469,6 +473,6 @@ bool Orchestrator::tell(const string& key)
 
 /****************************************************************/
 bool Orchestrator::dance(const string& motion)  
-{
-   return m_inner_thread->dance(motion);
+{    
+    return m_inner_thread->dance(motion);
 }
