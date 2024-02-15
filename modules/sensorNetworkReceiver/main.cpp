@@ -30,6 +30,7 @@
 #include <yarp/dev/ILLM.h>
 #include <yarp/dev/PolyDriver.h>
 #include <algorithm>
+#include <r1OrchestratorRPC.h>
 
 YARP_LOG_COMPONENT(SENSOR_NETWORK_RECEIVER, "r1_obr.sensorNetworkReceiver")
 
@@ -53,8 +54,10 @@ private:
     BufferedPort<Bottle> m_output_port;
     string               m_output_port_name;
 
-    RpcClient            m_rpc_to_orchestrator_port;
-    string               m_rpc_to_orchestrator_port_name;
+    //r1OrchestratorRPC
+    Port                 m_r1Orchestrator_client_port;
+    string               m_r1Orchestrator_client_port_name;
+    r1OrchestratorRPC    m_r1Orchestrator;
 
     //ChatGPT Filter
     bool                 m_llm_active;
@@ -90,7 +93,7 @@ sensorNetworkReceiver::sensorNetworkReceiver()
     m_llm_active = false;
     m_llm_local = "/sensorNetworkReceiver/llm/rpc";
     m_llm_remote = "/yarpgpt/rpc";
-    m_rpc_to_orchestrator_port_name = "/sensorNetworkReceiver/orchestrator:rpc";
+    m_r1Orchestrator_client_port_name = "/sensorNetworkReceiver/r1Orchestrator/thrift:c";
 };
 
 bool sensorNetworkReceiver::configure(ResourceFinder &rf)
@@ -148,12 +151,12 @@ bool sensorNetworkReceiver::configure(ResourceFinder &rf)
         else
             m_iLlm->setPrompt("You are an intent detector: whenever you receive a sentence like 'say: something' or 'try to say: something' you need to reply with the structure 'say \"something\"'. In all other cases just say 'nay'");
 
-        if(rf.check("rpc_to_orchestrator")) {m_rpc_to_orchestrator_port_name = rf.find("rpc_to_orchestrator").asString();}
-        if (!m_rpc_to_orchestrator_port.open(m_rpc_to_orchestrator_port_name))
+        if (!m_r1Orchestrator_client_port.open(m_r1Orchestrator_client_port_name))
         {
-            yCError(SENSOR_NETWORK_RECEIVER, "Unable to open RPC port to orchestrator");
+            yCError(SENSOR_NETWORK_RECEIVER, "Unable to open r1Orchestrator thrift client port");
             return false;
         }
+        m_r1Orchestrator.yarp().attachAsClient(m_r1Orchestrator_client_port);
 
     }
 
@@ -184,7 +187,7 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
         Bottle btl; btl.fromString(answer);
         if (btl.get(0).asString()=="say")
         {
-            m_rpc_to_orchestrator_port.write(btl);
+            m_r1Orchestrator.say(btl.tail().toString()); 
             reply.addString("Ok");   //answering "ok, I am saying what you asked"
             yCInfo(SENSOR_NETWORK_RECEIVER,"'say' command detected by LLM");
             yCInfo(SENSOR_NETWORK_RECEIVER,"RPC replying: %s",reply.toString().c_str());
@@ -192,18 +195,17 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
         }
         else if (btl.get(0).asString()=="go")
         {
-            Bottle go_btl, temp;
-            go_btl.addString("go");
-            temp.copy(btl, 1, -1); //copying all btl except first element
-            string temp_str =  temp.toString();
-            replace(temp_str.begin(), temp_str.end(), ' ', '_'); //replacing spaces
-            go_btl.addString(temp_str);
-            m_rpc_to_orchestrator_port.write(go_btl);
+            string loc =  btl.tail().toString();
+            replace(loc.begin(), loc.end(), ' ', '_'); //replacing spaces
+            m_r1Orchestrator.go(loc);
             yCInfo(SENSOR_NETWORK_RECEIVER,"'go' command detected by LLM. Forwarding it to orchestrator");
         }
         else if (btl.get(0).asString()=="search")
         {
-            m_rpc_to_orchestrator_port.write(btl);
+            if (btl.size()>2)
+                m_r1Orchestrator.searchObjectLocation(btl.get(1).asString(), btl.get(2).asString());
+            else 
+                m_r1Orchestrator.searchObject(btl.get(1).asString());
             yCInfo(SENSOR_NETWORK_RECEIVER,"'search' command detected by LLM. Forwarding it to orchestrator");
         }
         else
@@ -269,8 +271,8 @@ bool sensorNetworkReceiver::close()
     if (!m_output_port.isClosed())
         m_output_port.close();
 
-    if (m_rpc_to_orchestrator_port.asPort().isOpen())
-        m_rpc_to_orchestrator_port.close(); 
+    if (m_r1Orchestrator_client_port.isOpen())
+        m_r1Orchestrator_client_port.close(); 
     
     if(m_poly.isValid())
         m_poly.close();

@@ -53,6 +53,21 @@ bool Orchestrator::configure(ResourceFinder &rf)
     }
 
 
+    // --------- Thrift interface server side config --------- //
+    if(rf.check("thrift_server_port"))  m_orchestrator_thrift_port_name = rf.find("thrift_server_port").asString();
+    if (!m_orchestrator_thrift_port.open(m_orchestrator_thrift_port_name))
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot open the thrift port");
+        return false;
+    }
+
+    if (!this->yarp().attachAsServer(m_orchestrator_thrift_port))
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot attach port %s as a server", m_orchestrator_thrift_port_name.c_str());
+        return false;
+    }
+
+
     // --------- Open Input command Port --------- //
     if(rf.check("input_port"))
         m_input_port_name = rf.find("input_port").asString();
@@ -110,21 +125,6 @@ bool Orchestrator::configure(ResourceFinder &rf)
     if(!m_audioPlayPort.open(audioplayerStatusPortName))
     {
         yCError(R1OBR_ORCHESTRATOR, "Unable to open audio player status port");
-        return false;
-    }
-
-    
-    // --------- Thrift interface server side config --------- //
-    if(rf.check("thrift_server_port"))  m_orchestrator_thrift_port_name = rf.find("thrift_server_port").asString();
-    if (!m_orchestrator_thrift_port.open(m_orchestrator_thrift_port_name))
-    {
-        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot open the thrift port");
-        return false;
-    }
-
-    if (!this->yarp().attachAsServer(m_orchestrator_thrift_port))
-    {
-        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot attach port %s as a server", m_orchestrator_thrift_port_name.c_str());
         return false;
     }
 

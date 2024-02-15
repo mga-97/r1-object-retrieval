@@ -44,5 +44,9 @@ add_subdirectory(app)
 add_subdirectory(modules)
 add_subdirectory(interfaces)
 
+# Append to .bashrc
+file(APPEND $ENV{HOME}/.bashrc "\n##### R1 OBJECT RETRIEVAL #####")
+file(APPEND $ENV{HOME}/.bashrc "\nexport R1_OBR_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}")
+file(APPEND $ENV{HOME}/.bashrc "\nexport R1_OBR_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}")
 
 

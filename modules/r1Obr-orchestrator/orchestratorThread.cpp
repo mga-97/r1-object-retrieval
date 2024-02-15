@@ -124,14 +124,7 @@ bool OrchestratorThread::threadInit()
     // --------- Chat Bot initialization --------- //
     m_chat_bot = new ChatBot();
     if (!m_chat_bot->configure(m_rf)){
-        return false;
-    }
-    string chat_bot_port_name = "/r1Obr-orchestrator/chatBot:rpc";
-    string rpc_server_port_name = m_rf.check("input_rpc_port", Value("/r1Obr-orchestrator/rpc")).asString();
-    bool ok = Network::connect(chat_bot_port_name.c_str(), rpc_server_port_name.c_str());
-    if (!ok)
-    {
-        yCError(R1OBR_ORCHESTRATOR_THREAD,"Could not connect %s to %s", chat_bot_port_name.c_str(), rpc_server_port_name.c_str());
+        yCError(R1OBR_ORCHESTRATOR_THREAD,"ChatBot configuration failed");
         return false;
     }
 

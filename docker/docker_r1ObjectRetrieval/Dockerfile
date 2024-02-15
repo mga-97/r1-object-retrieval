@@ -301,6 +301,8 @@ ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share/R1_OBJECT_RETRIEVAL
 ENV PATH=${PATH}:${user1_home}/.local/bin
 ENV PATH=$PATH:${user1_home}/r1-object-retrieval/build/bin
+ENV R1_OBR_SOURCE_DIR=${user1_home}/r1-object-retrieval
+ENV R1_OBR_BUILD_DIR=${R1_OBR_SOURCE_DIR}/build
 
 # Install openai c++ dependencies
 RUN sudo apt-get update && sudo apt-get install -y unzip curl zip

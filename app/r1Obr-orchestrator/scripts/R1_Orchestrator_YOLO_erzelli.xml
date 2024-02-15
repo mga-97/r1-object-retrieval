@@ -166,9 +166,9 @@
    </connection>  
 
    <connection>
-      <from>/sensorNetworkReceiver/orchestrator:rpc</from>
-      <to>/r1Obr-orchestrator/rpc</to>
+      <from>/sensorNetworkReceiver/r1Orchestrator/thrift:c</from>
+      <to>/r1Obr-orchestrator/thrift:s</to>
       <protocol>fast_tcp</protocol>
-   </connection>   
+   </connection>  
       
 </application>

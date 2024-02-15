@@ -49,6 +49,13 @@ bool ChatBot::configure(ResourceFinder &rf)
         yCError(CHAT_BOT_ORCHESTRATOR, "Unable to open Chat Bot RPC port to orchestrator");
         return false;
     }
+    string orchstrator_rpc_server_port_name = rf.check("input_rpc_port", Value("/r1Obr-orchestrator/rpc")).asString();
+    bool ok = Network::connect(orchestratorRPCPortName.c_str(), orchstrator_rpc_server_port_name.c_str());
+    if (!ok)
+    {
+        yCError(CHAT_BOT_ORCHESTRATOR,"Could not connect %s to %s", orchestratorRPCPortName.c_str(), orchstrator_rpc_server_port_name.c_str());
+        return false;
+    }
 
     if(config.check("rpc_microphone_port")) {audiorecorderRPCPortName = config.find("rpc_microphone_port").asString();}
     if(!m_audiorecorderRPCPort.open(audiorecorderRPCPortName))
