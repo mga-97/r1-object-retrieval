@@ -42,6 +42,7 @@ add_install_rpath_support(BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"
 # Everything is configured now, we can start adding source code
 add_subdirectory(app)
 add_subdirectory(modules)
+add_subdirectory(interfaces)
 
 
 

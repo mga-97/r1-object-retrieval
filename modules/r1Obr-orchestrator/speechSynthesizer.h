@@ -46,7 +46,7 @@ public:
 
     bool configure(ResourceFinder &rf, string suffix);
     void close();
-    bool say(string& sentence);
+    bool say(const string& sentence);
 
     bool setLanguage(string& language);
     bool setVoice(string& voice);

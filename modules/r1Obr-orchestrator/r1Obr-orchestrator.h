@@ -25,12 +25,13 @@
 #include "orchestratorThread.h"
 #include "speechSynthesizer.h"
 #include "storyTeller.h"
+#include <r1OrchestratorRPC.h>
 
 using namespace yarp::os;
 using namespace yarp::dev;
 using namespace std;
 
-class Orchestrator : public RFModule, public TypedReaderCallback<Bottle>
+class Orchestrator : public RFModule, public TypedReaderCallback<Bottle>, public r1OrchestratorRPC
 {
 private:
 
@@ -59,24 +60,46 @@ private:
     //storyTeller
     StoryTeller*                m_story_teller;
 
+    //Thrift Server
+    string                      m_orchestrator_thrift_port_name;
+    Port                        m_orchestrator_thrift_port;
+
     //Others
     double                      m_period;
     RpcClient                   m_audiorecorderRPCPort;
     BufferedPort<Bottle>        m_audioPlayPort;
 
 public:
+    //Constructor/Destructor
     Orchestrator();
+
+    //RFModule
     virtual bool configure(ResourceFinder &rf);
     virtual bool close();
     virtual double getPeriod();
     virtual bool updateModule();
 
-    //Port inherited from TypedReaderCallback
+    //inherited from TypedReaderCallback
     using TypedReaderCallback<Bottle>::onRead;
     void onRead(Bottle& b) override;
 
     bool respond(const Bottle &cmd, Bottle &reply);
-    bool say(string toSay);
+
+    //inherited from r1OrchestratorRPC
+    bool searchObject(const string& what)  override;
+    bool searchObjectLocation(const string& what, const string& where)  override;
+    bool stop()  override;
+    bool reset()  override;
+    bool resetHome()  override;
+    bool resume()  override;
+    string status()  override;
+    string what()  override;
+    string where()  override;
+    bool navpos()  override;
+    bool go(const string& location)  override;
+    bool say(const string& toSay)  override;
+    bool tell(const string& key)  override;
+    bool dance(const string& motion)  override;
 };
 
 #endif

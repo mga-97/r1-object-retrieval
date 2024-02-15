@@ -103,7 +103,7 @@ void SpeechSynthesizer::close()
 
 
 // ------------------------------------------------------ //
-bool SpeechSynthesizer::say(string& sentence)
+bool SpeechSynthesizer::say(const string& sentence)
 {
     if (!m_active)
         return false;

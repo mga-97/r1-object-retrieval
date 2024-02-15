@@ -29,6 +29,7 @@ Orchestrator::Orchestrator() :
     m_input_port_name = "/r1Obr-orchestrator/input:i";
     m_status_port_name = "/r1Obr-orchestrator/status:o";
     m_positive_feedback_port_name = "/r1Obr-orchestrator/positive_outcome_feedback:i";
+    m_orchestrator_thrift_port_name = "/r1Obr-orchestrator/thrift:s";
 }
 
 
@@ -112,6 +113,22 @@ bool Orchestrator::configure(ResourceFinder &rf)
         return false;
     }
 
+    
+    // --------- Thrift interface server side config --------- //
+    if(rf.check("thrift_server_port"))  m_orchestrator_thrift_port_name = rf.find("thrift_server_port").asString();
+    if (!m_orchestrator_thrift_port.open(m_orchestrator_thrift_port_name))
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot open the thrift port");
+        return false;
+    }
+
+    if (!this->yarp().attachAsServer(m_orchestrator_thrift_port))
+    {
+        yCWarning(R1OBR_ORCHESTRATOR, "Error! Cannot attach port %s as a server", m_orchestrator_thrift_port_name.c_str());
+        return false;
+    }
+
+
     // --------- Story Teller --------- //
     m_story_teller = new StoryTeller();
     if(!m_story_teller->configure(rf))
@@ -144,6 +161,9 @@ bool Orchestrator::close()
     
     if (!m_audioPlayPort.isClosed())
         m_audioPlayPort.close();
+    
+    if (m_orchestrator_thrift_port.isOpen())
+        m_orchestrator_thrift_port.close();
     
     m_inner_thread->stop();
     delete m_inner_thread;
@@ -326,8 +346,89 @@ void Orchestrator::onRead(yarp::os::Bottle &b)
 
 }
 
+
 /****************************************************************/
-bool Orchestrator::say(string toSay)
+bool Orchestrator::searchObject(const string& what)  
+{
+    Bottle request;
+    request.fromString("search " + what);
+    m_inner_thread->search(request);
+    m_inner_thread->setObject(what);
+
+    return status()!="idle"; //return false if orchestrator status is idle
+}
+
+/****************************************************************/
+bool Orchestrator::searchObjectLocation(const string& what, const string& where)  
+{
+    Bottle request;
+    request.fromString("search " + what + " " + where);
+    m_inner_thread->search(request);
+    m_inner_thread->setObject(what);
+
+    return status()!="idle"; //return false if orchestrator status is idle
+}
+
+/****************************************************************/
+bool Orchestrator::stop()  
+{
+    m_inner_thread->stopOrReset("ext_stop");
+
+    return status()=="idle";  //return false if orchestrator status is NOT idle
+}
+
+/****************************************************************/
+bool Orchestrator::reset()  
+{
+    m_inner_thread->stopOrReset("ext_reset");
+
+    return status()=="idle";  //return false if orchestrator status is NOT idle
+}
+
+/****************************************************************/
+bool Orchestrator::resetHome()  
+{
+    return m_inner_thread->resetHome()=="reset and sent home";
+}
+
+/****************************************************************/
+bool Orchestrator::resume()  
+{
+    return m_inner_thread->resume()!="not resumed";
+}
+
+/****************************************************************/
+string Orchestrator::status()  
+{
+    return m_inner_thread->getStatus();
+}
+
+/****************************************************************/
+string Orchestrator::what()  
+{
+    return m_inner_thread->getWhat();
+}
+
+/****************************************************************/
+string Orchestrator::where()  
+{
+    return m_inner_thread->getWhere();
+}
+
+/****************************************************************/
+bool Orchestrator::navpos()  
+{
+    return m_inner_thread->setNavigationPosition();
+}
+
+/****************************************************************/
+bool Orchestrator::go(const string& location)  
+{
+    return m_inner_thread->go(location);
+}
+
+/****************************************************************/
+bool Orchestrator::say(const string& toSay)
 {
     //close microphone
     Bottle req{"stopRecording_RPC"}, rep;
@@ -356,4 +457,18 @@ bool Orchestrator::say(string toSay)
     m_audiorecorderRPCPort.write(req,rep);
 
     return ret;
+}
+
+/****************************************************************/
+bool Orchestrator::tell(const string& key)  
+{
+    string story;
+    m_story_teller->getStory(key, story);
+    return say(story);
+}
+
+/****************************************************************/
+bool Orchestrator::dance(const string& motion)  
+{
+   return m_inner_thread->dance(motion);
 }
