@@ -9,6 +9,15 @@
    <!--    MODULES     -->
    <!--                -->
 
+
+   <!-- LLM device -->
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <node>console</node>
+   </module>
+   
    <!-- chat bot -->
    <module>
       <name>yarprobotinterface</name>
@@ -65,12 +74,6 @@
    </module>
 
    <!-- sensor network receiver -->
-   <module>
-      <name>yarprobotinterface</name>
-      <parameters>--config LLMDevice.xml</parameters>
-      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
-      <node>console</node>
-   </module>
    <module>
       <name>sensorNetworkReceiver</name>
       <parameters>--context sensorNetworkReceiver --from sensorNetworkReceiver.ini</parameters>

@@ -17,6 +17,7 @@
  */
 
 #include "chatBot.h"
+#include <algorithm>
 
 YARP_LOG_COMPONENT(CHAT_BOT_ORCHESTRATOR, "r1_obr.orchestrator.chatBot")
 
@@ -107,6 +108,34 @@ bool ChatBot::configure(ResourceFinder &rf)
 
     }
 
+    // optional LLM filter
+    if(config.check("llm_active")) { m_llm_active = (config.find("llm_active").asString() == "true");}
+    if (m_llm_active)
+    {
+        string llm_local{"/r1Obr-orchestrator/chatBot/llm/rpc"}, llm_remote{"/LLM_nws/rpc"};
+        Property prop;
+        if(config.check("llm_local")) { llm_local = config.find("llm_local").asString();}
+        if(config.check("llm_remote")) { llm_remote = config.find("llm_remote").asString();}
+        prop.put("device", "LLM_nwc_yarp");
+        prop.put("local", llm_local);
+        prop.put("remote", llm_remote);
+        if (!m_polyLLM.open(prop)) {
+            yCError(CHAT_BOT_ORCHESTRATOR) << "Cannot open LLM_nwc_yarp";
+            return false;
+        }
+
+        if (!m_polyLLM.view(m_iLlm)) {
+            yCError(CHAT_BOT_ORCHESTRATOR) << "Cannot open interface from driver";
+            return false;
+        }
+
+        m_iLlm->deleteConversation();
+        if(config.check("llm_prompt"))
+            m_iLlm->setPrompt(config.find("llm_prompt").asString());
+        else
+            m_iLlm->setPrompt("You are an intent detector: whenever you receive a sentence like 'say: something' or 'try to say: something' you need to reply with the structure 'say \"something\"'. In all other cases just say 'nay'");
+    }
+
 
     //audio player status
     if(config.check("audioplayer_input_port")) {audioplayerStatusPortName = config.find("audioplayer_input_port").asString();}
@@ -146,6 +175,9 @@ void ChatBot::close()
     
     if(m_PolyCB.isValid())
         m_PolyCB.close();
+    
+    if(m_polyLLM.isValid())
+        m_polyLLM.close();
 
     m_speaker->close();
     delete m_speaker;
@@ -171,7 +203,7 @@ void ChatBot::onRead(Bottle& b)
     else
     {
         yCWarning(CHAT_BOT_ORCHESTRATOR, "Chat Bot not active. Use RPC port to write commands");
-        Bottle req{"unk_cmd"};
+        Bottle req{"cmd_unk"};
         m_orchestratorRPCPort.write(req);
     }
 }
@@ -243,6 +275,37 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 yCInfo(CHAT_BOT_ORCHESTRATOR, "Language set to: %s", lang.c_str());
             }
             else if(cmd->get(0).asString()=="no_command") {}
+            else if(cmd->get(0).asString()=="cmd_unk") 
+            {
+                Bottle reply;
+                if(m_llm_active)
+                {
+                    //If ChatBot hasn't recognized any command (cmd_unk) the same input string is passed to the LLM
+                    string answer;
+                    m_iLlm->ask(msgIn, answer);
+                    yCInfo(CHAT_BOT_ORCHESTRATOR, "Contacting LLM. LLM answered: %s", answer.c_str());
+                    Bottle btl_llm; btl_llm.fromString(answer);
+                    if (btl_llm.get(0).asString()=="say" || btl_llm.get(0).asString()=="go" || btl_llm.get(0).asString()=="search" )
+                    {
+                        if(btl_llm.get(0).asString()=="go")
+                        {
+                            string loc =  btl_llm.tail().toString();
+                            replace(loc.begin(), loc.end(), ' ', '_'); //replacing spaces
+                            btl_llm.clear();
+                            btl_llm.fromString("go "+loc);
+                        }
+
+                        m_orchestratorRPCPort.write(btl_llm,reply);
+                    }
+                    else
+                        m_orchestratorRPCPort.write(*cmd,reply);
+                }
+                else
+                    m_orchestratorRPCPort.write(*cmd,reply);
+
+                yCInfo(CHAT_BOT_ORCHESTRATOR, "Replied from orchestrator: %s", reply.toString().c_str() );
+
+            } 
             else
             {
                 Bottle reply;

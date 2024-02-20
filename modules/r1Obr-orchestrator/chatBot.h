@@ -23,6 +23,7 @@
 #include <yarp/dev/IChatBot.h>
 #include "speechSynthesizer.h"
 #include <yarp/dev/AudioPlayerStatus.h>
+#include <yarp/dev/ILLM.h>
 
 using namespace yarp::os;
 using namespace yarp::dev;
@@ -41,6 +42,10 @@ private:
     bool                    m_chatBot_active;
     PolyDriver              m_PolyCB;
     IChatBot*               m_iChatBot = nullptr;
+
+    bool                    m_llm_active;
+    PolyDriver              m_polyLLM;
+    ILLM*                   m_iLlm = nullptr;
 
     SpeechSynthesizer*      m_speaker;
 

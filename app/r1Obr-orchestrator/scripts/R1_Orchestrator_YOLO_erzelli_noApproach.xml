@@ -9,6 +9,14 @@
    <!--    MODULES     -->
    <!--                -->
 
+   <!-- LLM device -->
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <node>console</node>
+   </module>
+
    <!-- chat bot -->
    <module>
       <name>yarprobotinterface</name>
@@ -21,6 +29,14 @@
       <name>yarprobotinterface</name>
       <parameters>--context google --from googleSynthesizer_EN.ini</parameters>
       <node>console1</node>
+   </module>
+
+   <!-- LLM device -->
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <node>console</node>
    </module>
 
    <!-- orchestrator -->
@@ -66,12 +82,6 @@
    </module>
 
    <!-- sensor network receiver -->
-   <module>
-      <name>yarprobotinterface</name>
-      <parameters>--config LLMDevice.xml</parameters>
-      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
-      <node>console</node>
-   </module>
    <module>
       <name>sensorNetworkReceiver</name>
       <parameters>--context sensorNetworkReceiver --from sensorNetworkReceiver.ini</parameters>
