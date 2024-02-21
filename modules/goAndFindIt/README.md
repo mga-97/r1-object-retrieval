@@ -28,3 +28,6 @@ Sending an RPC command to the port `/goAndFindIt/rpc`:
 - `resume`: resumes stopped search
 - `reset`: resets search
 - `help`: gets this list
+
+![goAndFindIt scheme](https://github.com/colombraf/r1-object-retrieval/assets/45776020/a77a7501-bb21-4282-87fe-1aaceb873133)
+
