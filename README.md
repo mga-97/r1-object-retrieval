@@ -52,7 +52,7 @@ You can find here below a list of the main [modules](modules) in this repo and a
 | [approachObject](modules/approachObject/README.md) | Plug-in module for the search positive outcome: the robot navigates nearer to the found object  |
 | [disappointedPose](modules/disappointmentPose/README.md) | Plug-in module for the search negative outcome: the robot assumes a predefined pose  |
 | [yarpMdetr](modules/yarpMdetr/README.MD) / [yarpYolo](modules/yarpYolo/README.MD) | Object Detection modules: detect objects in an input image |
-| [r1Obr-orchestrator](modules/r1Obr-orchestrator/README.md) | Orchestrator of the whole object retrieval application: manages the search, the speech interaction, the integration of the sensor network, and other possible actions that the robot could perform|
+| [r1Obr-orchestrator](modules/r1Obr-orchestrator/README.md) | Orchestrator (FSM) of the whole object retrieval application: manages the search, the speech interaction, the integration of the sensor network, and other possible actions that the robot could perform|
 | [sensorNetworkReceiver](modules/sensorNetworkReceiver/README.md) | Interaction module between the r1Obr-orchestrator and the Sensor Network |
 | [look_and_point](modules/look_and_point/README.md) | Just a simple module to use the positive output of the search and give it as an iput to the handPointing module (cer repo) |
 | [micActivation](modules/micActivation/)| Module that starts/stops the audioRecorder device when a joystick button is pressed/released |
@@ -61,3 +61,8 @@ You can find here below a list of the main [modules](modules) in this repo and a
 ## Interfaces
 You can find in the [interfaces](interfaces) folder the thrift files for the creation of the following classes:
 * [r1OrchestratorRPC](interfaces/r1OrchestratorRPC/): implementations of the RPC calls of the module r1Obr-orchestrator
+
+## Apps
+In the [app](app) folder you can find, divided by context:
+* a `scripts` folder containing the definition of the yarp applications, and eventually other useful scripts, for the corresponding module
+* a `conf` folder containing the configuration files for the corresponding module
