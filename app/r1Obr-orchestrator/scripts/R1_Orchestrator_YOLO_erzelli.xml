@@ -9,14 +9,6 @@
    <!--    MODULES     -->
    <!--                -->
 
-
-   <!-- LLM device -->
-   <module>
-      <name>yarprobotinterface</name>
-      <parameters>--config LLMDevice.xml</parameters>
-      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
-      <node>console</node>
-   </module>
    
    <!-- chat bot -->
    <module>
@@ -71,6 +63,14 @@
       <name>yarprobotinterface</name>
       <parameters>--context vadModule --from audioPlayer.ini</parameters>
       <node>r1-face</node>
+   </module>
+
+   <!-- LLM device -->
+   <module>
+      <name>yarprobotinterface</name>
+      <parameters>--config LLMDevice.xml</parameters>
+      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <node>console</node>
    </module>
 
    <!-- sensor network receiver -->
