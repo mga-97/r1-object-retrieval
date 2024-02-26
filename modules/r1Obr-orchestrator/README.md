@@ -6,8 +6,13 @@ Module to orchestrate the search for an object with the robot R1.
 This has been designed as a plug-in module where the input commands can be received from various sources, and the final behaviour of the robot is defined by other modules.
 
 While the search is performed by the goAndFindIt module, this one acts as interface with the user.
+![orchestrator scheme](https://github.com/colombraf/r1-object-retrieval/assets/45776020/10a1f851-1eea-41cf-999e-471d9c42a348)
 
-## Usage:
+## Architecture
+![orchestrator architecture](https://github.com/colombraf/r1-object-retrieval/assets/45776020/9d8566cc-ff8f-481a-8f01-e9d45f288b62)
+
+
+## Usage
 
 ### Inputs
 There are two ways to send commands to this module:
