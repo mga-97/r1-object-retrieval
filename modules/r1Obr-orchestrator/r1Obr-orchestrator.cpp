@@ -376,6 +376,7 @@ bool Orchestrator::searchObjectLocation(const string& what, const string& where)
 /****************************************************************/
 bool Orchestrator::stopSearch()  
 {    
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: stop");
     m_inner_thread->stopOrReset("ext_stop");
 
     return status()=="idle";  //return false if orchestrator status is NOT idle
@@ -384,6 +385,7 @@ bool Orchestrator::stopSearch()
 /****************************************************************/
 bool Orchestrator::resetSearch()  
 {    
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: reset");
     m_inner_thread->stopOrReset("ext_reset");
 
     return status()=="idle";  //return false if orchestrator status is NOT idle
@@ -392,12 +394,14 @@ bool Orchestrator::resetSearch()
 /****************************************************************/
 bool Orchestrator::resetHome()  
 {    
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: resetHome");
     return m_inner_thread->resetHome()=="reset and sent home";
 }
 
 /****************************************************************/
 bool Orchestrator::resume()  
 {   
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: resume");
     return m_inner_thread->resume()!="not resumed";
 }
 
@@ -428,6 +432,7 @@ bool Orchestrator::navpos()
 /****************************************************************/
 bool Orchestrator::go(const string& location)  
 {    
+    yCInfo(R1OBR_ORCHESTRATOR, "Received: go %s", location.c_str());
     return m_inner_thread->go(location);
 }
 

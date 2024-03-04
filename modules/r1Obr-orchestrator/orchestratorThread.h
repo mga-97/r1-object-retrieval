@@ -82,7 +82,7 @@ private:
     string                  m_faceexpression_rpc_port_name;
     RpcClient               m_faceexpression_rpc_port;
 
-    //Navigator to Home location
+    //Navigator to location
     Nav2Loc*                m_nav2loc;
 
     //Continuous Search thread
