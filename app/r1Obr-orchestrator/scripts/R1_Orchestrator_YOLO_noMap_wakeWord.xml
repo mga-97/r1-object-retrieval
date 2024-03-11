@@ -31,16 +31,16 @@
 
    <!-- Wake Word VAD modules -->
    <module>
-    <name>voiceActivationDetection</name>
-    <parameters></parameters>
-    <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
-    <node>console3</node>
-  </module>
-  <module>
-    <name>wakeWordDetection</name>
-    <parameters></parameters>
-    <environment>YARP_LOG_PROCESS_LABEL=WAKE-WORD</environment>
-    <node>console3</node>
+      <name>voiceActivationDetection</name>
+      <parameters></parameters>
+      <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
+      <node>console3</node>
+   </module>
+   <module>
+      <name>wakeWordDetection</name>
+      <parameters></parameters>
+      <environment>YARP_LOG_PROCESS_LABEL=WAKE-WORD</environment>
+      <node>console3</node>
   </module>
 
    <!-- chat bot -->
