@@ -6,9 +6,9 @@ Repository to manage the work on the object retrieval with the robot R1.
 * [yarp](https://github.com/robotology/yarp)
 * [icub-main](https://github.com/robotology/icub-main.git)
 * [icub-contrib](https://github.com/robotology/icub-contrib-common.git)
-* [cer](https://github.com/colombraf/cer)
+* [cer](https://github.com/robotology/cer)
 * [yarp-devices-llm](https://github.com/robotology/yarp-devices-llm)
-* [tour-guide-robot](https://github.com/colombraf/tour-guide-robot)
+* [tour-guide-robot](https://github.com/hsp-iit/tour-guide-robot)
 * [Mdetr](https://github.com/ashkamath/mdetr/tree/main) requirements
 * [Yolo v8](https://github.com/ultralytics/ultralytics) requirements
 
@@ -23,7 +23,7 @@ docker pull colombraf/r1images:r1ObjectRetrievalSim   # to work in a simulated e
 ### From source
 * On Linux:
 ```bash
-git clone https://github.com/colombraf/r1-object-retrieval 
+git clone https://github.com/hsp-iit/r1-object-retrieval 
 cd r1-object-retrieval && mkdir build && cd build && cmake .. && make -j11
 export PYTHONPATH=$PYTHONPATH:${R1_OBR_SOURCE_DIR} 
 export YARP_DATA_DIRS=$YARP_DATA_DIRS:${R1_OBR_BUILD_DIR}/share/R1_OBJECT_RETRIEVAL

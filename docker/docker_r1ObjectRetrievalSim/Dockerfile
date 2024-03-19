@@ -172,18 +172,6 @@ RUN cd cer && mkdir build && cd build && cmake .. \
                 -DENABLE_cermod_tripodMotionControl=ON && make -j11
 ENV CER_ROOT=$robotology_install_folder/cer
 ENV CER_DIR=$robotology_install_folder/cer/build
-# ----------------  fetch colombraf --------------------------------------------- #
-RUN echo "fetch remote"
-WORKDIR $robotology_install_folder/cer
-RUN git remote add colombraf https://github.com/colombraf/cer
-RUN git fetch colombraf
-RUN git checkout feature_pointR1
-RUN cd build && cmake .. \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DENABLE_cermod_cerDoubleLidar=ON \
-		-DENABLE_cermod_cerOdometry=ON \
-		-DENABLE_cermod_tripodMotionControl=ON && make -j11
-# ------------------------------------------------------------------------------ #
 
 
 # YARP-DEVICES-ROS2
@@ -267,16 +255,9 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # Install YOLO requirements
 RUN pip install ultralytics
 
-# colombraf/tour-guide-robot
-WORKDIR $user1_home/tour-guide-robot
-RUN git remote add colombraf https://github.com/colombraf/tour-guide-robot
-RUN git fetch colombraf
-RUN git checkout ${ros_distro}_rc
-RUN cd build && cmake .. && make -j11
-
 # r1-object-retrieval
 WORKDIR ${user1_home}
-RUN git clone https://github.com/colombraf/r1-object-retrieval
+RUN git clone https://github.com/hsp-iit/r1-object-retrieval
 RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share/R1_OBJECT_RETRIEVAL
