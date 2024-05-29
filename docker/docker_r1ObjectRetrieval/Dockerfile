@@ -299,7 +299,7 @@ RUN git clone https://github.com/Microsoft/vcpkg.git && \
     ./vcpkg install nlohmann-json
 
 # Install openai c++ community library
-RUN git clone https://github.com/D7EAD/liboai.git && \
+RUN git clone https://github.com/D7EAD/liboai.git -b v4.0.0-dev  && \
     cd liboai/liboai && \
     cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
