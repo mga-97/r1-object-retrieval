@@ -18,6 +18,7 @@
 
 #include "chatBot.h"
 #include <algorithm>
+#include <yarp/dev/LLM_Message.h>
 
 YARP_LOG_COMPONENT(CHAT_BOT_ORCHESTRATOR, "r1_obr.orchestrator.chatBot")
 
@@ -281,10 +282,15 @@ void ChatBot::interactWithChatBot(const string& msgIn)
                 if(m_llm_active)
                 {
                     //If ChatBot hasn't recognized any command (cmd_unk) the same input string is passed to the LLM
-                    string answer;
+                    yarp::dev::LLM_Message answer;
                     m_iLlm->ask(msgIn, answer);
-                    yCInfo(CHAT_BOT_ORCHESTRATOR, "Contacting LLM. LLM answered: %s", answer.c_str());
-                    Bottle btl_llm; btl_llm.fromString(answer);
+                    if(answer.type != "assistant")
+                    {
+                        yCError(CHAT_BOT_ORCHESTRATOR, "ChatBot::interactWithChatBot. Unexpected answer type from LLM.");
+                        return;
+                    }
+                    yCInfo(CHAT_BOT_ORCHESTRATOR, "Contacting LLM. LLM answered: %s", answer.content.c_str());
+                    Bottle btl_llm; btl_llm.fromString(answer.content);
                     if (btl_llm.get(0).asString()=="say" || btl_llm.get(0).asString()=="go" || btl_llm.get(0).asString()=="search" )
                     {
                         if(btl_llm.get(0).asString()=="go")
