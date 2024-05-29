@@ -257,7 +257,7 @@ RUN pip install ultralytics
 
 # r1-object-retrieval
 WORKDIR ${user1_home}
-RUN git clone https://github.com/hsp-iit/r1-object-retrieval
+RUN git clone https://github.com/fbrand-new/r1-object-retrieval -b fix/docker
 RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share/R1_OBJECT_RETRIEVAL
