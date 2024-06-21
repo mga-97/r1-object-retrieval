@@ -28,6 +28,7 @@
 #include <yarp/os/RpcClient.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/dev/ILLM.h>
+#include <yarp/dev/LLM_Message.h>
 #include <yarp/dev/PolyDriver.h>
 #include <algorithm>
 #include <r1OrchestratorRPC.h>
@@ -182,9 +183,14 @@ bool sensorNetworkReceiver::respond(const Bottle &b, Bottle &reply)
     
     if(m_llm_active)
     {
-        string answer;
+        yarp::dev::LLM_Message answer;
         m_iLlm->ask(b.toString(), answer);
-        Bottle btl; btl.fromString(answer);
+        if(answer.type != "assistant")
+        {
+            yCError(SENSOR_NETWORK_RECEIVER, "sensorNetworkReceiver::respond. Unexpected answer type from LLM");
+            return false;
+        }
+        Bottle btl; btl.fromString(answer.content);
         if (btl.get(0).asString()=="say")
         {
             m_r1Orchestrator.say(btl.tail().toString()); 

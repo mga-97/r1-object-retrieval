@@ -257,8 +257,8 @@ RUN pip install ultralytics
 
 # r1-object-retrieval
 WORKDIR ${user1_home}
-RUN git clone https://github.com/hsp-iit/r1-object-retrieval
-RUN cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
+RUN git clone https://github.com/hsp-iit/r1-object-retrieval && \
+    cd r1-object-retrieval && mkdir build && cd build && cmake .. && sudo make -j11
 ENV PYTHONPATH=$PYTHONPATH:${user1_home}/r1-object-retrieval
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${user1_home}/r1-object-retrieval/build/share/R1_OBJECT_RETRIEVAL
 ENV PATH=${PATH}:${user1_home}/.local/bin
@@ -274,7 +274,7 @@ RUN git clone https://github.com/Microsoft/vcpkg.git && \
     ./vcpkg install nlohmann-json
 
 # Install openai c++ community library
-RUN git clone https://github.com/D7EAD/liboai.git && \
+RUN git clone https://github.com/D7EAD/liboai.git -b v4.0.0-dev && \
     cd liboai/liboai && \
     cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
@@ -288,7 +288,7 @@ RUN cd ${robotology_install_folder}/yarp-devices-llm && \
     cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE=/home/user1/vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DLIBOAI_INSTALL_PATH=/home/user1/liboai && cd build \ 
-    # && sudo make install -j11  #IT IS NOT COMPILING BECAUSE IT CANNOT FIND yarp/dev/LLM_Message.h
+    && sudo make install -j11
 ENV YARP_DATA_DIRS=$YARP_DATA_DIRS:${robotology_install_folder}/yarp-devices-llm/build/share/yarp
 RUN echo "set -a" >> /home/user1/.bashrc
 RUN echo "source ${robotology_install_folder}/yarp-devices-llm/.env" >> /home/user1/.bashrc
