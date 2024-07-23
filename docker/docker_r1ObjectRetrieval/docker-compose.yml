@@ -1,0 +1,166 @@
+version: "3.7"
+
+x-general: &general
+  environment:
+    - DISPLAY=${DISPLAY}
+    - XAUTHORITY=/home/yarp-user/.Xauthority
+    - QT_X11_NO_MITSHM=1
+    - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/yarp-user/1000/bus
+    - LIBGL_ALWAYS_INDIRECT=0
+    - YARP_COLORED_OUTPUT=1
+    - NVIDIA_DRIVER_CAPABILITIES=all
+  volumes:
+    - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+    - "/etc/hosts:/etc/hosts"
+    - "${HOME}/.config/yarp:/home/yarp-user/.config/yarp"
+  network_mode: host
+  ipc: host
+  pid: host
+  privileged: true
+  security_opt:
+    - apparmor:unconfined
+  deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+x-demo: &demo
+  environment:
+    - DISPLAY=${DISPLAY}
+    - XAUTHORITY=/home/yarp-user/.Xauthority
+    - QT_X11_NO_MITSHM=1
+    - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/yarp-user/1000/bus
+    - LIBGL_ALWAYS_INDIRECT=0
+    - YARP_COLORED_OUTPUT=1
+    - NVIDIA_DRIVER_CAPABILITIES=all
+  volumes:
+    - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+    - "/etc/hosts:/etc/hosts"
+    - "${HOME}/.config/yarp:/home/yarp-user/.config/yarp"
+    - "${HOME}/.config/credentials/google-credentials/hsp_google.json:/home/yarp-user/.config/google-credential/hsp_google.json"
+    - "${HOME}/.config/credentials/azure-credentials/config.env:/home/yarp-user/.env/config.env"
+  network_mode: host
+  ipc: host
+  pid: host
+  privileged: true
+  security_opt:
+    - apparmor:unconfined
+  deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+services:
+
+# Images
+  r1-object-retrieval-stable:
+    image: elandini84/r1images:r1ObjectRetrieval_iron_stable
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+          base_img: elandini84/r1images:tourSim2_cuda.11.7.1-cudnn8_iron_stable
+          user_name: user1
+  r1-object-retrieval-devel:
+    image: elandini84/r1images:r1ObjectRetrieval_iron_devel
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+          base_img: elandini84/r1images:tourSim2_cuda.11.7.1-cudnn8_iron_devel
+          user_name: user1
+  r1-object-retrieval-demo-slow-stable:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_stable
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+          base_img: elandini84/r1images:r1ObjectRetrieval_iron_stable
+          robot_code: /usr/local/src/robot
+          grcp_version: v1.60.0
+          google_cloud_version: v2.22.0
+          open_telemetry_version: v1.13.0
+          nlohmann_json_version: v3.11.3
+          crc32c_version: 1.1.2
+          user_name: yarp-user
+          jval: 4
+          tour_branch: iron
+          llm_branch: master
+  r1-object-retrieval-demo-stable:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_stable
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+          base_img: elandini84/r1images:r1ObjectRetrieval_iron_stable
+          robot_code: /usr/local/src/robot
+          grcp_version: v1.60.0
+          google_cloud_version: v2.22.0
+          open_telemetry_version: v1.13.0
+          nlohmann_json_version: v3.11.3
+          crc32c_version: 1.1.2
+          user_name: yarp-user
+          jval: 8
+          tour_branch: iron
+          llm_branch: master
+  r1-object-retrieval-demo-slow-devel:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_devel
+    build:
+      context: .
+      dockerfile: Dockerfile_demo
+      args:
+          base_img: elandini84/r1images:r1ObjectRetrieval_iron_devel
+          robot_code: /usr/local/src/robot
+          grcp_version: v1.60.0
+          google_cloud_version: v2.22.0
+          open_telemetry_version: v1.13.0
+          nlohmann_json_version: v3.11.3
+          crc32c_version: 1.1.2
+          user_name: yarp-user
+          jval: 4
+          tour_branch: iron
+          llm_branch: master
+  r1-object-retrieval-demo-devel:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_devel
+    build:
+      context: .
+      dockerfile: Dockerfile_demo
+      args:
+          base_img: elandini84/r1images:r1ObjectRetrieval_iron_devel
+          robot_code: /usr/local/src/robot
+          grcp_version: v1.60.0
+          google_cloud_version: v2.22.0
+          open_telemetry_version: v1.13.0
+          nlohmann_json_version: v3.11.3
+          crc32c_version: 1.1.2
+          user_name: yarp-user
+          jval: 8
+          tour_branch: iron
+          llm_branch: master
+
+# Containers
+  r1-object-retrieval-stable-container:
+    image: elandini84/r1images:r1ObjectRetrieval_iron_stable
+    <<: *general
+    container_name: r1-object-retrieval-stable-container
+    command: terminator -g /home/yarp-user/.config/terminator/config
+  r1-object-retrieval-devel-container:
+    image: elandini84/r1images:r1ObjectRetrieval_iron_devel
+    <<: *general
+    container_name: r1-object-retrieval-devel-container
+    command: terminator -g /home/yarp-user/.config/terminator/config
+  r1-object-retrieval-demo-stable-container:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_stable
+    <<: *demo
+    container_name: r1-object-retrieval-demo-stable-container
+    command: terminator -g /home/yarp-user/.config/terminator/config
+  r1-object-retrieval-demo-devel-container:
+    image: elandini84/r1images:r1ObjectRetrieval_demo_iron_devel
+    <<: *demo
+    container_name: r1-object-retrieval-demo-devel-container
+    command: terminator -g /home/yarp-user/.config/terminator/config
