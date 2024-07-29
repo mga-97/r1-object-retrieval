@@ -159,7 +159,12 @@ WORKDIR ${robot_code}
 RUN git clone https://github.com/robotology/yarp-devices-google-cloud && \
    cd yarp-devices-google-cloud && mkdir build && cd build && \
    cmake .. && make -j11
+RUN git clone https://github.com/robotology/funny-things && cd funny-things && \
+    mkdir build && cd build && cmake .. -DENABLE_R1_APPS=ON -DCREATE_R1_GESTICULATE=ON -DCREATE_R1_IDLEMANAGER=ON &&\
+    make -j8
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:${robot_code}/yarp-devices-google-cloud/build/share/yarp:${robot_code}/yarp-devices-google-cloud/build/share/
+
+RUN sudo apt-get install -y curl zip unzip tar
 
 WORKDIR /home/${user_name}/Downloads
 # Install openai c++ dependencies
@@ -185,6 +190,8 @@ RUN echo "set -a" >> /home/${user_name}/.bashrc && \
     echo "set +a" >> /home/${user_name}/.bashrc
 
 # Install yarpGPT
+ARG llm_branch
+
 WORKDIR ${robot_code}
 RUN git clone https://github.com/robotology/yarp-devices-llm -b ${llm_branch} && \
     cd yarp-devices-llm && mkdir build && \
@@ -195,11 +202,6 @@ RUN git clone https://github.com/robotology/yarp-devices-llm -b ${llm_branch} &&
 ENV YARP_DEVICES_LLM_DIR=${robot_code}/yarp-devices-llm/build
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:${YARP_DEVICES_LLM_DIR}/share/yarp:${YARP_DEVICES_LLM_DIR}/share
 ENV PATH=$PATH:${YARP_DEVICES_LLM_DIR}/bin
-
-ARG tour_branch
-
-RUN git clone https://github.com/hsp-iit/tour-guide-robot -b $tour_branch
-RUN cd tour-guide-robot && mkdir build && cd build && cmake ..
 
 ENV TOUR_GUIDE_ROBOT_SOURCE_DIR=${robot_code}/tour-guide-robot
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:${TOUR_GUIDE_ROBOT_SOURCE_DIR}/build/share/tour-guide-robot
