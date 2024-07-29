@@ -117,7 +117,7 @@ services:
           base_img: elandini84/r1images:tourSim2_cuda.11.7.1-cudnn8_iron_stable
           user_name: user1
   r1-object-retrieval-sim-devel:
-    image: elandini84/r1images:r1ObjectRetrieval_iron_devel
+    image: elandini84/r1images:r1ObjectRetrieval_sim_iron_devel
     build:
       context: .
       dockerfile: Dockerfile_sim

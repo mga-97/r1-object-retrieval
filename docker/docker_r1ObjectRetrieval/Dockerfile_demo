@@ -12,6 +12,8 @@ ARG crc32c_version
 ARG user_name
 ARG robot_code
 
+USER ${user_name}
+WORKDIR /home/${user_name}/
 
 ### Packaging google-cloud-cpp instructions ############################################# START ####
 RUN mkdir Downloads
