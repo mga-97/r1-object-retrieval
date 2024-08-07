@@ -3,7 +3,7 @@
 
    <dependencies>
    </dependencies>
-   
+
 
    <!--                -->
    <!--    MODULES     -->
@@ -38,7 +38,7 @@
    <module>
       <name>yarprobotinterface</name>
       <parameters>--config LLMDevice.xml</parameters>
-      <workdir>/home/user1/robotology/yarp-devices-llm/assets</workdir>
+      <workdir>$ENV{ROBOT_CODE}/yarp-devices-llm/assets</workdir>
       <node>console</node>
    </module>
 
@@ -60,13 +60,13 @@
    <application>
       <name>R1_goAndFindIt_YOLO_noMap</name>
       <prefix></prefix>
-   </application>  
+   </application>
    <module>
       <name>r1Obr-orchestrator</name>
       <parameters>--context r1Obr-orchestrator --from r1Obr-orchestrator_R1_noMap.ini</parameters>
       <node>console</node>
    </module>
-   
+
    <!-- positive outcome -->
    <module>
       <name>look_and_point</name>
@@ -77,7 +77,7 @@
       <name>R1_handPointing_orchestrator</name>
       <prefix></prefix>
    </application>
-   
+
    <!-- negative outcome -->
 
 
@@ -128,7 +128,7 @@
       <to>/r1Obr-orchestrator/voice_command:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
-  
+
    <connection>
       <from>/r1Obr-orchestrator/nextLocPlanner/request:rpc</from>
       <to>/nextLocPlanner/request/rpc</to>
@@ -169,8 +169,8 @@
       <from>/r1Obr-orchestrator/positive_outcome:o</from>
       <to>/look_and_point/in:i</to>
       <protocol>fast_tcp</protocol>
-   </connection> 
-   
+   </connection>
+
    <connection>
       <from>/look_and_point/out:o</from>
       <to>/handPointing/clicked_point:i</to>
@@ -217,6 +217,6 @@
       <from>/audioPlayerWrapper/status:o</from>
       <to>/faceExpressionImage/mouthAudioData:i</to>
       <protocol>fast_tcp</protocol>
-   </connection>   
-      
+   </connection>
+
 </application>

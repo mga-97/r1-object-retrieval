@@ -3,7 +3,7 @@
 
    <dependencies>
    </dependencies>
-   
+
    <!--  MODULES  -->
    <application>
         <name>Navigation_ROS2_R1SN003</name>
@@ -18,7 +18,7 @@
 
     <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
+		<parameters>$ENV{ROBOT_CODE}/r1-object-retrieval/mdetr_python_code/yarpMdetr.py --from yarpMdetr_R1.ini</parameters>
 		<node>console</node>
 	</module>
 
@@ -58,7 +58,7 @@
       <environment></environment>
       <node>console</node>
    </module>
-   
+
    <module>
       <name>cer_reaching-solver</name>
       <parameters>--robot cer --arm-type right --verbosity 1</parameters>
@@ -70,7 +70,7 @@
       <parameters>--robot cer --arm-type right --verbosity 1 --T 1.0</parameters>
       <node>console</node>
    </module>
-   
+
    <module>
       <name>cer_reaching-solver</name>
       <parameters>--robot cer --arm-type left --verbosity 1</parameters>
@@ -92,14 +92,14 @@
    <module>
       <name>yarpmotorgui</name>
       <parameters></parameters>
-      <workdir>/home/user1/robotology/robots-configuration/R1SN003/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/robots-configuration/R1SN003/</workdir>
       <node>console</node>
    </module>
 
    <module>
       <name>./goHome.sh</name>
       <parameters></parameters>
-      <workdir>/home/user1/robotology/cer/app/handPointing/scripts/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/cer/app/handPointing/scripts/</workdir>
       <node>console</node>
    </module>
 
@@ -145,25 +145,25 @@
       <to>/nextLocPlanner/request/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/yarpMdetr/where_coords:o</from>
       <to>/lookForObject/objectCoordinates:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-   
+   </connection>
+
    <connection>
       <from>/goAndFindIt/output:o</from>
       <to>/look_and_point/in:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-   
+   </connection>
+
    <connection>
       <from>/look_and_point/out:o</from>
       <to>/handPointing/clicked_point:i</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/cer_reaching-controller/right/solver:rpc</from>
       <to>/cer_reaching-solver/right/rpc</to>
@@ -199,5 +199,5 @@
       <to>/handPointing/go_home:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
-      
+
 </application>

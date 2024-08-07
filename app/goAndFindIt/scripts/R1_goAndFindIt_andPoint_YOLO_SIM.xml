@@ -3,7 +3,7 @@
 
    <dependencies>
    </dependencies>
-   
+
    <!--  MODULES  -->
    <application>
         <name>Navigation_ROS2_R1_SIM</name>
@@ -19,7 +19,7 @@
    <module>
 		<name>python3</name>
 		<parameters>yarpYolo.py --from yarpYolo_R1.ini</parameters>
-      <workdir>/home/user1/r1-object-retrieval/modules/yarpYolo/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/r1-object-retrieval/modules/yarpYolo/</workdir>
 		<node>console</node>
 	</module>
 
@@ -52,14 +52,14 @@
       <parameters>--context goAndFindIt --from goAndFindIt_R1_SIM.ini</parameters>
       <node>console</node>
    </module>
-   
+
    <module>
       <name>handPointing</name>
       <parameters>--context handPointing --from handPointing_R1_SIM.ini</parameters>
       <environment></environment>
       <node>console</node>
-   </module> 
-   
+   </module>
+
    <module>
       <name>cer_reaching-solver</name>
       <parameters>--robot SIM_CER_ROBOT --arm-type right --verbosity 1</parameters>
@@ -71,7 +71,7 @@
       <parameters>--robot SIM_CER_ROBOT --arm-type right --verbosity 1 --T 1.0</parameters>
       <node>console</node>
    </module>
-   
+
    <module>
       <name>cer_reaching-solver</name>
       <parameters>--robot SIM_CER_ROBOT --arm-type left --verbosity 1</parameters>
@@ -93,7 +93,7 @@
    <module>
       <name>yarpmotorgui</name>
       <parameters></parameters>
-      <workdir>/home/user1/robotology/cer-sim/conf/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/cer-sim/conf/</workdir>
       <node>console</node>
    </module>
 
@@ -121,12 +121,12 @@
       <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/yarpYolo/where_coords:o</from>
       <to>/lookForObject/objectCoordinates:i</to>
       <protocol>tcp</protocol>
-   </connection> 
+   </connection>
 
    <connection>
       <from>/goAndFindIt/lookForObject/object:o</from>
@@ -145,13 +145,13 @@
       <to>/nextLocPlanner/request/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/goAndFindIt/output:o</from>
       <to>/look_and_point/in:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-   
+   </connection>
+
    <connection>
       <from>/look_and_point/out:o</from>
       <to>/handPointing/clicked_point:i</to>
@@ -199,5 +199,5 @@
       <to>/handPointing/go_home:i</to>
       <protocol>fast_tcp</protocol>
    </connection>
-      
+
 </application>

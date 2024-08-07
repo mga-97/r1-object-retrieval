@@ -3,7 +3,7 @@
 
    <dependencies>
    </dependencies>
-   
+
    <!--  MODULES  -->
    <application>
         <name>Navigation_ROS2_R1SN003</name>
@@ -18,7 +18,7 @@
    <module>
 		<name>python3</name>
 		<parameters>yarpYolo.py --from yarpYolo_R1.ini</parameters>
-      <workdir>/home/user1/r1-object-retrieval/modules/yarpYolo/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/r1-object-retrieval/modules/yarpYolo/</workdir>
 		<node>console</node>
 	</module>
 
@@ -43,7 +43,7 @@
    <module>
       <name>yarpmotorgui</name>
       <parameters></parameters>
-      <workdir>/home/user1/robotology/robots-configuration/R1SN003/</workdir>
+      <workdir>$ENV{ROBOT_CODE}/robots-configuration/R1SN003/</workdir>
       <node>console</node>
    </module>
 
@@ -71,23 +71,23 @@
       <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/yarpYolo/where_coords:o</from>
       <to>/lookForObject/objectCoordinates:i</to>
       <protocol>tcp</protocol>
-   </connection> 
+   </connection>
 
    <connection>
       <from>/lookForObject/out:o</from>
       <to>/look_and_point/in:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-   
+   </connection>
+
    <connection>
       <from>/look_and_point/out:o</from>
       <to>/handPointing/clicked_point:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-      
+   </connection>
+
 </application>

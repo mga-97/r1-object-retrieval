@@ -3,7 +3,7 @@
 
    <dependencies>
    </dependencies>
-   
+
    <!--  MODULES  -->
    <application>
         <name>Navigation_ROS2_R1_SIM</name>
@@ -18,7 +18,7 @@
 
    <module>
 		<name>python3</name>
-		<parameters>/home/user1/r1-object-retrieval/modules/yarpYolo/yarpYolo.py --from yarpYolo_R1.ini</parameters>
+		<parameters>$ENV{ROBOT_CODE}/r1-object-retrieval/modules/yarpYolo/yarpYolo.py --from yarpYolo_R1.ini</parameters>
 		<node>console</node>
 	</module>
 
@@ -58,11 +58,11 @@
       <to>/yarpYolo/command/rpc</to>
       <protocol>tcp</protocol>
    </connection>
-   
+
    <connection>
       <from>/yarpYolo/where_coords:o</from>
       <to>/lookForObject/objectCoordinates:i</to>
       <protocol>tcp</protocol>
-   </connection> 
-      
+   </connection>
+
 </application>
