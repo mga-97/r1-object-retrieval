@@ -14,14 +14,14 @@
    <module>
       <name>yarprobotinterface</name>
       <parameters>--context google --from googleChatBot_EN_stateless.ini</parameters>
-      <node>console1</node>
+      <node>console</node>
    </module>
 
    <!-- speech synthesizer -->
    <module>
       <name>yarprobotinterface</name>
       <parameters>--context google --from googleSynthesizer_EN.ini</parameters>
-      <node>console1</node>
+      <node>console</node>
    </module>
 
    <!-- orchestrator -->
