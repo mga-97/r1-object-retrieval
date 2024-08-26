@@ -187,7 +187,8 @@ RUN git clone https://github.com/D7EAD/liboai.git && \
     cd build && make -j8 && sudo make install
 
 # Configure openai credentials
-RUN echo "set -a" >> /home/${user_name}/.bashrc && \
+RUN echo "\n" >> /home/${user_name}/.bashrc && \
+    echo "set -a" >> /home/${user_name}/.bashrc && \
     echo "source ~/.env/config.env" >> /home/${user_name}/.bashrc && \
     echo "set +a" >> /home/${user_name}/.bashrc
 
