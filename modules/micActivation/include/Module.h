@@ -18,4 +18,5 @@ class Module: public yarp::os::RFModule
         yarp::dev::PolyDriver drv_;
         yarp::dev::IAudioGrabberSound* iAudioGrabber_;
         bool is_microphone_open_;
+        int start;
 };

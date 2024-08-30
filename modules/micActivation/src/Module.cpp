@@ -3,6 +3,7 @@
 #include <yarp/os/LogStream.h>
 #include <yarp/os/Value.h>
 #include <yarp/os/Property.h>
+#include <chrono>
 
 bool Module::configure(yarp::os::ResourceFinder &rf)
 {
@@ -58,6 +59,9 @@ bool Module::updateModule()
             /* Start recording if microphone is stopped */
             if(!is_microphone_open_)
             {
+                auto now = std::chrono::system_clock::now();
+                auto duration = now.time_since_epoch();
+                start = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
                 yInfo() << "Started recording";
                 iAudioGrabber_->startRecording();
             }
@@ -67,8 +71,14 @@ bool Module::updateModule()
         {
             if(is_microphone_open_)
             {
-                yInfo() << "Stopped recording";
-                iAudioGrabber_->stopRecording();
+                auto now = std::chrono::system_clock::now();
+                auto duration = now.time_since_epoch();
+                int end = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+                if (end - start > 500)
+                {
+                    yInfo() << "Stopped recording";
+                    iAudioGrabber_->stopRecording();
+                }
             }
         }
     }
